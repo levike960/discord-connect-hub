@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Borászat{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-8">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h2 class="card-title">Borászat</h2>
+        <p class="text-muted">Welcome, {{ current_user.display_name }}. This page is only accessible to users with fraction permission.</p>
+        <hr>
+        <p>Add your fraction-specific content here.</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
