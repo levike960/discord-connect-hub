@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}{{ company.name }} — Fal{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h2 class="card-title mb-3">
+          <i class="bi bi-building"></i> {{ company.name }}
+        </h2>
+        <hr>
+
+        {# Post new message #}
+        <form method="POST" class="mb-4">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="mb-3">
+            <textarea name="content" class="form-control" rows="3"
+                      placeholder="Írj egy üzenetet..." maxlength="1000" required></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-send"></i> Küldés
+          </button>
+        </form>
+
+        {# Messages wall #}
+        {% if messages %}
+        <div class="d-flex flex-column gap-3">
+          {% for msg in messages %}
+          <div class="card border-start border-primary border-3">
+            <div class="card-body">
+              <div class="d-flex align-items-center mb-2">
+                <img src="{{ msg.author.avatar_url }}" alt="avatar"
+                     class="rounded-circle me-2" width="32" height="32" style="object-fit: cover;">
+                <strong>{{ msg.author.display_name }}</strong>
+                <small class="text-muted ms-auto">{{ msg.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+              </div>
+              <p class="mb-0">{{ msg.content }}</p>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-muted">Még nincsenek üzenetek. Legyen Ön az első!</p>
+        {% endif %}
+
+        <a href="{{ url_for('fraction_deliveries') }}" class="btn btn-outline-secondary mt-4">
+          <i class="bi bi-arrow-left"></i> Vissza a cégekhez
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

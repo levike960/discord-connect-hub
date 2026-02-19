@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Clock In/Out{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <div class="card shadow-sm">
+      <div class="card-body text-center">
+        <h2 class="card-title mb-4"><i class="bi bi-clock"></i> Bejelentkezés / Kijelentkezés</h2>
+
+        {% if current_user.is_clocked_in %}
+          <div class="alert alert-success">
+            <i class="bi bi-check-circle-fill"></i> Jelenleg be van jelentkezve.
+            <br>
+            <small>Bejelentkezés ideje: {{ current_user.active_work_log.clock_in.strftime('%Y-%m-%d %H:%M:%S') }}</small>
+          </div>
+          <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button name="action" value="clock_out" class="btn btn-danger btn-lg">
+              <i class="bi bi-box-arrow-right"></i> Kijelentkezés (Clock Out)
+            </button>
+          </form>
+        {% else %}
+          <div class="alert alert-secondary">
+            <i class="bi bi-x-circle"></i> Jelenleg nincs bejelentkezve.
+          </div>
+          <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button name="action" value="clock_in" class="btn btn-success btn-lg">
+              <i class="bi bi-box-arrow-in-right"></i> Bejelentkezés (Clock In)
+            </button>
+          </form>
+        {% endif %}
+
+        <a href="{{ url_for('fraction') }}" class="btn btn-outline-secondary mt-4">
+          <i class="bi bi-arrow-left"></i> Vissza
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
