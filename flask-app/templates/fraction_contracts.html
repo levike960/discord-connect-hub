@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Szerződések{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-10">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h2 class="card-title mb-4"><i class="bi bi-file-earmark-text-fill"></i> Szerződések</h2>
+
+        {% if contracts %}
+        <div class="row g-4">
+          {% for contract in contracts %}
+          <div class="col-md-6">
+            <div class="card h-100 shadow-sm">
+              {% if contract.image_path %}
+              <img src="{{ url_for('static', filename=contract.image_path) }}"
+                   class="card-img-top" alt="{{ contract.company_name }}"
+                   style="max-height: 200px; object-fit: cover;">
+              {% endif %}
+              <div class="card-body">
+                <h5 class="card-title">{{ contract.company_name }}</h5>
+                <p class="card-text">{{ contract.description }}</p>
+              </div>
+              <div class="card-footer text-muted small">
+                {{ contract.created_at.strftime('%Y-%m-%d') }}
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-muted">Nincsenek szerződések.</p>
+        {% endif %}
+
+        <a href="{{ url_for('fraction') }}" class="btn btn-outline-secondary mt-4">
+          <i class="bi bi-arrow-left"></i> Vissza
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

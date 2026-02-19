@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Kalkulátor{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <div class="card shadow-sm">
+      <div class="card-body text-center">
+        <h2 class="card-title mb-4"><i class="bi bi-calculator"></i> Kalkulátor</h2>
+        <hr>
+        <p class="text-muted py-5">
+          <i class="bi bi-tools fs-1 d-block mb-3"></i>
+          Ez a funkció hamarosan elérhető lesz.
+          <br>
+          <small>(To be added)</small>
+        </p>
+
+        <a href="{{ url_for('fraction') }}" class="btn btn-outline-secondary mt-3">
+          <i class="bi bi-arrow-left"></i> Vissza
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
