@@ -69,9 +69,26 @@ class User(UserMixin, db.Model):  # type: ignore[name-defined]
     is_admin = db.Column(db.Boolean, default=False)
     has_fraction_permission = db.Column(db.Boolean, default=False)
 
+    # Relationships
+    ratings_received = db.relationship(
+        "Rating", foreign_keys="Rating.target_user_id",
+        backref="target_user", lazy="dynamic"
+    )
+
     @property
     def display_name(self) -> str:
         return self.nickname or self.username
+
+    @property
+    def average_rating(self) -> float:
+        ratings = self.ratings_received.all()
+        if not ratings:
+            return 0.0
+        return round(sum(r.stars for r in ratings) / len(ratings), 1)
+
+    @property
+    def rating_count(self) -> int:
+        return self.ratings_received.count()
 
     @property
     def avatar_url(self) -> str:
@@ -91,6 +108,26 @@ class User(UserMixin, db.Model):  # type: ignore[name-defined]
             )
         # Default
         return "https://cdn.discordapp.com/embed/avatars/0.png"
+
+
+class Rating(db.Model):  # type: ignore[name-defined]
+    __tablename__ = "ratings"
+
+    id = db.Column(db.Integer, primary_key=True)
+    reviewer_user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id"), nullable=False
+    )
+    target_user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id"), nullable=False
+    )
+    stars = db.Column(db.Integer, nullable=False)  # 1-5
+
+    # One rating per reviewer per target
+    __table_args__ = (
+        db.UniqueConstraint("reviewer_user_id", "target_user_id", name="uq_rating"),
+    )
+
+    reviewer = db.relationship("User", foreign_keys=[reviewer_user_id])
 
 
 @login_manager.user_loader
@@ -238,7 +275,10 @@ def logout():
 
 @app.route("/")
 def visitor():
-    return render_template("visitor.html")
+    workers = User.query.filter_by(has_fraction_permission=True).all()
+    # Sort by average rating descending
+    workers.sort(key=lambda w: w.average_rating, reverse=True)
+    return render_template("visitor.html", workers=workers)
 
 
 @app.route("/profile", methods=["GET", "POST"])
@@ -292,6 +332,46 @@ def admin():
 @fraction_required
 def fraction():
     return render_template("fraction.html")
+
+
+# ---------------------------------------------------------------------------
+# Routes — Ratings
+# ---------------------------------------------------------------------------
+
+@app.route("/rate/<int:target_id>", methods=["POST"])
+@login_required
+def rate_worker(target_id):
+    target = db.session.get(User, target_id)
+    if not target or not target.has_fraction_permission:
+        flash("Invalid worker.", "danger")
+        return redirect(url_for("visitor"))
+
+    if target.id == current_user.id:
+        flash("You cannot rate yourself.", "warning")
+        return redirect(url_for("visitor"))
+
+    stars = request.form.get("stars", type=int)
+    if not stars or stars < 1 or stars > 5:
+        flash("Please select a rating between 1 and 5.", "warning")
+        return redirect(url_for("visitor"))
+
+    # Upsert rating
+    existing = Rating.query.filter_by(
+        reviewer_user_id=current_user.id, target_user_id=target_id
+    ).first()
+    if existing:
+        existing.stars = stars
+    else:
+        rating = Rating(
+            reviewer_user_id=current_user.id,
+            target_user_id=target_id,
+            stars=stars,
+        )
+        db.session.add(rating)
+
+    db.session.commit()
+    flash(f"Rated {target.display_name} {stars} star(s).", "success")
+    return redirect(url_for("visitor"))
 
 
 # ---------------------------------------------------------------------------
