@@ -2,17 +2,175 @@
 {% block title %}Home{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-  <div class="col-md-8 col-lg-6">
-    <div class="card shadow-sm">
-      <div class="card-body text-center">
-        <h2 class="card-title mb-3">Prices</h2>
-        <a href="INSERT_PATH_HERE" target="_blank" rel="noopener noreferrer"
-           class="btn btn-outline-primary">
-          View Price List (PNG)
-        </a>
+
+{# ── Information Section ── #}
+<section class="mb-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-10">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h2 class="card-title mb-4"><i class="bi bi-info-circle"></i> Információ</h2>
+
+          {# Prices #}
+          <div class="mb-4">
+            <h4>Árlista &amp; Kedvezmények</h4>
+            <p>Tekintse meg aktuális árlistánkat és kedvezményeinket:</p>
+            <a href="INSERT_PATH_HERE" target="_blank" rel="noopener noreferrer"
+               class="btn btn-outline-primary">
+              <i class="bi bi-image"></i> Árlista megtekintése (PNG)
+            </a>
+          </div>
+
+          <hr>
+
+          {# Contact #}
+          <div class="mb-3">
+            <h4>Kapcsolat</h4>
+            <p><i class="bi bi-envelope"></i> Email: <a href="mailto:casa@cspreborn.hu">casa@cspreborn.hu</a></p>
+          </div>
+        </div>
       </div>
     </div>
   </div>
-</div>
+</section>
+
+{# ── Fraction Story ── #}
+<section class="mb-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-10">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h2 class="card-title mb-3"><i class="bi bi-book"></i> A Mi Történetünk</h2>
+          <hr>
+          <div class="py-4">
+            <p class="text-muted fst-italic text-center" style="min-height: 200px;">
+              Ez a szekció hamarosan tartalommal bővül. Itt olvashatja majd a frakció történetét,
+              hagyományait és küldetését.
+            </p>
+            <p class="text-muted text-center">[Tartalom hamarosan]</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# ── Worker Ratings ── #}
+<section class="mb-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-10">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h2 class="card-title mb-4"><i class="bi bi-star-fill text-warning"></i> Munkatársak Értékelése</h2>
+          <p class="text-muted mb-4">Értékelje munkatársainkat 1-5 csillaggal!</p>
+
+          {% if workers %}
+          <div class="row">
+            {% for worker in workers %}
+            <div class="col-md-6 col-lg-4 mb-4">
+              <div class="card h-100 border {% if loop.first %}border-warning{% endif %}">
+                {% if loop.first %}
+                <div class="card-header bg-warning bg-opacity-10 text-center">
+                  <small class="fw-bold text-warning"><i class="bi bi-trophy-fill"></i> Legjobban értékelt</small>
+                </div>
+                {% endif %}
+                <div class="card-body text-center">
+                  <img src="{{ worker.avatar_url }}" alt="avatar"
+                       class="rounded-circle mb-3" width="80" height="80"
+                       style="object-fit: cover;">
+                  <h5 class="card-title">{{ worker.display_name }}</h5>
+
+                  {# Average stars display #}
+                  <div class="mb-2">
+                    {% set avg = worker.average_rating %}
+                    {% for i in range(1, 6) %}
+                      {% if i <= avg|int %}
+                        <i class="bi bi-star-fill text-warning"></i>
+                      {% elif i - avg < 1 and i - avg > 0 %}
+                        <i class="bi bi-star-half text-warning"></i>
+                      {% else %}
+                        <i class="bi bi-star text-warning"></i>
+                      {% endif %}
+                    {% endfor %}
+                    <span class="ms-2 text-muted">({{ avg }}/5 — {{ worker.rating_count }} értékelés)</span>
+                  </div>
+
+                  {# Rating form (only for logged-in users, not rating themselves) #}
+                  {% if current_user.is_authenticated and current_user.id != worker.id %}
+                  <form method="POST" action="{{ url_for('rate_worker', target_id=worker.id) }}" class="mt-3">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="d-flex align-items-center justify-content-center gap-2">
+                      <select name="stars" class="form-select form-select-sm" style="width: auto;">
+                        <option value="" disabled selected>Csillagok</option>
+                        <option value="1">⭐ 1</option>
+                        <option value="2">⭐ 2</option>
+                        <option value="3">⭐ 3</option>
+                        <option value="4">⭐ 4</option>
+                        <option value="5">⭐ 5</option>
+                      </select>
+                      <button type="submit" class="btn btn-sm btn-outline-warning">Értékel</button>
+                    </div>
+                  </form>
+                  {% elif not current_user.is_authenticated %}
+                  <small class="text-muted d-block mt-2">Jelentkezzen be az értékeléshez</small>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p class="text-muted text-center">Jelenleg nincsenek értékelhető munkatársak.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# ── Partners ── #}
+<section class="mb-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-10">
+      <div class="card shadow-sm">
+        <div class="card-body text-center">
+          <h2 class="card-title mb-4"><i class="bi bi-people-fill"></i> Partnereink</h2>
+          <hr>
+          <div class="row justify-content-center align-items-center g-4 mt-3">
+
+            {# Partner 1 — UwU #}
+            <div class="col-md-5">
+              <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center py-4">
+                  {# Replace src with actual logo path #}
+                  <div class="mb-3" style="height: 80px; display: flex; align-items: center; justify-content: center;">
+                    <span class="fs-1 fw-bold text-primary">UwU</span>
+                  </div>
+                  <h5>UwU</h5>
+                  <p class="text-muted fst-italic">"Megbízható partnerünk, akikkel öröm együtt dolgozni."</p>
+                </div>
+              </div>
+            </div>
+
+            {# Partner 2 — La Fuente Blanca #}
+            <div class="col-md-5">
+              <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center py-4">
+                  {# Replace src with actual logo path #}
+                  <div class="mb-3" style="height: 80px; display: flex; align-items: center; justify-content: center;">
+                    <span class="fs-1 fw-bold text-primary">LFB</span>
+                  </div>
+                  <h5>La Fuente Blanca</h5>
+                  <p class="text-muted fst-italic">"Kiváló minőség és professzionális együttműködés."</p>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
 {% endblock %}
