@@ -2,24 +2,462 @@
 {% block title %}Kalkulátor{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-  <div class="col-md-6">
-    <div class="card shadow-sm">
-      <div class="card-body text-center">
-        <h2 class="card-title mb-4"><i class="bi bi-calculator"></i> Kalkulátor</h2>
-        <hr>
-        <p class="text-muted py-5">
-          <i class="bi bi-tools fs-1 d-block mb-3"></i>
-          Ez a funkció hamarosan elérhető lesz.
-          <br>
-          <small>(To be added)</small>
-        </p>
+<style>
+  .pos-tablet {
+    max-width: 900px;
+    margin: 0 auto;
+    border: 3px solid var(--csp-border);
+    border-radius: 2rem;
+    background: var(--csp-surface);
+    padding: 1.5rem;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    position: relative;
+    overflow: hidden;
+  }
+  .pos-tablet::before {
+    content: '';
+    position: absolute;
+    top: 0.6rem;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 5px;
+    background: var(--csp-border);
+    border-radius: 3px;
+  }
+  .pos-header {
+    text-align: center;
+    padding: 0.5rem 0 1rem;
+    border-bottom: 1px solid var(--csp-border);
+    margin-bottom: 1rem;
+  }
+  .pos-category-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    padding: 1rem 0;
+  }
+  .pos-category-card {
+    aspect-ratio: 1;
+    border: 2px solid var(--csp-border);
+    border-radius: var(--csp-radius);
+    background: var(--csp-surface-hover);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    text-decoration: none;
+    color: var(--csp-text);
+    padding: 1rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .pos-category-card:hover {
+    border-color: var(--csp-accent);
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 8px 30px rgba(124,92,252,0.15);
+    color: var(--csp-text);
+  }
+  .pos-category-card img {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    margin-bottom: 0.75rem;
+  }
+  .pos-category-card .category-icon {
+    font-size: 3.5rem;
+    margin-bottom: 0.75rem;
+  }
+  .pos-category-card h5 {
+    font-weight: 600;
+    margin: 0;
+    font-size: 0.95rem;
+  }
+  .pos-age-badge {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    background: var(--csp-red);
+    color: #fff;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.7rem;
+  }
+  /* Item grid */
+  .pos-item-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 0.75rem;
+    padding: 1rem 0;
+  }
+  .pos-item-card {
+    border: 2px solid var(--csp-border);
+    border-radius: var(--csp-radius);
+    background: var(--csp-surface-hover);
+    padding: 0.75rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    color: var(--csp-text);
+  }
+  .pos-item-card:hover {
+    border-color: var(--csp-accent);
+    transform: scale(1.04);
+    box-shadow: 0 4px 16px rgba(124,92,252,0.12);
+    color: var(--csp-text);
+  }
+  .pos-item-card .item-price {
+    color: var(--csp-accent);
+    font-weight: 700;
+    font-size: 0.85rem;
+    margin-top: 0.25rem;
+  }
+  .pos-item-card img {
+    width: 60px;
+    height: 60px;
+    object-fit: contain;
+    margin-bottom: 0.5rem;
+  }
+  /* Cart */
+  .pos-cart {
+    border-top: 2px solid var(--csp-border);
+    margin-top: 1rem;
+    padding-top: 1rem;
+  }
+  .pos-cart-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.4rem 0;
+    border-bottom: 1px solid var(--csp-border);
+  }
+  .pos-cart-total {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--csp-accent);
+    text-align: right;
+    padding: 0.75rem 0;
+  }
+  .pos-finish-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+    margin-top: 1rem;
+  }
+  .pos-finish-btn {
+    padding: 1rem;
+    border: 2px solid var(--csp-border);
+    border-radius: var(--csp-radius);
+    background: var(--csp-surface-hover);
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: var(--csp-text);
+    text-decoration: none;
+    display: block;
+  }
+  .pos-finish-btn:hover {
+    border-color: var(--csp-accent);
+    background: var(--csp-accent-subtle);
+    color: var(--csp-text);
+  }
+  .pos-finish-btn i { font-size: 1.5rem; display: block; margin-bottom: 0.5rem; }
+  /* Qty selector */
+  .qty-selector {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin: 2rem 0;
+  }
+  .qty-selector .qty-btn {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    border: 2px solid var(--csp-accent);
+    background: transparent;
+    color: var(--csp-accent);
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .qty-selector .qty-btn:hover {
+    background: var(--csp-accent);
+    color: #fff;
+  }
+  .qty-selector .qty-display {
+    font-size: 2.5rem;
+    font-weight: 700;
+    min-width: 80px;
+    text-align: center;
+    color: var(--csp-text);
+  }
+  /* Print styles */
+  @media print {
+    .no-print { display: none !important; }
+    body { background: #fff !important; color: #000 !important; }
+    .pos-tablet { border: none; box-shadow: none; }
+  }
+</style>
 
-        <a href="{{ url_for('fraction') }}" class="btn btn-outline-secondary mt-3">
-          <i class="bi bi-arrow-left"></i> Vissza
-        </a>
-      </div>
+<div class="pos-tablet">
+  <div class="pos-header">
+    <h4 class="mb-0"><i class="bi bi-calculator"></i> POS Kalkulátor</h4>
+  </div>
+
+  {% if step == 'categories' %}
+  {# ══════ CATEGORY SELECTION ══════ #}
+  <div class="pos-category-grid">
+    <a href="{{ url_for('fraction_calculator', step='items', cat='alc') }}" class="pos-category-card">
+      <span class="pos-age-badge">18+</span>
+      <i class="bi bi-cup-fill category-icon" style="color: #a855f7;"></i>
+      <h5>Alkoholos italok</h5>
+    </a>
+    <a href="{{ url_for('fraction_calculator', step='items', cat='non_alc') }}" class="pos-category-card">
+      <i class="bi bi-cup-straw category-icon" style="color: #38bdf8;"></i>
+      <h5>Alkoholmentes italok</h5>
+    </a>
+    <a href="{{ url_for('fraction_calculator', step='items', cat='food') }}" class="pos-category-card">
+      <i class="bi bi-egg-fried category-icon" style="color: #fb923c;"></i>
+      <h5>Ételek</h5>
+    </a>
+  </div>
+
+  {# ── Cart preview ── #}
+  {% if cart %}
+  <div class="pos-cart">
+    <h6><i class="bi bi-cart3"></i> Kosár ({{ cart|length }} tétel)</h6>
+    {% for item in cart %}
+    <div class="pos-cart-item">
+      <span>{{ item.name }} × {{ item.qty }}</span>
+      <span>
+        {{ "%.0f"|format(item.line_total) }} Ft
+        <a href="{{ url_for('fraction_calculator', remove=loop.index0) }}" class="text-danger ms-2" title="Törlés"><i class="bi bi-x-circle"></i></a>
+      </span>
+    </div>
+    {% endfor %}
+    <div class="pos-cart-total">Összesen: {{ "%.0f"|format(cart_total) }} Ft</div>
+    <div class="pos-finish-grid no-print">
+      <a href="{{ url_for('fraction_calculator', step='finish', mode='discount') }}" class="pos-finish-btn">
+        <i class="bi bi-percent"></i>
+        Kedvezmény
+      </a>
+      <a href="{{ url_for('fraction_calculator', step='finish', mode='basic') }}" class="pos-finish-btn">
+        <i class="bi bi-cash"></i>
+        Alapár
+      </a>
+      <a href="{{ url_for('fraction_calculator', step='finish', mode='production') }}" class="pos-finish-btn">
+        <i class="bi bi-gear"></i>
+        Gyártás kalkuláció
+      </a>
+    </div>
+    <div class="text-center mt-3 no-print">
+      <a href="{{ url_for('fraction_calculator', clear=1) }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-trash"></i> Kosár ürítése
+      </a>
     </div>
   </div>
+  {% endif %}
+
+  {% elif step == 'items' %}
+  {# ══════ ITEM SELECTION ══════ #}
+  <div class="d-flex align-items-center mb-3">
+    <a href="{{ url_for('fraction_calculator') }}" class="btn btn-sm btn-outline-secondary me-3 no-print">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <h5 class="mb-0">
+      {% if cat == 'alc' %}<i class="bi bi-cup-fill" style="color:#a855f7;"></i> Alkoholos italok
+      {% elif cat == 'non_alc' %}<i class="bi bi-cup-straw" style="color:#38bdf8;"></i> Alkoholmentes italok
+      {% else %}<i class="bi bi-egg-fried" style="color:#fb923c;"></i> Ételek
+      {% endif %}
+    </h5>
+  </div>
+  {% if items %}
+  <div class="pos-item-grid">
+    {% for item in items %}
+    <a href="{{ url_for('fraction_calculator', step='qty', item_id=item.id) }}" class="pos-item-card">
+      {% if item.image_path %}
+        <img src="{{ url_for('static', filename=item.image_path) }}" alt="{{ item.name }}">
+      {% else %}
+        <i class="bi {% if cat == 'alc' %}bi-cup-fill{% elif cat == 'non_alc' %}bi-cup-straw{% else %}bi-egg-fried{% endif %}" style="font-size: 2rem; margin-bottom: 0.5rem;"></i>
+      {% endif %}
+      <div class="fw-semibold" style="font-size:0.85rem;">{{ item.name }}</div>
+      <div class="item-price">{{ "%.0f"|format(item.price) }} Ft</div>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="text-muted text-center py-4">Nincsenek tételek ebben a kategóriában.</p>
+  {% endif %}
+
+  {% elif step == 'qty' %}
+  {# ══════ QUANTITY SELECTOR ══════ #}
+  <div class="text-center">
+    <a href="{{ url_for('fraction_calculator', step='items', cat=selected_item.category) }}" class="btn btn-sm btn-outline-secondary mb-3 no-print">
+      <i class="bi bi-arrow-left"></i> Vissza
+    </a>
+    <h5>{{ selected_item.name }}</h5>
+    <p class="text-muted">{{ "%.0f"|format(selected_item.price) }} Ft / db</p>
+    <form method="POST" action="{{ url_for('fraction_calculator_add') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="item_id" value="{{ selected_item.id }}">
+      <input type="hidden" name="qty" id="qtyValue" value="1">
+      <div class="qty-selector">
+        <button type="button" class="qty-btn" onclick="changeQty(-1)"><i class="bi bi-dash"></i></button>
+        <div class="qty-display" id="qtyDisplay">1</div>
+        <button type="button" class="qty-btn" onclick="changeQty(1)"><i class="bi bi-plus"></i></button>
+      </div>
+      <button type="submit" class="btn btn-primary btn-lg px-5">
+        <i class="bi bi-cart-plus"></i> Hozzáadás
+      </button>
+    </form>
+  </div>
+  <script>
+    function changeQty(delta) {
+      const input = document.getElementById('qtyValue');
+      const display = document.getElementById('qtyDisplay');
+      let val = parseInt(input.value) + delta;
+      if (val < 1) val = 1;
+      if (val > 99) val = 99;
+      input.value = val;
+      display.textContent = val;
+    }
+  </script>
+
+  {% elif step == 'finish' %}
+  {# ══════ FINISH / RESULT ══════ #}
+  <div class="text-center mb-3 no-print">
+    <a href="{{ url_for('fraction_calculator') }}" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Vissza a kasszához
+    </a>
+  </div>
+
+  {% if mode == 'discount' %}
+    <h5 class="mb-3"><i class="bi bi-percent"></i> Kedvezményes számla</h5>
+    {% if discount_companies %}
+    <form method="GET" action="{{ url_for('fraction_calculator') }}">
+      <input type="hidden" name="step" value="finish">
+      <input type="hidden" name="mode" value="discount">
+      <div class="mb-3">
+        <label class="form-label">Válasszon céget:</label>
+        <select name="company_id" class="form-select" onchange="this.form.submit()">
+          <option value="">-- Cég kiválasztása --</option>
+          {% for c in discount_companies %}
+          <option value="{{ c.id }}" {% if selected_company and selected_company.id == c.id %}selected{% endif %}>{{ c.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </form>
+    {% if selected_company and discount_details %}
+    <div class="card mb-3">
+      <div class="card-body">
+        <h6>{{ selected_company.name }} — Kedvezmények:</h6>
+        <table class="table table-sm mb-0">
+          <thead><tr><th>Tétel</th><th>Db</th><th>Eredeti</th><th>Kedv. %</th><th>Kedv. ár</th></tr></thead>
+          <tbody>
+            {% for d in discount_details %}
+            <tr>
+              <td>{{ d.name }}</td>
+              <td>{{ d.qty }}</td>
+              <td>{{ "%.0f"|format(d.original) }} Ft</td>
+              <td>{{ "%.0f"|format(d.discount_pct) }}%</td>
+              <td class="fw-bold" style="color:var(--csp-green);">{{ "%.0f"|format(d.discounted) }} Ft</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        <div class="pos-cart-total mt-2">
+          <span class="text-muted text-decoration-line-through me-2">{{ "%.0f"|format(cart_total) }} Ft</span>
+          {{ "%.0f"|format(discount_total) }} Ft
+        </div>
+      </div>
+    </div>
+    <button onclick="window.print()" class="btn btn-outline-primary no-print"><i class="bi bi-printer"></i> Nyomtatás</button>
+    {% endif %}
+    {% else %}
+    <p class="text-muted">Nincsenek kedvezményes cégek beállítva.</p>
+    {% endif %}
+
+  {% elif mode == 'basic' %}
+    <h5 class="mb-3"><i class="bi bi-cash"></i> Alapár számla</h5>
+    <div class="card">
+      <div class="card-body">
+        <table class="table table-sm mb-0">
+          <thead><tr><th>Tétel</th><th>Db</th><th>Ár</th></tr></thead>
+          <tbody>
+            {% for item in cart %}
+            <tr>
+              <td>{{ item.name }}</td>
+              <td>{{ item.qty }}</td>
+              <td>{{ "%.0f"|format(item.line_total) }} Ft</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        <div class="pos-cart-total">Összesen: {{ "%.0f"|format(cart_total) }} Ft</div>
+      </div>
+    </div>
+    <button onclick="window.print()" class="btn btn-outline-primary mt-3 no-print"><i class="bi bi-printer"></i> Nyomtatás</button>
+
+  {% elif mode == 'production' %}
+    <h5 class="mb-3"><i class="bi bi-gear"></i> Gyártás kalkuláció</h5>
+    <div class="card mb-3">
+      <div class="card-body">
+        <h6>Szükséges alapanyagok:</h6>
+        {% if production_ingredients %}
+        <table class="table table-sm">
+          <thead><tr><th>Alapanyag</th><th>Mennyiség</th><th>Egységár</th><th>Költség</th></tr></thead>
+          <tbody>
+            {% for ing in production_ingredients %}
+            <tr>
+              <td>{{ ing.name }}</td>
+              <td>{{ "%.1f"|format(ing.qty) }} {{ ing.unit }}</td>
+              <td>{{ "%.0f"|format(ing.unit_price) }} Ft</td>
+              <td>{{ "%.0f"|format(ing.cost) }} Ft</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted">Nincsenek receptek a kiválasztott tételekhez.</p>
+        {% endif %}
+        <hr>
+        <div class="row text-center">
+          <div class="col-4">
+            <div class="text-muted small">Gyártási idő</div>
+            <div class="fs-4 fw-bold" style="color:var(--csp-accent);">{{ production_time }} perc</div>
+          </div>
+          <div class="col-4">
+            <div class="text-muted small">Gyártási költség</div>
+            <div class="fs-4 fw-bold" style="color:var(--csp-gold);">{{ "%.0f"|format(production_cost) }} Ft</div>
+          </div>
+          <div class="col-4">
+            <div class="text-muted small">Eladási ár</div>
+            <div class="fs-4 fw-bold" style="color:var(--csp-green);">{{ "%.0f"|format(cart_total) }} Ft</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <button onclick="window.print()" class="btn btn-outline-primary no-print"><i class="bi bi-printer"></i> Nyomtatás</button>
+  {% endif %}
+
+  {% endif %}
+</div>
+
+<div class="text-center mt-3 no-print">
+  <a href="{{ url_for('fraction') }}" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-left"></i> Vissza a főmenübe
+  </a>
 </div>
 {% endblock %}
