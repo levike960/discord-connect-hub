@@ -233,6 +233,43 @@
     .card-title { font-weight: 700; letter-spacing: -0.01em; }
     h2.card-title i { color: var(--csp-accent); }
 
+    /* ── Page enter animation ── */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes scaleIn {
+      from { opacity: 0; transform: scale(0.96); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+    main { animation: fadeInUp 0.4s ease-out; }
+
+    /* ── Faction menu cards ── */
+    .faction-card {
+      transition: transform 0.25s cubic-bezier(.4,0,.2,1), box-shadow 0.25s ease, border-color 0.25s ease;
+    }
+    .faction-card:hover {
+      transform: translateY(-6px) scale(1.02);
+      box-shadow: 0 12px 36px rgba(124,92,252,0.18);
+      border-color: var(--csp-accent) !important;
+    }
+    .faction-card .faction-icon {
+      transition: transform 0.3s cubic-bezier(.4,0,.2,1);
+    }
+    .faction-card:hover .faction-icon {
+      transform: scale(1.18) rotate(-4deg);
+    }
+    /* staggered entrance */
+    .faction-card { animation: scaleIn 0.35s ease-out backwards; }
+    .faction-card:nth-child(1) { animation-delay: 0.04s; }
+    .faction-card:nth-child(2) { animation-delay: 0.08s; }
+    .faction-card:nth-child(3) { animation-delay: 0.12s; }
+    .faction-card:nth-child(4) { animation-delay: 0.16s; }
+    .faction-card:nth-child(5) { animation-delay: 0.20s; }
+    .faction-card:nth-child(6) { animation-delay: 0.24s; }
+    .faction-card:nth-child(7) { animation-delay: 0.28s; }
+    .faction-card:nth-child(8) { animation-delay: 0.32s; }
+
     /* ── Scrollbar ── */
     ::-webkit-scrollbar { width: 8px; }
     ::-webkit-scrollbar-track { background: var(--csp-bg); }
