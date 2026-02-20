@@ -69,6 +69,10 @@ Advertisement = models["Advertisement"]
 DeliveryCompany = models["DeliveryCompany"]
 DeliveryMessage = models["DeliveryMessage"]
 Contract = models["Contract"]
+Ingredient = models["Ingredient"]
+MenuItem = models["MenuItem"]
+MenuItemIngredient = models["MenuItemIngredient"]
+CompanyDiscount = models["CompanyDiscount"]
 
 
 @login_manager.user_loader
@@ -340,7 +344,125 @@ def fraction_dues():
 @app.route("/fraction/calculator")
 @fraction_required
 def fraction_calculator():
-    return render_template("fraction_calculator.html")
+    step = request.args.get("step", "categories")
+    cat = request.args.get("cat", "")
+    item_id = request.args.get("item_id", type=int)
+    mode = request.args.get("mode", "")
+    company_id = request.args.get("company_id", type=int)
+
+    # Handle cart in session
+    if "pos_cart" not in session:
+        session["pos_cart"] = []
+
+    # Remove item from cart
+    remove_idx = request.args.get("remove", type=int)
+    if remove_idx is not None:
+        cart = session.get("pos_cart", [])
+        if 0 <= remove_idx < len(cart):
+            cart.pop(remove_idx)
+            session["pos_cart"] = cart
+        return redirect(url_for("fraction_calculator"))
+
+    # Clear cart
+    if request.args.get("clear"):
+        session["pos_cart"] = []
+        return redirect(url_for("fraction_calculator"))
+
+    # Build cart display data
+    cart = []
+    cart_total = 0.0
+    for c in session.get("pos_cart", []):
+        mi = db.session.get(MenuItem, c["id"])
+        if mi:
+            line_total = mi.price * c["qty"]
+            cart.append({"name": mi.name, "qty": c["qty"], "line_total": line_total,
+                         "category": mi.category, "item_id": mi.id})
+            cart_total += line_total
+
+    ctx = dict(step=step, cat=cat, cart=cart, cart_total=cart_total, mode=mode)
+
+    if step == "items":
+        ctx["items"] = MenuItem.query.filter_by(category=cat).order_by(MenuItem.name).all()
+    elif step == "qty":
+        ctx["selected_item"] = db.session.get(MenuItem, item_id)
+        if not ctx["selected_item"]:
+            return redirect(url_for("fraction_calculator"))
+    elif step == "finish":
+        if mode == "discount":
+            # Get companies that have discounts
+            disc_company_ids = db.session.query(CompanyDiscount.company_id).distinct().all()
+            disc_company_ids = [x[0] for x in disc_company_ids]
+            ctx["discount_companies"] = DeliveryCompany.query.filter(
+                DeliveryCompany.id.in_(disc_company_ids)).all() if disc_company_ids else []
+            ctx["selected_company"] = None
+            ctx["discount_details"] = []
+            ctx["discount_total"] = cart_total
+            if company_id:
+                company = db.session.get(DeliveryCompany, company_id)
+                ctx["selected_company"] = company
+                if company:
+                    discounts = {d.category: d.discount_percent
+                                 for d in CompanyDiscount.query.filter_by(company_id=company_id).all()}
+                    details = []
+                    disc_total = 0.0
+                    for item in cart:
+                        pct = discounts.get(item["category"], 0)
+                        discounted = item["line_total"] * (1 - pct / 100)
+                        details.append({
+                            "name": item["name"], "qty": item["qty"],
+                            "original": item["line_total"], "discount_pct": pct,
+                            "discounted": discounted
+                        })
+                        disc_total += discounted
+                    ctx["discount_details"] = details
+                    ctx["discount_total"] = disc_total
+        elif mode == "production":
+            # Aggregate ingredients and time
+            ingredient_totals = {}
+            total_time = 0
+            total_cost = 0.0
+            for item in cart:
+                mi = db.session.get(MenuItem, item["item_id"])
+                if mi:
+                    total_time += mi.production_time_minutes * item["qty"]
+                    for ri in mi.recipe_items.all():
+                        key = ri.ingredient_id
+                        if key not in ingredient_totals:
+                            ingredient_totals[key] = {
+                                "name": ri.ingredient.name,
+                                "unit": ri.ingredient.unit,
+                                "unit_price": ri.ingredient.price_per_unit,
+                                "qty": 0.0
+                            }
+                        ingredient_totals[key]["qty"] += ri.quantity * item["qty"]
+            for v in ingredient_totals.values():
+                v["cost"] = v["qty"] * v["unit_price"]
+                total_cost += v["cost"]
+            ctx["production_ingredients"] = list(ingredient_totals.values())
+            ctx["production_time"] = total_time
+            ctx["production_cost"] = total_cost
+
+    return render_template("fraction_calculator.html", **ctx)
+
+
+@app.route("/fraction/calculator/add", methods=["POST"])
+@fraction_required
+def fraction_calculator_add():
+    item_id = request.form.get("item_id", type=int)
+    qty = request.form.get("qty", type=int, default=1)
+    if item_id and qty and qty > 0:
+        cart = session.get("pos_cart", [])
+        # Check if item already in cart
+        found = False
+        for c in cart:
+            if c["id"] == item_id:
+                c["qty"] += qty
+                found = True
+                break
+        if not found:
+            cart.append({"id": item_id, "qty": qty})
+        session["pos_cart"] = cart
+    return redirect(url_for("fraction_calculator"))
 
 
 @app.route("/fraction/ads")
@@ -521,6 +643,111 @@ def admin():
                 except ValueError:
                     flash("Invalid datetime format.", "danger")
 
+        # --- Add Ingredient ---
+        elif form_type == "add_ingredient":
+            name = request.form.get("ing_name", "").strip()
+            unit = request.form.get("ing_unit", "db").strip()
+            price = request.form.get("ing_price", type=float)
+            if name and price is not None:
+                db.session.add(Ingredient(name=name, unit=unit, price_per_unit=price))
+                db.session.commit()
+                flash("Ingredient added.", "success")
+
+        # --- Delete Ingredient ---
+        elif form_type == "delete_ingredient":
+            ing_id = request.form.get("ing_id", type=int)
+            ing = db.session.get(Ingredient, ing_id)
+            if ing:
+                db.session.delete(ing)
+                db.session.commit()
+                flash("Ingredient deleted.", "success")
+
+        # --- Add Menu Item ---
+        elif form_type == "add_menu_item":
+            mi_name = request.form.get("mi_name", "").strip()
+            mi_cat = request.form.get("mi_category", "food")
+            mi_price = request.form.get("mi_price", type=float, default=0)
+            mi_time = request.form.get("mi_time", type=int, default=0)
+            mi_cost = request.form.get("mi_cost_override", type=float)
+            image_path = None
+            file = request.files.get("mi_image")
+            if file and file.filename and allowed_file(file.filename):
+                fname = secure_filename(f"menu_{datetime.utcnow().timestamp()}_{file.filename}")
+                filepath = os.path.join(app.config["UPLOAD_FOLDER"], fname)
+                file.save(filepath)
+                image_path = f"uploads/{fname}"
+            if mi_name:
+                item = MenuItem(name=mi_name, category=mi_cat, price=mi_price,
+                                production_time_minutes=mi_time,
+                                production_cost=mi_cost if mi_cost is not None else 0,
+                                image_path=image_path, created_by=current_user.id)
+                db.session.add(item)
+                db.session.commit()
+                flash("Menu item added.", "success")
+
+        # --- Delete Menu Item ---
+        elif form_type == "delete_menu_item":
+            mi_id = request.form.get("mi_id", type=int)
+            mi = db.session.get(MenuItem, mi_id)
+            if mi:
+                db.session.delete(mi)
+                db.session.commit()
+                flash("Menu item deleted.", "success")
+
+        # --- Add Recipe Item ---
+        elif form_type == "add_recipe_item":
+            mi_id = request.form.get("mi_id", type=int)
+            ing_id = request.form.get("ri_ingredient_id", type=int)
+            qty = request.form.get("ri_quantity", type=float, default=1)
+            if mi_id and ing_id:
+                db.session.add(MenuItemIngredient(
+                    menu_item_id=mi_id, ingredient_id=ing_id, quantity=qty))
+                db.session.commit()
+                flash("Recipe ingredient added.", "success")
+
+        # --- Remove Recipe Item ---
+        elif form_type == "remove_recipe_item":
+            ri_id = request.form.get("ri_id", type=int)
+            ri = db.session.get(MenuItemIngredient, ri_id)
+            if ri:
+                db.session.delete(ri)
+                db.session.commit()
+                flash("Recipe ingredient removed.", "success")
+
+        # --- Recalculate Cost ---
+        elif form_type == "recalc_cost":
+            mi_id = request.form.get("mi_id", type=int)
+            mi = db.session.get(MenuItem, mi_id)
+            if mi:
+                mi.production_cost = mi.calculated_cost
+                db.session.commit()
+                flash(f"Production cost recalculated: {mi.production_cost} Ft", "success")
+
+        # --- Add Discount ---
+        elif form_type == "add_discount":
+            comp_id = request.form.get("disc_company_id", type=int)
+            cat = request.form.get("disc_category", "")
+            pct = request.form.get("disc_percent", type=float, default=0)
+            if comp_id and cat:
+                existing = CompanyDiscount.query.filter_by(
+                    company_id=comp_id, category=cat).first()
+                if existing:
+                    existing.discount_percent = pct
+                else:
+                    db.session.add(CompanyDiscount(
+                        company_id=comp_id, category=cat, discount_percent=pct))
+                db.session.commit()
+                flash("Discount saved.", "success")
+
+        # --- Delete Discount ---
+        elif form_type == "delete_discount":
+            disc_id = request.form.get("disc_id", type=int)
+            disc = db.session.get(CompanyDiscount, disc_id)
+            if disc:
+                db.session.delete(disc)
+                db.session.commit()
+                flash("Discount deleted.", "success")
+
         return redirect(url_for("admin"))
 
     users = User.query.order_by(User.username).all()
@@ -529,9 +756,13 @@ def admin():
     companies = DeliveryCompany.query.order_by(DeliveryCompany.name).all()
     contracts = Contract.query.order_by(Contract.created_at.desc()).all()
     work_logs = WorkLog.query.order_by(WorkLog.clock_in.desc()).limit(100).all()
+    ingredients = Ingredient.query.order_by(Ingredient.name).all()
+    menu_items = MenuItem.query.order_by(MenuItem.category, MenuItem.name).all()
+    discounts = CompanyDiscount.query.all()
 
     return render_template("admin.html", users=users, dues=dues, ads=ads,
-                           companies=companies, contracts=contracts, work_logs=work_logs)
+                            companies=companies, contracts=contracts, work_logs=work_logs,
+                            ingredients=ingredients, menu_items=menu_items, discounts=discounts)
 
 
 # ---------------------------------------------------------------------------

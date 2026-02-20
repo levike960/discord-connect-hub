@@ -105,7 +105,6 @@ def define_models(db, app):
 
         @property
         def is_clocked_in(self):
-            """Check if user has an open work log (clocked in but not out)."""
             return self.work_logs.filter_by(clock_out=None).first() is not None
 
         @property
@@ -196,6 +195,62 @@ def define_models(db, app):
         created_at = db.Column(db.DateTime, default=datetime.utcnow)
         created_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
 
+    class Ingredient(db.Model):
+        __tablename__ = "ingredients"
+
+        id = db.Column(db.Integer, primary_key=True)
+        name = db.Column(db.String(128), nullable=False, unique=True)
+        unit = db.Column(db.String(32), nullable=False, default="db")
+        price_per_unit = db.Column(db.Float, nullable=False, default=0.0)
+        created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    class MenuItem(db.Model):
+        __tablename__ = "menu_items"
+
+        id = db.Column(db.Integer, primary_key=True)
+        name = db.Column(db.String(128), nullable=False)
+        category = db.Column(db.String(32), nullable=False)  # 'alc', 'non_alc', 'food'
+        price = db.Column(db.Float, nullable=False, default=0.0)
+        production_cost = db.Column(db.Float, nullable=False, default=0.0)
+        production_time_minutes = db.Column(db.Integer, nullable=False, default=0)
+        image_path = db.Column(db.String(512), nullable=True)
+        created_at = db.Column(db.DateTime, default=datetime.utcnow)
+        created_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+
+        recipe_items = db.relationship("MenuItemIngredient", backref="menu_item",
+                                        cascade="all, delete-orphan", lazy="dynamic")
+
+        @property
+        def calculated_cost(self):
+            total = 0.0
+            for ri in self.recipe_items.all():
+                total += ri.quantity * ri.ingredient.price_per_unit
+            return round(total, 2)
+
+    class MenuItemIngredient(db.Model):
+        __tablename__ = "menu_item_ingredients"
+
+        id = db.Column(db.Integer, primary_key=True)
+        menu_item_id = db.Column(db.Integer, db.ForeignKey("menu_items.id"), nullable=False)
+        ingredient_id = db.Column(db.Integer, db.ForeignKey("ingredients.id"), nullable=False)
+        quantity = db.Column(db.Float, nullable=False, default=1.0)
+
+        ingredient = db.relationship("Ingredient")
+
+    class CompanyDiscount(db.Model):
+        __tablename__ = "company_discounts"
+
+        id = db.Column(db.Integer, primary_key=True)
+        company_id = db.Column(db.Integer, db.ForeignKey("delivery_companies.id"), nullable=False)
+        category = db.Column(db.String(32), nullable=False)  # 'alc', 'non_alc', 'food'
+        discount_percent = db.Column(db.Float, nullable=False, default=0.0)
+
+        company = db.relationship("DeliveryCompany", backref="discounts")
+
+        __table_args__ = (
+            db.UniqueConstraint("company_id", "category", name="uq_company_category_discount"),
+        )
+
     return {
         "User": User,
         "Rating": Rating,
@@ -205,4 +260,8 @@ def define_models(db, app):
         "DeliveryCompany": DeliveryCompany,
         "DeliveryMessage": DeliveryMessage,
         "Contract": Contract,
+        "Ingredient": Ingredient,
+        "MenuItem": MenuItem,
+        "MenuItemIngredient": MenuItemIngredient,
+        "CompanyDiscount": CompanyDiscount,
     }
