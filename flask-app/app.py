@@ -615,6 +615,17 @@ def admin():
                 db.session.commit()
                 flash("Tartozás rendezve.", "success")
 
+        # --- Settle all dues for a company ---
+        elif form_type == "settle_company_dues":
+            company_id = request.form.get("company_id", type=int)
+            if company_id:
+                unpaid = Due.query.filter_by(company_id=company_id, is_paid=False).all()
+                for due in unpaid:
+                    due.is_paid = True
+                    due.paid_at = datetime.utcnow()
+                db.session.commit()
+                flash(f"{len(unpaid)} tartozás rendezve.", "success")
+
         # --- Add Advertisement ---
         elif form_type == "add_ad":
             title = request.form.get("ad_title", "").strip()
