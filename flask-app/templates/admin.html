@@ -312,76 +312,129 @@
     {% endif %}
   </div>
 
-  {# ═══ Work Logs Tab ═══ #}
+  {# ═══ Work Hours Tab — Per-User Breakdown ═══ #}
   <div class="tab-pane fade" id="tab-worklogs">
-    <h4 class="mb-3">Munkaórák kezelése</h4>
-    <p class="text-muted">Módosítsa a felhasználók munkaóráit visszamenőlegesen.</p>
+    <div class="d-flex flex-wrap align-items-center justify-content-between mb-4">
+      <h4 class="mb-0"><i class="bi bi-clock-history text-primary"></i> Munkaidő áttekintés</h4>
+      <div class="btn-group" role="group">
+        <a href="?wh_period=day#tab-worklogs" class="btn btn-sm btn-{{ 'primary' if wh_period == 'day' else 'outline-primary' }}"
+           onclick="activateWorklogsTab()">Nap</a>
+        <a href="?wh_period=week#tab-worklogs" class="btn btn-sm btn-{{ 'primary' if wh_period == 'week' else 'outline-primary' }}"
+           onclick="activateWorklogsTab()">Hét</a>
+        <a href="?wh_period=month#tab-worklogs" class="btn btn-sm btn-{{ 'primary' if wh_period == 'month' else 'outline-primary' }}"
+           onclick="activateWorklogsTab()">Hónap</a>
+        <a href="?wh_period=year#tab-worklogs" class="btn btn-sm btn-{{ 'primary' if wh_period == 'year' else 'outline-primary' }}"
+           onclick="activateWorklogsTab()">Év</a>
+      </div>
+    </div>
 
-    {% if work_logs %}
-    <div class="table-responsive">
-      <table class="table table-striped table-hover align-middle">
-        <thead class="table-dark">
-          <tr>
-            <th>Felhasználó</th>
-            <th>Bejelentkezés</th>
-            <th>Kijelentkezés</th>
-            <th>Időtartam</th>
-            <th>Módosítás</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for log in work_logs %}
-          <tr>
-            <td>
-              {% set log_user = log.user %}
-              {{ log_user.display_name if log_user else 'N/A' }}
-            </td>
-            <td>{{ log.clock_in.strftime('%Y-%m-%d %H:%M') }}</td>
-            <td>
-              {% if log.clock_out %}
-                {{ log.clock_out.strftime('%Y-%m-%d %H:%M') }}
-              {% else %}
-                <span class="badge bg-success">Aktív</span>
-              {% endif %}
-            </td>
-            <td>{{ log.duration_formatted }}</td>
-            <td>
-              <button class="btn btn-sm btn-outline-primary" type="button"
-                      data-bs-toggle="collapse" data-bs-target="#edit-log-{{ log.id }}">
-                <i class="bi bi-pencil"></i>
-              </button>
-            </td>
-          </tr>
-          <tr class="collapse" id="edit-log-{{ log.id }}">
-            <td colspan="5">
-              <form method="POST" class="row g-2 align-items-end p-2 bg-light rounded">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <input type="hidden" name="form_type" value="edit_worklog">
-                <input type="hidden" name="log_id" value="{{ log.id }}">
-                <div class="col-md-4">
-                  <label class="form-label small">Bejelentkezés</label>
-                  <input type="datetime-local" name="new_clock_in" class="form-control form-control-sm"
-                         value="{{ log.clock_in.strftime('%Y-%m-%dT%H:%M') }}">
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label small">Kijelentkezés</label>
-                  <input type="datetime-local" name="new_clock_out" class="form-control form-control-sm"
-                         value="{{ log.clock_out.strftime('%Y-%m-%dT%H:%M') if log.clock_out else '' }}">
-                </div>
-                <div class="col-md-4">
-                  <button type="submit" class="btn btn-sm btn-primary w-100">Mentés</button>
-                </div>
-              </form>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+    {% if workhour_stats %}
+    <div class="row g-3">
+      {% for stat in workhour_stats %}
+      <div class="col-md-6 col-lg-4">
+        <div class="card h-100">
+          <div class="card-body">
+            <div class="d-flex align-items-center gap-3 mb-3">
+              <img src="{{ stat.user.avatar_url }}" alt="avatar" class="avatar-sm">
+              <div>
+                <h6 class="mb-0">{{ stat.user.ingame_name or stat.user.display_name }}</h6>
+                {% if stat.user.rank %}
+                  <span class="badge" style="background: {{ stat.user.rank.color or 'var(--csp-accent)' }}; font-size: 0.7rem;">
+                    {{ stat.user.rank.name }}
+                  </span>
+                {% endif %}
+              </div>
+              <div class="ms-auto text-end">
+                <span class="fs-5 fw-bold" style="color: var(--csp-accent);">{{ stat.total_formatted }}</span>
+              </div>
+            </div>
+
+            {% if stat.logs %}
+            <div class="table-responsive" style="max-height: 200px; overflow-y: auto;">
+              <table class="table table-sm table-striped mb-0" style="font-size: 0.8rem;">
+                <thead>
+                  <tr>
+                    <th>Be</th>
+                    <th>Ki</th>
+                    <th>Idő</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for log in stat.logs %}
+                  <tr>
+                    <td>{{ log.clock_in.strftime('%m.%d %H:%M') }}</td>
+                    <td>
+                      {% if log.clock_out %}
+                        {{ log.clock_out.strftime('%m.%d %H:%M') }}
+                      {% else %}
+                        <span class="badge bg-success" style="font-size:0.65rem;">Aktív</span>
+                      {% endif %}
+                    </td>
+                    <td>{{ log.duration_formatted }}</td>
+                    <td>
+                      <button class="btn btn-sm btn-outline-primary p-0 px-1" type="button"
+                              data-bs-toggle="collapse" data-bs-target="#edit-log-{{ log.id }}"
+                              style="font-size:0.7rem;">
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                    </td>
+                  </tr>
+                  <tr class="collapse" id="edit-log-{{ log.id }}">
+                    <td colspan="4">
+                      <form method="POST" class="row g-1 align-items-end p-1 bg-light rounded">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="form_type" value="edit_worklog">
+                        <input type="hidden" name="log_id" value="{{ log.id }}">
+                        <div class="col-5">
+                          <input type="datetime-local" name="new_clock_in" class="form-control form-control-sm"
+                                 value="{{ log.clock_in.strftime('%Y-%m-%dT%H:%M') }}" style="font-size:0.75rem;">
+                        </div>
+                        <div class="col-5">
+                          <input type="datetime-local" name="new_clock_out" class="form-control form-control-sm"
+                                 value="{{ log.clock_out.strftime('%Y-%m-%dT%H:%M') if log.clock_out else '' }}" style="font-size:0.75rem;">
+                        </div>
+                        <div class="col-2">
+                          <button type="submit" class="btn btn-sm btn-primary w-100" style="font-size:0.7rem;">
+                            <i class="bi bi-check"></i>
+                          </button>
+                        </div>
+                      </form>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            {% else %}
+            <p class="text-muted small mb-0">Nincs bejegyzés ebben az időszakban.</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
     </div>
     {% else %}
-    <p class="text-muted">Nincsenek munkaóra bejegyzések.</p>
+    <p class="text-muted">Nincsenek fraction tagok.</p>
     {% endif %}
   </div>
+
+  <script>
+  // Auto-activate worklogs tab when navigating with wh_period
+  (function() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('wh_period')) {
+      const triggerEl = document.querySelector('button[data-bs-target="#tab-worklogs"]');
+      if (triggerEl) {
+        const tab = new bootstrap.Tab(triggerEl);
+        tab.show();
+      }
+    }
+  })();
+  function activateWorklogsTab() {
+    sessionStorage.setItem('adminActiveTab', '#tab-worklogs');
+  }
+  </script>
 
   {% include "admin_calculator.html" %}
   {% include "admin_ranks.html" %}

@@ -831,6 +831,20 @@ def admin():
 
         return redirect(url_for("admin"))
 
+    # --- Workhour stats period ---
+    wh_period = request.args.get("wh_period", "day")
+    now = datetime.utcnow()
+    if wh_period == "day":
+        wh_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    elif wh_period == "week":
+        wh_start = (now - timedelta(days=now.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
+    elif wh_period == "month":
+        wh_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    elif wh_period == "year":
+        wh_start = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+    else:
+        wh_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+
     users = User.query.order_by(User.username).all()
     dues = Due.query.order_by(Due.due_date.asc()).all()
     ads = Advertisement.query.order_by(Advertisement.created_at.desc()).all()
@@ -844,10 +858,29 @@ def admin():
     fraction_members = User.query.filter_by(has_fraction_permission=True).all()
     fraction_members.sort(key=lambda u: (u.rank.sort_order if u.rank else 9999, u.display_name))
 
+    # Per-user workhour stats
+    workhour_stats = []
+    for member in fraction_members:
+        logs = WorkLog.query.filter(
+            WorkLog.user_id == member.id,
+            WorkLog.clock_in >= wh_start
+        ).order_by(WorkLog.clock_in.desc()).all()
+        total_secs = sum(l.duration_seconds for l in logs)
+        h, rem = divmod(int(total_secs), 3600)
+        m, _ = divmod(rem, 60)
+        workhour_stats.append({
+            "user": member,
+            "logs": logs,
+            "total_formatted": f"{h}h {m}m",
+            "total_seconds": total_secs,
+        })
+    workhour_stats.sort(key=lambda x: x["total_seconds"], reverse=True)
+
     return render_template("admin.html", users=users, dues=dues, ads=ads,
                             companies=companies, contracts=contracts, work_logs=work_logs,
                             ingredients=ingredients, menu_items=menu_items, discounts=discounts,
-                            ranks=ranks, fraction_members=fraction_members)
+                            ranks=ranks, fraction_members=fraction_members,
+                            workhour_stats=workhour_stats, wh_period=wh_period)
 
 
 # ---------------------------------------------------------------------------
