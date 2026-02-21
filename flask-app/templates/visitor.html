@@ -78,7 +78,7 @@
                   <img src="{{ worker.avatar_url }}" alt="avatar"
                        class="rounded-circle mb-3" width="80" height="80"
                        style="object-fit: cover;">
-                  <h5 class="card-title">{{ worker.display_name }}</h5>
+                  <h5 class="card-title">{{ worker.ingame_name or worker.display_name }}</h5>
 
                   {# Average stars display #}
                   <div class="mb-2">
