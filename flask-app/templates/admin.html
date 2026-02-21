@@ -138,14 +138,80 @@
       </div>
     </form>
 
-    {% if dues %}
+    {% if grouped_dues %}
+    <h5 class="mb-3"><i class="bi bi-truck"></i> Céges tartozások</h5>
+    <div class="accordion mb-4" id="duesAccordion">
+      {% for group in grouped_dues %}
+      <div class="accordion-item">
+        <h2 class="accordion-header">
+          <button class="accordion-button collapsed d-flex align-items-center gap-2" type="button"
+                  data-bs-toggle="collapse" data-bs-target="#dues-company-{{ group.company.id }}">
+            <strong>{{ group.company.name }}</strong>
+            <span class="ms-auto me-3">
+              {% if group.all_paid %}
+                <span class="badge bg-success">Rendezve</span>
+              {% else %}
+                <span class="badge bg-warning text-dark">{{ "%.0f"|format(group.unpaid) }} Ft nyitott</span>
+              {% endif %}
+              <span class="badge bg-secondary">Össz: {{ "%.0f"|format(group.total) }} Ft</span>
+            </span>
+          </button>
+        </h2>
+        <div id="dues-company-{{ group.company.id }}" class="accordion-collapse collapse" data-bs-parent="#duesAccordion">
+          <div class="accordion-body p-0">
+            <table class="table table-striped mb-0">
+              <thead class="table-light">
+                <tr><th>Név</th><th>Összeg</th><th>Határidő</th><th>Státusz</th><th></th></tr>
+              </thead>
+              <tbody>
+                {% for due in group.dues %}
+                <tr class="{{ 'table-success' if due.is_paid else '' }}">
+                  <td>{{ due.name }}</td>
+                  <td>{{ "%.0f"|format(due.amount) }} Ft</td>
+                  <td>{{ due.due_date.strftime('%Y-%m-%d') }}</td>
+                  <td>
+                    {% if due.is_paid %}
+                      <span class="badge bg-success"><i class="bi bi-check-circle"></i> Rendezve</span>
+                    {% else %}
+                      <span class="badge bg-warning text-dark">Nyitott</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if not due.is_paid %}
+                    <form method="POST" class="d-inline">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <input type="hidden" name="form_type" value="settle_due">
+                      <input type="hidden" name="due_id" value="{{ due.id }}">
+                      <button class="btn btn-sm btn-success" title="Rendezés"><i class="bi bi-check-lg"></i></button>
+                    </form>
+                    {% endif %}
+                    <form method="POST" class="d-inline">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <input type="hidden" name="form_type" value="delete_due">
+                      <input type="hidden" name="due_id" value="{{ due.id }}">
+                      <button class="btn btn-sm btn-danger">Törlés</button>
+                    </form>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if dues_no_company %}
+    <h5 class="mb-3"><i class="bi bi-cash-coin"></i> Egyéb tartozások</h5>
     <div class="table-responsive">
       <table class="table table-striped">
         <thead class="table-dark">
           <tr><th>Név</th><th>Összeg</th><th>Határidő</th><th>Státusz</th><th></th></tr>
         </thead>
         <tbody>
-          {% for due in dues %}
+          {% for due in dues_no_company %}
           <tr class="{{ 'table-success' if due.is_paid else '' }}">
             <td>{{ due.name }}</td>
             <td>{{ "%.0f"|format(due.amount) }} Ft</td>
@@ -178,7 +244,9 @@
         </tbody>
       </table>
     </div>
-    {% else %}
+    {% endif %}
+
+    {% if not grouped_dues and not dues_no_company %}
     <p class="text-muted">Nincsenek tartozások.</p>
     {% endif %}
   </div>

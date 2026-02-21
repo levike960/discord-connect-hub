@@ -881,7 +881,29 @@ def admin():
         wh_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
 
     users = User.query.order_by(User.username).all()
-    dues = Due.query.order_by(Due.due_date.asc()).all()
+    all_dues = Due.query.order_by(Due.due_date.asc()).all()
+    # Group dues by company for admin view
+    from collections import defaultdict
+    dues_by_company = defaultdict(list)
+    dues_no_company = []
+    for d in all_dues:
+        if d.company_id and d.company:
+            dues_by_company[d.company_id].append(d)
+        else:
+            dues_no_company.append(d)
+    grouped_dues = []
+    for company_id, company_dues in dues_by_company.items():
+        company = company_dues[0].company
+        total = sum(d.amount for d in company_dues)
+        unpaid = sum(d.amount for d in company_dues if not d.is_paid)
+        grouped_dues.append({
+            "company": company,
+            "dues": company_dues,
+            "total": total,
+            "unpaid": unpaid,
+            "all_paid": all(d.is_paid for d in company_dues),
+        })
+    grouped_dues.sort(key=lambda x: x["company"].name)
     ads = Advertisement.query.order_by(Advertisement.created_at.desc()).all()
     companies = DeliveryCompany.query.order_by(DeliveryCompany.name).all()
     contracts = Contract.query.order_by(Contract.created_at.desc()).all()
@@ -911,7 +933,8 @@ def admin():
         })
     workhour_stats.sort(key=lambda x: x["total_seconds"], reverse=True)
 
-    return render_template("admin.html", users=users, dues=dues, ads=ads,
+    return render_template("admin.html", users=users, grouped_dues=grouped_dues,
+                            dues_no_company=dues_no_company, ads=ads,
                             companies=companies, contracts=contracts, work_logs=work_logs,
                             ingredients=ingredients, menu_items=menu_items, discounts=discounts,
                             ranks=ranks, fraction_members=fraction_members,
