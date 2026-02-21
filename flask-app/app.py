@@ -703,16 +703,27 @@ def admin():
                 db.session.add(MenuItemIngredient(
                     menu_item_id=mi_id, ingredient_id=ing_id, quantity=qty))
                 db.session.commit()
-                flash("Recipe ingredient added.", "success")
+                # Auto-recalculate production cost
+                mi = db.session.get(MenuItem, mi_id)
+                if mi:
+                    mi.production_cost = mi.calculated_cost
+                    db.session.commit()
+                flash("Recipe ingredient added, cost recalculated.", "success")
 
         # --- Remove Recipe Item ---
         elif form_type == "remove_recipe_item":
             ri_id = request.form.get("ri_id", type=int)
             ri = db.session.get(MenuItemIngredient, ri_id)
             if ri:
+                mi_id = ri.menu_item_id
                 db.session.delete(ri)
                 db.session.commit()
-                flash("Recipe ingredient removed.", "success")
+                # Auto-recalculate production cost
+                mi = db.session.get(MenuItem, mi_id)
+                if mi:
+                    mi.production_cost = mi.calculated_cost
+                    db.session.commit()
+                flash("Recipe ingredient removed, cost recalculated.", "success")
 
         # --- Recalculate Cost ---
         elif form_type == "recalc_cost":
