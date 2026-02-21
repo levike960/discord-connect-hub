@@ -424,7 +424,7 @@ def fraction_calculator():
             for item in cart:
                 mi = db.session.get(MenuItem, item["item_id"])
                 if mi:
-                    total_time += mi.production_time_minutes * item["qty"]
+                    total_time += mi.production_time_seconds * item["qty"]
                     for ri in mi.recipe_items.all():
                         key = ri.ingredient_id
                         if key not in ingredient_totals:
@@ -678,7 +678,7 @@ def admin():
                 image_path = f"uploads/{fname}"
             if mi_name:
                 item = MenuItem(name=mi_name, category=mi_cat, price=mi_price,
-                                production_time_minutes=mi_time,
+                                production_time_seconds=mi_time,
                                 production_cost=mi_cost if mi_cost is not None else 0,
                                 image_path=image_path, created_by=current_user.id)
                 db.session.add(item)

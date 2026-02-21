@@ -212,7 +212,7 @@ def define_models(db, app):
         category = db.Column(db.String(32), nullable=False)  # 'alc', 'non_alc', 'food'
         price = db.Column(db.Float, nullable=False, default=0.0)
         production_cost = db.Column(db.Float, nullable=False, default=0.0)
-        production_time_minutes = db.Column(db.Integer, nullable=False, default=0)
+        production_time_seconds = db.Column(db.Integer, nullable=False, default=0)
         image_path = db.Column(db.String(512), nullable=True)
         created_at = db.Column(db.DateTime, default=datetime.utcnow)
         created_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
