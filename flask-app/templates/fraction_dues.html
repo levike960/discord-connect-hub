@@ -21,15 +21,17 @@
             </thead>
             <tbody>
               {% for due in dues %}
-              <tr class="{{ 'table-danger' if due.due_date < today else '' }}">
+              <tr class="{{ 'table-success' if due.is_paid else ('table-danger' if due.due_date < today else '') }}">
                 <td>{{ due.name }}</td>
                 <td>{{ "%.0f"|format(due.amount) }} Ft</td>
                 <td>{{ due.due_date.strftime('%Y-%m-%d') }}</td>
                 <td>
-                  {% if due.due_date < today %}
+                  {% if due.is_paid %}
+                    <span class="badge bg-success"><i class="bi bi-check-circle"></i> Rendezve</span>
+                  {% elif due.due_date < today %}
                     <span class="badge bg-danger">Lejárt</span>
                   {% else %}
-                    <span class="badge bg-success">Aktív</span>
+                    <span class="badge bg-warning text-dark">Aktív</span>
                   {% endif %}
                 </td>
               </tr>

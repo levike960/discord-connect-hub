@@ -482,6 +482,31 @@ def fraction_calculator_add():
     return redirect(url_for("fraction_calculator"))
 
 
+@app.route("/fraction/calculator/record_due", methods=["POST"])
+@fraction_required
+def fraction_calculator_record_due():
+    """Record discounted total as a Due for the selected company."""
+    company_id = request.form.get("company_id", type=int)
+    discount_total = request.form.get("discount_total", type=float)
+    if company_id and discount_total is not None:
+        company = db.session.get(DeliveryCompany, company_id)
+        if company:
+            due = Due(
+                name=f"{company.name} — POS kedvezmény",
+                amount=discount_total,
+                due_date=date.today() + timedelta(days=30),
+                company_id=company_id,
+                created_by=current_user.id,
+            )
+            db.session.add(due)
+            db.session.commit()
+            session["pos_cart"] = []
+            flash(f"Tartozás felírva: {company.name} — {'%.0f' % discount_total} Ft", "success")
+        else:
+            flash("Cég nem található.", "danger")
+    return redirect(url_for("fraction_calculator"))
+
+
 @app.route("/fraction/ads")
 @fraction_required
 def fraction_ads():
@@ -579,6 +604,16 @@ def admin():
                 db.session.delete(due)
                 db.session.commit()
                 flash("Due deleted.", "success")
+
+        # --- Settle Due (mark as paid) ---
+        elif form_type == "settle_due":
+            due_id = request.form.get("due_id", type=int)
+            due = db.session.get(Due, due_id)
+            if due:
+                due.is_paid = True
+                due.paid_at = datetime.utcnow()
+                db.session.commit()
+                flash("Tartozás rendezve.", "success")
 
         # --- Add Advertisement ---
         elif form_type == "add_ad":
