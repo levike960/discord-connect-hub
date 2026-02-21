@@ -9,6 +9,11 @@
         <img src="{{ current_user.avatar_url }}" alt="Avatar" class="avatar-lg mb-3">
         <h4>{{ current_user.display_name }}</h4>
         <p class="text-muted">Discord ID: {{ current_user.discord_id }}</p>
+        {% if current_user.rank %}
+          <span class="badge" style="background: {{ current_user.rank.color or 'var(--csp-accent)' }}; color: #fff; font-size: 0.9rem;">
+            {{ current_user.rank.name }}
+          </span>
+        {% endif %}
       </div>
     </div>
 
@@ -24,6 +29,20 @@
                    value="{{ current_user.nickname or '' }}"
                    placeholder="{{ current_user.username }}">
             <div class="form-text">Leave empty to use Discord username.</div>
+          </div>
+
+          <div class="mb-3">
+            <label for="ingame_name" class="form-label">In-game név</label>
+            <input type="text" class="form-control" id="ingame_name" name="ingame_name"
+                   value="{{ current_user.ingame_name or '' }}"
+                   placeholder="IC karakternév" maxlength="128">
+          </div>
+
+          <div class="mb-3">
+            <label for="phone" class="form-label">Telefonszám</label>
+            <input type="text" class="form-control" id="phone" name="phone"
+                   value="{{ current_user.phone or '' }}"
+                   placeholder="In-game telefonszám" maxlength="32">
           </div>
 
           <div class="mb-3">

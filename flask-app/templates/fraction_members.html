@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Taglista{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-10">
+    <h2 class="mb-4"><i class="bi bi-people-fill"></i> Taglista</h2>
+
+    <div class="row g-4">
+      {% for member in members %}
+      <div class="col-md-4 col-sm-6">
+        <div class="card h-100 shadow-sm border-0 text-center">
+          <div class="card-body py-4">
+            <img src="{{ member.avatar_url }}" alt="avatar" class="avatar-lg mb-3">
+            <h5 class="mb-1">{{ member.display_name }}</h5>
+            {% if member.rank %}
+              <span class="badge mb-2" style="background: {{ member.rank.color or 'var(--csp-accent)' }}; color: #fff;">
+                {{ member.rank.name }}
+              </span>
+            {% endif %}
+            {% if member.ingame_name %}
+              <p class="text-muted small mb-1"><i class="bi bi-person-badge me-1"></i>{{ member.ingame_name }}</p>
+            {% endif %}
+            <p class="text-muted small mb-1"><i class="bi bi-discord me-1"></i>{{ member.username }}</p>
+            {% if member.phone %}
+              <p class="text-muted small mb-0"><i class="bi bi-telephone me-1"></i>{{ member.phone }}</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% if not members %}
+    <p class="text-muted">Nincsenek tagok.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

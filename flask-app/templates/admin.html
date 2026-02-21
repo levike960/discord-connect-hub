@@ -12,6 +12,16 @@
     </button>
   </li>
   <li class="nav-item">
+    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-ranks" type="button">
+      <i class="bi bi-award"></i> Rangok
+    </button>
+  </li>
+  <li class="nav-item">
+    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-members" type="button">
+      <i class="bi bi-person-lines-fill"></i> Tagok
+    </button>
+  </li>
+  <li class="nav-item">
     <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-dues" type="button">
       <i class="bi bi-cash-coin"></i> Tartozások
     </button>
@@ -374,6 +384,7 @@
   </div>
 
   {% include "admin_calculator.html" %}
+  {% include "admin_ranks.html" %}
 
 </div>
 {% endblock %}

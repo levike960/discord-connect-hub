@@ -69,6 +69,7 @@ Advertisement = models["Advertisement"]
 DeliveryCompany = models["DeliveryCompany"]
 DeliveryMessage = models["DeliveryMessage"]
 Contract = models["Contract"]
+Rank = models["Rank"]
 Ingredient = models["Ingredient"]
 MenuItem = models["MenuItem"]
 MenuItemIngredient = models["MenuItemIngredient"]
@@ -217,6 +218,12 @@ def profile():
         new_nick = request.form.get("nickname", "").strip()
         current_user.nickname = new_nick if new_nick else None
 
+        new_ingame = request.form.get("ingame_name", "").strip()
+        current_user.ingame_name = new_ingame if new_ingame else None
+
+        new_phone = request.form.get("phone", "").strip()
+        current_user.phone = new_phone if new_phone else None
+
         file = request.files.get("avatar")
         if file and file.filename and allowed_file(file.filename):
             filename = f"avatar_{current_user.discord_id}.png"
@@ -276,6 +283,16 @@ def rate_worker(target_id):
 @fraction_required
 def fraction():
     return render_template("fraction.html")
+
+
+@app.route("/fraction/members")
+@fraction_required
+def fraction_members():
+    members = User.query.filter_by(has_fraction_permission=True).all()
+    ranks = Rank.query.order_by(Rank.sort_order.asc()).all()
+    # Sort members by rank order (no rank = last)
+    members.sort(key=lambda u: (u.rank.sort_order if u.rank else 9999, u.display_name))
+    return render_template("fraction_members.html", members=members, ranks=ranks)
 
 
 @app.route("/fraction/clock", methods=["GET", "POST"])
@@ -759,6 +776,59 @@ def admin():
                 db.session.commit()
                 flash("Discount deleted.", "success")
 
+        # --- Add Rank ---
+        elif form_type == "add_rank":
+            rname = request.form.get("rank_name", "").strip()
+            rcolor = request.form.get("rank_color", "").strip() or None
+            if rname:
+                max_order = db.session.query(db.func.max(Rank.sort_order)).scalar() or 0
+                db.session.add(Rank(name=rname, sort_order=max_order + 1, color=rcolor))
+                db.session.commit()
+                flash("Rank added.", "success")
+
+        # --- Delete Rank ---
+        elif form_type == "delete_rank":
+            rank_id = request.form.get("rank_id", type=int)
+            rank = db.session.get(Rank, rank_id)
+            if rank:
+                # Unassign users with this rank
+                for u in User.query.filter_by(rank_id=rank_id).all():
+                    u.rank_id = None
+                db.session.delete(rank)
+                db.session.commit()
+                flash("Rank deleted.", "success")
+
+        # --- Move Rank Up/Down ---
+        elif form_type == "move_rank":
+            rank_id = request.form.get("rank_id", type=int)
+            direction = request.form.get("direction")
+            rank = db.session.get(Rank, rank_id)
+            if rank:
+                all_ranks = Rank.query.order_by(Rank.sort_order.asc()).all()
+                idx = next((i for i, r in enumerate(all_ranks) if r.id == rank_id), None)
+                if idx is not None:
+                    if direction == "up" and idx > 0:
+                        all_ranks[idx].sort_order, all_ranks[idx-1].sort_order = \
+                            all_ranks[idx-1].sort_order, all_ranks[idx].sort_order
+                    elif direction == "down" and idx < len(all_ranks) - 1:
+                        all_ranks[idx].sort_order, all_ranks[idx+1].sort_order = \
+                            all_ranks[idx+1].sort_order, all_ranks[idx].sort_order
+                    db.session.commit()
+
+        # --- Edit Member (admin edits user profile) ---
+        elif form_type == "edit_member":
+            user_id = request.form.get("user_id", type=int)
+            target = db.session.get(User, user_id)
+            if target:
+                new_ingame = request.form.get("ingame_name", "").strip()
+                target.ingame_name = new_ingame if new_ingame else None
+                new_phone = request.form.get("phone", "").strip()
+                target.phone = new_phone if new_phone else None
+                rank_id = request.form.get("rank_id", type=int)
+                target.rank_id = rank_id if rank_id else None
+                db.session.commit()
+                flash(f"Updated {target.display_name}.", "success")
+
         return redirect(url_for("admin"))
 
     users = User.query.order_by(User.username).all()
@@ -770,10 +840,14 @@ def admin():
     ingredients = Ingredient.query.order_by(Ingredient.name).all()
     menu_items = MenuItem.query.order_by(MenuItem.category, MenuItem.name).all()
     discounts = CompanyDiscount.query.all()
+    ranks = Rank.query.order_by(Rank.sort_order.asc()).all()
+    fraction_members = User.query.filter_by(has_fraction_permission=True).all()
+    fraction_members.sort(key=lambda u: (u.rank.sort_order if u.rank else 9999, u.display_name))
 
     return render_template("admin.html", users=users, dues=dues, ads=ads,
                             companies=companies, contracts=contracts, work_logs=work_logs,
-                            ingredients=ingredients, menu_items=menu_items, discounts=discounts)
+                            ingredients=ingredients, menu_items=menu_items, discounts=discounts,
+                            ranks=ranks, fraction_members=fraction_members)
 
 
 # ---------------------------------------------------------------------------
