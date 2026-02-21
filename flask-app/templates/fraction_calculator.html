@@ -390,7 +390,15 @@
         </div>
       </div>
     </div>
-    <button onclick="window.print()" class="btn btn-outline-primary no-print"><i class="bi bi-printer"></i> Nyomtatás</button>
+    <div class="d-flex gap-2 mt-3 no-print">
+      <button onclick="window.print()" class="btn btn-outline-primary"><i class="bi bi-printer"></i> Nyomtatás</button>
+      <form method="POST" action="{{ url_for('fraction_calculator_record_due') }}" class="d-inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="company_id" value="{{ selected_company.id }}">
+        <input type="hidden" name="discount_total" value="{{ discount_total }}">
+        <button type="submit" class="btn btn-warning"><i class="bi bi-pencil-square"></i> Felírás</button>
+      </form>
+    </div>
     {% endif %}
     {% else %}
     <p class="text-muted">Nincsenek kedvezményes cégek beállítva.</p>

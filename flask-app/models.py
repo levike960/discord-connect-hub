@@ -157,8 +157,13 @@ def define_models(db, app):
         name = db.Column(db.String(128), nullable=False)
         amount = db.Column(db.Float, nullable=False)
         due_date = db.Column(db.Date, nullable=False)
+        is_paid = db.Column(db.Boolean, default=False)
+        paid_at = db.Column(db.DateTime, nullable=True)
+        company_id = db.Column(db.Integer, db.ForeignKey("delivery_companies.id"), nullable=True)
         created_at = db.Column(db.DateTime, default=datetime.utcnow)
         created_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+
+        company = db.relationship("DeliveryCompany", backref="dues")
 
     class Advertisement(db.Model):
         __tablename__ = "advertisements"

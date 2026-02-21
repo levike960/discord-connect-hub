@@ -142,15 +142,30 @@
     <div class="table-responsive">
       <table class="table table-striped">
         <thead class="table-dark">
-          <tr><th>Név</th><th>Összeg</th><th>Határidő</th><th></th></tr>
+          <tr><th>Név</th><th>Összeg</th><th>Határidő</th><th>Státusz</th><th></th></tr>
         </thead>
         <tbody>
           {% for due in dues %}
-          <tr>
+          <tr class="{{ 'table-success' if due.is_paid else '' }}">
             <td>{{ due.name }}</td>
             <td>{{ "%.0f"|format(due.amount) }} Ft</td>
             <td>{{ due.due_date.strftime('%Y-%m-%d') }}</td>
             <td>
+              {% if due.is_paid %}
+                <span class="badge bg-success"><i class="bi bi-check-circle"></i> Rendezve</span>
+              {% else %}
+                <span class="badge bg-warning text-dark">Nyitott</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if not due.is_paid %}
+              <form method="POST" class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="form_type" value="settle_due">
+                <input type="hidden" name="due_id" value="{{ due.id }}">
+                <button class="btn btn-sm btn-success" title="Rendezés"><i class="bi bi-check-lg"></i></button>
+              </form>
+              {% endif %}
               <form method="POST" class="d-inline">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="form_type" value="delete_due">
