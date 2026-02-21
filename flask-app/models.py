@@ -67,6 +67,11 @@ def define_models(db, app):
         avatar = db.Column(db.String(256), nullable=True)
         is_admin = db.Column(db.Boolean, default=False)
         has_fraction_permission = db.Column(db.Boolean, default=False)
+        ingame_name = db.Column(db.String(128), nullable=True)
+        phone = db.Column(db.String(32), nullable=True)
+        rank_id = db.Column(db.Integer, db.ForeignKey("ranks.id"), nullable=True)
+
+        rank = db.relationship("Rank", backref="users", lazy="joined")
 
         ratings_received = db.relationship(
             "Rating", foreign_keys="Rating.target_user_id",
@@ -195,6 +200,15 @@ def define_models(db, app):
         created_at = db.Column(db.DateTime, default=datetime.utcnow)
         created_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
 
+    class Rank(db.Model):
+        __tablename__ = "ranks"
+
+        id = db.Column(db.Integer, primary_key=True)
+        name = db.Column(db.String(128), nullable=False, unique=True)
+        sort_order = db.Column(db.Integer, nullable=False, default=0)
+        color = db.Column(db.String(32), nullable=True)  # optional badge color
+        created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
     class Ingredient(db.Model):
         __tablename__ = "ingredients"
 
@@ -260,6 +274,7 @@ def define_models(db, app):
         "DeliveryCompany": DeliveryCompany,
         "DeliveryMessage": DeliveryMessage,
         "Contract": Contract,
+        "Rank": Rank,
         "Ingredient": Ingredient,
         "MenuItem": MenuItem,
         "MenuItemIngredient": MenuItemIngredient,
