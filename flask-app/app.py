@@ -1144,13 +1144,27 @@ def admin():
 
     partners = Partner.query.order_by(Partner.sort_order).all()
 
+    # Dashboard stats
+    total_unpaid = sum(d.amount for d in all_dues if not d.is_paid)
+    unpaid_count = sum(1 for d in all_dues if not d.is_paid)
+    active_workers = sum(1 for m in fraction_members if m.is_clocked_in)
+    total_members = len(fraction_members)
+    low_stock_ingredients = [i for i in ingredients if i.stock < i.min_stock]
+    low_stock_products = [m for m in menu_items if m.stock < m.min_stock]
+    total_low_stock = len(low_stock_ingredients) + len(low_stock_products)
+
     return render_template("admin.html", users=users, grouped_dues=grouped_dues,
                             dues_no_company=dues_no_company, ads=ads,
                             companies=companies, contracts=contracts, work_logs=work_logs,
                             ingredients=ingredients, menu_items=menu_items, discounts=discounts,
                             ranks=ranks, fraction_members=fraction_members,
                             workhour_stats=workhour_stats, wh_period=wh_period,
-                            partners=partners)
+                            partners=partners,
+                            dash_total_unpaid=total_unpaid, dash_unpaid_count=unpaid_count,
+                            dash_active_workers=active_workers, dash_total_members=total_members,
+                            dash_low_stock_ingredients=low_stock_ingredients,
+                            dash_low_stock_products=low_stock_products,
+                            dash_total_low_stock=total_low_stock)
 
 
 # ---------------------------------------------------------------------------
