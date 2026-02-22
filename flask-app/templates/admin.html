@@ -2,61 +2,125 @@
 {% block title %}Admin{% endblock %}
 
 {% block content %}
-<h2 class="mb-4"><i class="bi bi-gear-fill"></i> Admin Panel</h2>
+<style>
+  .admin-hero {
+    background: linear-gradient(135deg, var(--csp-surface) 0%, var(--csp-accent-subtle) 100%);
+    border: 1px solid var(--csp-border);
+    border-radius: 1rem;
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+  }
+  .admin-hero h2 {
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    margin-bottom: 0.25rem;
+  }
+  .admin-hero h2 i { color: var(--csp-accent); }
+  .stat-card {
+    background: var(--csp-surface);
+    border: 1px solid var(--csp-border);
+    border-radius: var(--csp-radius);
+    padding: 1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    transition: all var(--csp-transition);
+  }
+  .stat-card:hover { border-color: var(--csp-accent); }
+  .stat-icon {
+    width: 44px; height: 44px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.2rem;
+  }
+  .admin-nav-card {
+    cursor: pointer;
+    transition: transform 0.25s cubic-bezier(.4,0,.2,1), box-shadow 0.25s ease, border-color 0.25s ease;
+    animation: scaleIn 0.35s ease-out backwards;
+  }
+  .admin-nav-card:hover {
+    transform: translateY(-6px) scale(1.02);
+    box-shadow: 0 12px 36px rgba(124,92,252,0.18);
+    border-color: var(--csp-accent) !important;
+  }
+  .admin-nav-card .nav-icon {
+    width: 56px; height: 56px; border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem;
+    transition: transform 0.3s cubic-bezier(.4,0,.2,1);
+  }
+  .admin-nav-card:hover .nav-icon {
+    transform: scale(1.18) rotate(-4deg);
+  }
+  .admin-nav-card:nth-child(1)  { animation-delay: 0.02s; }
+  .admin-nav-card:nth-child(2)  { animation-delay: 0.04s; }
+  .admin-nav-card:nth-child(3)  { animation-delay: 0.06s; }
+  .admin-nav-card:nth-child(4)  { animation-delay: 0.08s; }
+  .admin-nav-card:nth-child(5)  { animation-delay: 0.10s; }
+  .admin-nav-card:nth-child(6)  { animation-delay: 0.12s; }
+  .admin-nav-card:nth-child(7)  { animation-delay: 0.14s; }
+  .admin-nav-card:nth-child(8)  { animation-delay: 0.16s; }
+  .admin-nav-card:nth-child(9)  { animation-delay: 0.18s; }
+  .admin-nav-card:nth-child(10) { animation-delay: 0.20s; }
+  .admin-nav-card:nth-child(11) { animation-delay: 0.22s; }
+  .admin-nav-card:nth-child(12) { animation-delay: 0.24s; }
+  .admin-nav-card:nth-child(13) { animation-delay: 0.26s; }
+  .admin-back-btn {
+    display: none;
+    margin-bottom: 1rem;
+  }
+  .admin-back-btn.visible { display: inline-flex; }
+</style>
 
-{# ── Dashboard Summary ── #}
-<div class="row g-3 mb-4">
-  {# Unpaid Dues #}
-  <div class="col-md-4">
-    <div class="card h-100" style="border-left: 4px solid var(--csp-red) !important;">
-      <div class="card-body d-flex align-items-center gap-3">
-        <div style="width:48px;height:48px;border-radius:12px;background:rgba(248,113,113,0.15);display:flex;align-items:center;justify-content:center;">
-          <i class="bi bi-cash-coin fs-4" style="color:var(--csp-red);"></i>
-        </div>
-        <div>
-          <div class="text-muted small">Nyitott tartozások</div>
-          <div class="fs-4 fw-bold" style="color:var(--csp-red);">{{ "%.0f"|format(dash_total_unpaid) }} Ft</div>
-          <div class="text-muted" style="font-size:0.75rem;">{{ dash_unpaid_count }} rendezetlen tétel</div>
-        </div>
-      </div>
+{# ── Hero Header ── #}
+<div class="admin-hero">
+  <div class="d-flex align-items-center gap-3 mb-3">
+    <div style="width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg, var(--csp-accent), #a78bfa);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(124,92,252,0.3);">
+      <i class="bi bi-shield-lock-fill text-white fs-4"></i>
+    </div>
+    <div>
+      <h2 class="mb-0"><i class="bi bi-gear-fill"></i> Admin Panel</h2>
+      <p class="text-muted mb-0" style="font-size:0.85rem;">Vezérlőpult — Kezelj mindent egy helyről</p>
     </div>
   </div>
 
-  {# Active Workers #}
-  <div class="col-md-4">
-    <div class="card h-100" style="border-left: 4px solid var(--csp-green) !important;">
-      <div class="card-body d-flex align-items-center gap-3">
-        <div style="width:48px;height:48px;border-radius:12px;background:rgba(52,211,153,0.15);display:flex;align-items:center;justify-content:center;">
-          <i class="bi bi-people-fill fs-4" style="color:var(--csp-green);"></i>
+  <div class="row g-2">
+    <div class="col-md-4">
+      <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(248,113,113,0.15);color:var(--csp-red);">
+          <i class="bi bi-cash-coin"></i>
         </div>
         <div>
-          <div class="text-muted small">Aktív dolgozók</div>
-          <div class="fs-4 fw-bold" style="color:var(--csp-green);">{{ dash_active_workers }} / {{ dash_total_members }}</div>
-          <div class="text-muted" style="font-size:0.75rem;">
-            {% if dash_active_workers > 0 %}jelenleg dolgozik{% else %}senki nem dolgozik{% endif %}
-          </div>
+          <div class="text-muted" style="font-size:0.75rem;">Nyitott tartozások</div>
+          <div class="fw-bold" style="color:var(--csp-red);font-size:1.1rem;">{{ "%.0f"|format(dash_total_unpaid) }} Ft</div>
+          <div class="text-muted" style="font-size:0.7rem;">{{ dash_unpaid_count }} rendezetlen</div>
         </div>
       </div>
     </div>
-  </div>
-
-  {# Stock Alerts #}
-  <div class="col-md-4">
-    <div class="card h-100" style="border-left: 4px solid {% if dash_total_low_stock > 0 %}var(--csp-gold){% else %}var(--csp-green){% endif %} !important;">
-      <div class="card-body d-flex align-items-center gap-3">
-        <div style="width:48px;height:48px;border-radius:12px;background:{% if dash_total_low_stock > 0 %}rgba(245,166,35,0.15){% else %}rgba(52,211,153,0.15){% endif %};display:flex;align-items:center;justify-content:center;">
-          <i class="bi bi-box-seam fs-4" style="color:{% if dash_total_low_stock > 0 %}var(--csp-gold){% else %}var(--csp-green){% endif %};"></i>
+    <div class="col-md-4">
+      <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(52,211,153,0.15);color:var(--csp-green);">
+          <i class="bi bi-people-fill"></i>
         </div>
         <div>
-          <div class="text-muted small">Raktárkészlet</div>
+          <div class="text-muted" style="font-size:0.75rem;">Aktív dolgozók</div>
+          <div class="fw-bold" style="color:var(--csp-green);font-size:1.1rem;">{{ dash_active_workers }} / {{ dash_total_members }}</div>
+          <div class="text-muted" style="font-size:0.7rem;">{% if dash_active_workers > 0 %}jelenleg dolgozik{% else %}senki nem dolgozik{% endif %}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="stat-card">
+        <div class="stat-icon" style="background:{% if dash_total_low_stock > 0 %}rgba(245,166,35,0.15){% else %}rgba(52,211,153,0.15){% endif %};color:{% if dash_total_low_stock > 0 %}var(--csp-gold){% else %}var(--csp-green){% endif %};">
+          <i class="bi bi-box-seam"></i>
+        </div>
+        <div>
+          <div class="text-muted" style="font-size:0.75rem;">Raktárkészlet</div>
           {% if dash_total_low_stock > 0 %}
-            <div class="fs-4 fw-bold" style="color:var(--csp-gold);">{{ dash_total_low_stock }} figyelmeztetés</div>
-            <div class="text-muted" style="font-size:0.75rem;">
-              {{ dash_low_stock_ingredients|length }} alapanyag, {{ dash_low_stock_products|length }} termék
-            </div>
+            <div class="fw-bold" style="color:var(--csp-gold);font-size:1.1rem;">{{ dash_total_low_stock }} figyelmeztetés</div>
+            <div class="text-muted" style="font-size:0.7rem;">{{ dash_low_stock_ingredients|length }} alapanyag, {{ dash_low_stock_products|length }} termék</div>
           {% else %}
-            <div class="fs-4 fw-bold" style="color:var(--csp-green);">Rendben</div>
-            <div class="text-muted" style="font-size:0.75rem;">Minden készlet a minimum felett</div>
+            <div class="fw-bold" style="color:var(--csp-green);font-size:1.1rem;">Rendben</div>
+            <div class="text-muted" style="font-size:0.7rem;">Minden készlet a minimum felett</div>
           {% endif %}
         </div>
       </div>
@@ -64,73 +128,61 @@
   </div>
 </div>
 
-{# Tab navigation #}
-<ul class="nav nav-tabs mb-4" id="adminTabs" role="tablist">
-  <li class="nav-item">
-    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-users" type="button">
-      <i class="bi bi-people"></i> Felhasználók
-    </button>
-  </li>
-  <li class="nav-item">
-    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-ranks" type="button">
-      <i class="bi bi-award"></i> Rangok
-    </button>
-  </li>
-  <li class="nav-item">
-    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-members" type="button">
-      <i class="bi bi-person-lines-fill"></i> Tagok
-    </button>
-  </li>
-  <li class="nav-item">
-    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-dues" type="button">
-      <i class="bi bi-cash-coin"></i> Tartozások
-    </button>
-  </li>
-  <li class="nav-item">
-    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-ads" type="button">
-      <i class="bi bi-megaphone"></i> Hirdetések
-    </button>
-  </li>
-  <li class="nav-item">
-    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-companies" type="button">
-      <i class="bi bi-truck"></i> Cégek
-    </button>
-  </li>
-  <li class="nav-item">
-    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-contracts" type="button">
-      <i class="bi bi-file-earmark-text"></i> Szerződések
-    </button>
-  </li>
-  <li class="nav-item">
-    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-worklogs" type="button">
-      <i class="bi bi-clock-history"></i> Munkaórák
-    </button>
-  </li>
-  <li class="nav-item">
-    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-ingredients" type="button">
-      <i class="bi bi-box-seam"></i> Alapanyagok
-    </button>
-  </li>
-  <li class="nav-item">
-    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-menuitems" type="button">
-      <i class="bi bi-cup-straw"></i> Tételek / Receptek
-    </button>
-  </li>
-  <li class="nav-item">
-    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-discounts" type="button">
-      <i class="bi bi-percent"></i> Kedvezmények
-    </button>
-  </li>
-  <li class="nav-item">
-    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-partners" type="button">
-      <i class="bi bi-people-fill"></i> Partnerek
-    </button>
-  </li>
-  <li class="nav-item">
-    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-reports" type="button">
-      <i class="bi bi-bar-chart-line"></i> Riport
-    </button>
-  </li>
+{# ── Back Button (shown when a tab is active) ── #}
+<button class="btn btn-outline-secondary admin-back-btn" id="adminBackBtn" onclick="showAdminGrid()">
+  <i class="bi bi-arrow-left me-1"></i> Vissza a menühöz
+</button>
+
+{# ── Card Grid Navigation ── #}
+<div class="row g-3 mb-4" id="adminNavGrid">
+  {% set nav_items = [
+    ('#tab-users',       'bi-people-fill',           'Felhasználók',     'Jogosultságok kezelése',   '--csp-accent',   'rgba(124,92,252,0.12)'),
+    ('#tab-ranks',       'bi-award-fill',            'Rangok',           'Rangrendszer beállítása',  '--csp-gold',     'rgba(245,166,35,0.12)'),
+    ('#tab-members',     'bi-person-lines-fill',     'Tagok',            'Fraction tagok',           '--csp-green',    'rgba(52,211,153,0.12)'),
+    ('#tab-dues',        'bi-cash-coin',             'Tartozások',       'Pénzügyi nyilvántartás',   '--csp-red',      'rgba(248,113,113,0.12)'),
+    ('#tab-ads',         'bi-megaphone-fill',        'Hirdetések',       'Közlemények kezelése',     '#38bdf8',        'rgba(56,189,248,0.12)'),
+    ('#tab-companies',   'bi-truck',                 'Cégek',            'Szállítási partnerek',     '--csp-accent',   'rgba(124,92,252,0.12)'),
+    ('#tab-contracts',   'bi-file-earmark-text-fill','Szerződések',      'Dokumentumkezelés',        '--csp-gold',     'rgba(245,166,35,0.12)'),
+    ('#tab-worklogs',    'bi-clock-history',         'Munkaórák',        'Munkaidő áttekintés',      '--csp-green',    'rgba(52,211,153,0.12)'),
+    ('#tab-ingredients', 'bi-box-seam-fill',         'Alapanyagok',      'Raktárkészlet',            '#e67e22',        'rgba(230,126,34,0.12)'),
+    ('#tab-menuitems',   'bi-cup-straw',             'Tételek / Receptek','Étlap és receptek',       '#722f37',        'rgba(114,47,55,0.12)'),
+    ('#tab-discounts',   'bi-percent',               'Kedvezmények',     'Árazás és akciók',        '--csp-accent',   'rgba(124,92,252,0.12)'),
+    ('#tab-partners',    'bi-people-fill',           'Partnerek',        'Partner nyilvántartás',    '#38bdf8',        'rgba(56,189,248,0.12)'),
+    ('#tab-reports',     'bi-bar-chart-line-fill',   'Riport',           'Statisztikák és grafikonok','--csp-green',  'rgba(52,211,153,0.12)')
+  ] %}
+  {% for target, icon, label, desc, color, bg in nav_items %}
+  <div class="col-md-4 col-sm-6 admin-nav-card" onclick="openAdminTab('{{ target }}')">
+    <div class="card h-100 border-0 shadow-sm">
+      <div class="card-body d-flex align-items-center gap-3 py-3">
+        <div class="nav-icon" style="background:{{ bg }};color:var({{ color }});">
+          <i class="bi {{ icon }}"></i>
+        </div>
+        <div>
+          <h6 class="mb-0 fw-semibold">{{ label }}</h6>
+          <span class="text-muted" style="font-size:0.78rem;">{{ desc }}</span>
+        </div>
+        <i class="bi bi-chevron-right ms-auto text-muted"></i>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{# Hidden tab triggers #}
+<ul class="nav nav-tabs mb-4 d-none" id="adminTabs" role="tablist">
+  <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-users" type="button"></button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-ranks" type="button"></button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-members" type="button"></button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-dues" type="button"></button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-ads" type="button"></button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-companies" type="button"></button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-contracts" type="button"></button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-worklogs" type="button"></button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-ingredients" type="button"></button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-menuitems" type="button"></button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-discounts" type="button"></button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-partners" type="button"></button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-reports" type="button"></button></li>
 </ul>
 
 <div class="tab-content">
@@ -591,29 +643,45 @@
   </div>
 
   <script>
+  function openAdminTab(target) {
+    document.getElementById('adminNavGrid').style.display = 'none';
+    document.getElementById('adminBackBtn').classList.add('visible');
+    document.querySelector('.tab-content').style.display = 'block';
+    const triggerEl = document.querySelector('#adminTabs button[data-bs-target="' + target + '"]');
+    if (triggerEl) {
+      const tab = new bootstrap.Tab(triggerEl);
+      tab.show();
+    }
+    sessionStorage.setItem('adminActiveTab', target);
+    window.scrollTo({top: document.getElementById('adminBackBtn').offsetTop - 80, behavior: 'smooth'});
+  }
+
+  function showAdminGrid() {
+    document.getElementById('adminNavGrid').style.display = '';
+    document.getElementById('adminBackBtn').classList.remove('visible');
+    document.querySelector('.tab-content').style.display = 'none';
+    sessionStorage.removeItem('adminActiveTab');
+  }
+
   (function() {
     const params = new URLSearchParams(window.location.search);
+    const tabContent = document.querySelector('.tab-content');
 
-    // Restore active tab from URL param or wh_period
+    // Initially hide tab content, show grid
+    tabContent.style.display = 'none';
+
+    // Restore active tab from URL param, wh_period, or session
     const tabParam = params.get('tab');
-    if (tabParam) {
-      const triggerEl = document.querySelector('button[data-bs-target="' + tabParam + '"]');
-      if (triggerEl) {
-        const tab = new bootstrap.Tab(triggerEl);
-        tab.show();
-      }
-    } else if (params.has('wh_period')) {
-      const triggerEl = document.querySelector('button[data-bs-target="#tab-worklogs"]');
-      if (triggerEl) {
-        const tab = new bootstrap.Tab(triggerEl);
-        tab.show();
-      }
+    const savedTab = sessionStorage.getItem('adminActiveTab');
+    const restoreTarget = tabParam || (params.has('wh_period') ? '#tab-worklogs' : null) || savedTab;
+
+    if (restoreTarget) {
+      openAdminTab(restoreTarget);
     }
 
     // Inject active_tab hidden field into all forms before submit
-    document.querySelectorAll('#adminTabs + .tab-content form, .tab-content form').forEach(function(form) {
+    document.querySelectorAll('.tab-content form').forEach(function(form) {
       form.addEventListener('submit', function() {
-        // Find which tab is currently active
         const activeBtn = document.querySelector('#adminTabs .nav-link.active');
         if (activeBtn) {
           const target = activeBtn.getAttribute('data-bs-target');
