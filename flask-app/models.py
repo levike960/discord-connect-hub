@@ -222,6 +222,7 @@ def define_models(db, app):
         unit = db.Column(db.String(32), nullable=False, default="db")
         price_per_unit = db.Column(db.Float, nullable=False, default=0.0)
         stock = db.Column(db.Float, nullable=False, default=0.0)
+        min_stock = db.Column(db.Float, nullable=False, default=5.0)
         created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     class MenuItem(db.Model):
@@ -235,6 +236,7 @@ def define_models(db, app):
         production_time_seconds = db.Column(db.Integer, nullable=False, default=0)
         image_path = db.Column(db.String(512), nullable=True)
         stock = db.Column(db.Float, nullable=False, default=0.0)
+        min_stock = db.Column(db.Float, nullable=False, default=5.0)
         created_at = db.Column(db.DateTime, default=datetime.utcnow)
         created_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
 
