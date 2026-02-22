@@ -703,7 +703,31 @@ def admin():
                 db.session.commit()
                 flash(f"{len(unpaid)} tartozás rendezve.", "success")
 
-        # --- Add Advertisement ---
+        # --- Monthly close for a company ---
+        elif form_type == "monthly_close_company":
+            company_id = request.form.get("company_id", type=int)
+            if company_id:
+                now = datetime.utcnow()
+                month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+                unpaid = Due.query.filter(
+                    Due.company_id == company_id,
+                    Due.is_paid == False,
+                    Due.created_at < month_start
+                ).all()
+                current_month = Due.query.filter(
+                    Due.company_id == company_id,
+                    Due.is_paid == False,
+                    Due.created_at >= month_start
+                ).all()
+                all_to_close = unpaid + current_month
+                for due in all_to_close:
+                    due.is_paid = True
+                    due.paid_at = datetime.utcnow()
+                db.session.commit()
+                company = db.session.get(DeliveryCompany, company_id)
+                cname = company.name if company else "?"
+                flash(f"Havi zárás kész: {cname} — {len(all_to_close)} tétel rendezve.", "success")
+
         elif form_type == "add_ad":
             title = request.form.get("ad_title", "").strip()
             content = request.form.get("ad_content", "").strip()

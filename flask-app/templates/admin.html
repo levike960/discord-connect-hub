@@ -165,7 +165,15 @@
         <div id="dues-company-{{ group.company.id }}" class="accordion-collapse collapse" data-bs-parent="#duesAccordion">
           <div class="accordion-body p-0">
             {% if not group.all_paid %}
-            <div class="p-2 bg-light border-bottom d-flex justify-content-end">
+            <div class="p-2 bg-light border-bottom d-flex justify-content-end gap-2">
+              <form method="POST" class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="form_type" value="monthly_close_company">
+                <input type="hidden" name="company_id" value="{{ group.company.id }}">
+                <button class="btn btn-sm btn-warning" onclick="return confirm('Biztosan lezárod a hónapot ennél a cégnél? Az összes nyitott tartozás rendezettnek lesz jelölve.')">
+                  <i class="bi bi-calendar-check"></i> Hó zárás
+                </button>
+              </form>
               <form method="POST" class="d-inline">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="form_type" value="settle_company_dues">
