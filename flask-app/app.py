@@ -504,17 +504,43 @@ def fraction_calculator_confirm():
         return redirect(url_for("fraction_calculator"))
 
     if mode in ("basic", "discount"):
-        # Deduct finished products from stock
+        # Calculate total for revenue tracking
+        sale_total = 0.0
         for c in cart:
             mi = db.session.get(MenuItem, c["id"])
             if mi:
                 mi.stock = max(0, mi.stock - c["qty"])
+                sale_total += mi.price * c["qty"]
                 db.session.add(StockMovement(
                     item_type="menu_item", item_id=mi.id,
                     quantity=-c["qty"],
                     reason=f"POS eladás ({mode})",
                     user_id=current_user.id
                 ))
+        # If discount mode, recalculate with discounts
+        if mode == "discount":
+            company_id = request.form.get("company_id", type=int)
+            if company_id:
+                discounts = {d.category: d.discount_percent
+                             for d in CompanyDiscount.query.filter_by(company_id=company_id).all()}
+                disc_total = 0.0
+                for c in cart:
+                    mi = db.session.get(MenuItem, c["id"])
+                    if mi:
+                        pct = discounts.get(mi.category, 0)
+                        disc_total += mi.price * c["qty"] * (1 - pct / 100)
+                sale_total = disc_total
+        # Record revenue as a Due entry
+        label = "POS eladás (alapár)" if mode == "basic" else "POS eladás (kedvezményes)"
+        due = Due(
+            name=label,
+            amount=sale_total,
+            due_date=date.today(),
+            is_paid=True,
+            paid_at=datetime.utcnow(),
+            created_by=current_user.id,
+        )
+        db.session.add(due)
         db.session.commit()
         session["pos_cart"] = []
         flash("Eladás rögzítve, raktár frissítve.", "success")

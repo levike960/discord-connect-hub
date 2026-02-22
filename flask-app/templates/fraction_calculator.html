@@ -395,6 +395,7 @@
       <form method="POST" action="{{ url_for('fraction_calculator_confirm') }}" class="d-inline">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="mode" value="discount">
+        <input type="hidden" name="company_id" value="{{ selected_company.id }}">
         <button type="submit" class="btn btn-success"><i class="bi bi-check-circle"></i> OK — Lezárás</button>
       </form>
       <form method="POST" action="{{ url_for('fraction_calculator_record_due') }}" class="d-inline">
