@@ -461,5 +461,26 @@
     });
   })();
 </script>
+
+<!-- Lightbox Modal -->
+<div class="modal fade" id="imageLightbox" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-xl">
+    <div class="modal-content bg-transparent border-0 shadow-none">
+      <div class="modal-body p-0 text-center position-relative">
+        <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3 z-3" data-bs-dismiss="modal" aria-label="Close"></button>
+        <img id="lightboxImage" src="" alt="" class="img-fluid rounded" style="max-height:85vh;cursor:zoom-out;" data-bs-dismiss="modal">
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  document.addEventListener('click', function(e) {
+    const img = e.target.closest('img[data-lightbox]');
+    if (!img) return;
+    document.getElementById('lightboxImage').src = img.src;
+    document.getElementById('lightboxImage').alt = img.alt || '';
+    new bootstrap.Modal(document.getElementById('imageLightbox')).show();
+  });
+</script>
 </body>
 </html>

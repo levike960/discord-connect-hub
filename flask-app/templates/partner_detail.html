@@ -61,8 +61,8 @@
           {% for img in images %}
           <div class="col-6 col-md-4">
             <div class="card border-0">
-              <img src="{{ url_for('static', filename=img.image_path) }}" class="img-fluid rounded"
-                   style="aspect-ratio:4/3;object-fit:cover;width:100%;" alt="{{ img.caption or partner.name }}">
+            <img src="{{ url_for('static', filename=img.image_path) }}" class="img-fluid rounded"
+                   data-lightbox style="aspect-ratio:4/3;object-fit:cover;width:100%;cursor:pointer;" alt="{{ img.caption or partner.name }}">
               {% if img.caption %}
                 <div class="text-center mt-1">
                   <small class="text-muted">{{ img.caption }}</small>
