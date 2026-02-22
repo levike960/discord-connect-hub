@@ -1153,6 +1153,65 @@ def admin():
     low_stock_products = [m for m in menu_items if m.stock < m.min_stock]
     total_low_stock = len(low_stock_ingredients) + len(low_stock_products)
 
+    # --- Report data ---
+    report_period = request.args.get("report_period", "week")
+    if report_period == "month":
+        report_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        num_days = (now - report_start).days + 1
+    else:
+        report_start = (now - timedelta(days=now.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
+        num_days = 7
+
+    # Revenue: dues created in period
+    report_dues = Due.query.filter(Due.created_at >= report_start).all()
+    report_revenue = sum(d.amount for d in report_dues)
+    report_revenue_count = len(report_dues)
+
+    # Stock movements in period
+    report_movements = StockMovement.query.filter(StockMovement.created_at >= report_start).all()
+    report_stock_in_count = sum(1 for m in report_movements if m.quantity > 0)
+    report_stock_out_count = sum(1 for m in report_movements if m.quantity < 0)
+
+    # Work hours in period
+    report_wlogs = WorkLog.query.filter(WorkLog.clock_in >= report_start).all()
+    report_total_secs = sum(l.duration_seconds for l in report_wlogs)
+    rh, rm = divmod(int(report_total_secs), 3600)
+    rmm, _ = divmod(rm, 60)
+    report_total_hours = f"{rh}h {rmm}m"
+    report_worklogs_count = len(report_wlogs)
+
+    # Per-worker stats for period
+    from collections import defaultdict as dd
+    worker_secs = dd(lambda: {"secs": 0, "count": 0, "user": None})
+    for l in report_wlogs:
+        ws = worker_secs[l.user_id]
+        ws["secs"] += l.duration_seconds
+        ws["count"] += 1
+        ws["user"] = l.user
+    report_worker_stats = []
+    for uid, ws in worker_secs.items():
+        wh, wr = divmod(int(ws["secs"]), 3600)
+        wm, _ = divmod(wr, 60)
+        report_worker_stats.append({
+            "user": ws["user"], "formatted": f"{wh}h {wm}m",
+            "total_secs": ws["secs"], "count": ws["count"]
+        })
+    report_worker_stats.sort(key=lambda x: x["total_secs"], reverse=True)
+
+    # Chart data: daily breakdown
+    chart_labels = []
+    chart_revenue = []
+    chart_workhours = []
+    for i in range(num_days):
+        day = report_start + timedelta(days=i)
+        day_end = day + timedelta(days=1)
+        chart_labels.append(day.strftime("%m.%d"))
+        chart_revenue.append(sum(d.amount for d in report_dues
+                                 if d.created_at and day <= d.created_at < day_end))
+        day_secs = sum(l.duration_seconds for l in report_wlogs
+                       if l.clock_in and day <= l.clock_in < day_end)
+        chart_workhours.append(round(day_secs / 3600, 1))
+
     return render_template("admin.html", users=users, grouped_dues=grouped_dues,
                             dues_no_company=dues_no_company, ads=ads,
                             companies=companies, contracts=contracts, work_logs=work_logs,
@@ -1164,7 +1223,18 @@ def admin():
                             dash_active_workers=active_workers, dash_total_members=total_members,
                             dash_low_stock_ingredients=low_stock_ingredients,
                             dash_low_stock_products=low_stock_products,
-                            dash_total_low_stock=total_low_stock)
+                            dash_total_low_stock=total_low_stock,
+                            report_period=report_period,
+                            report_revenue=report_revenue,
+                            report_revenue_count=report_revenue_count,
+                            report_stock_in_count=report_stock_in_count,
+                            report_stock_out_count=report_stock_out_count,
+                            report_total_hours=report_total_hours,
+                            report_worklogs_count=report_worklogs_count,
+                            report_worker_stats=report_worker_stats,
+                            report_chart_labels=chart_labels,
+                            report_chart_revenue=chart_revenue,
+                            report_chart_workhours=chart_workhours)
 
 
 # ---------------------------------------------------------------------------

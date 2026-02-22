@@ -1,0 +1,173 @@
+{# ═══ Reports Tab ═══ #}
+<div class="tab-pane fade" id="tab-reports">
+  <div class="d-flex flex-wrap align-items-center justify-content-between mb-4">
+    <h4 class="mb-0"><i class="bi bi-bar-chart-line text-primary"></i> Riport</h4>
+    <div class="btn-group" role="group">
+      <a href="?report_period=week&tab=%23tab-reports" class="btn btn-sm btn-{{ 'primary' if report_period == 'week' else 'outline-primary' }}">Hét</a>
+      <a href="?report_period=month&tab=%23tab-reports" class="btn btn-sm btn-{{ 'primary' if report_period == 'month' else 'outline-primary' }}">Hónap</a>
+    </div>
+  </div>
+
+  {# Summary Cards #}
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="card h-100">
+        <div class="card-body text-center">
+          <div class="text-muted small mb-1">Bevétel (felírt tartozások)</div>
+          <div class="fs-3 fw-bold" style="color:var(--csp-green);">{{ "%.0f"|format(report_revenue) }} Ft</div>
+          <div class="text-muted" style="font-size:0.75rem;">{{ report_revenue_count }} tétel</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card h-100">
+        <div class="card-body text-center">
+          <div class="text-muted small mb-1">Készletmozgás (bevételezés)</div>
+          <div class="fs-3 fw-bold" style="color:var(--csp-accent);">{{ report_stock_in_count }} db</div>
+          <div class="text-muted" style="font-size:0.75rem;">{{ report_stock_out_count }} db kiadás</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card h-100">
+        <div class="card-body text-center">
+          <div class="text-muted small mb-1">Összesített munkaidő</div>
+          <div class="fs-3 fw-bold" style="color:var(--csp-gold);">{{ report_total_hours }}</div>
+          <div class="text-muted" style="font-size:0.75rem;">{{ report_worklogs_count }} bejegyzés</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# Charts #}
+  <div class="row g-4 mb-4">
+    <div class="col-lg-6">
+      <div class="card">
+        <div class="card-body">
+          <h6 class="mb-3"><i class="bi bi-cash-coin text-success"></i> Bevétel (naponta)</h6>
+          <canvas id="revenueChart" height="220"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="card">
+        <div class="card-body">
+          <h6 class="mb-3"><i class="bi bi-clock-history text-warning"></i> Munkaidő (naponta, óra)</h6>
+          <canvas id="workhoursChart" height="220"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# Top workers table #}
+  {% if report_worker_stats %}
+  <div class="card mb-4">
+    <div class="card-body">
+      <h6 class="mb-3"><i class="bi bi-trophy text-warning"></i> Dolgozók munkaideje ({{ 'heti' if report_period == 'week' else 'havi' }})</h6>
+      <div class="table-responsive">
+        <table class="table table-striped table-hover align-middle mb-0">
+          <thead class="table-dark">
+            <tr><th>#</th><th>Dolgozó</th><th>Munkaidő</th><th>Bejegyzések</th></tr>
+          </thead>
+          <tbody>
+            {% for ws in report_worker_stats %}
+            <tr>
+              <td>
+                {% if loop.index == 1 %}<i class="bi bi-trophy-fill text-warning"></i>
+                {% elif loop.index == 2 %}<i class="bi bi-trophy-fill text-secondary"></i>
+                {% elif loop.index == 3 %}<i class="bi bi-trophy-fill" style="color:#cd7f32;"></i>
+                {% else %}{{ loop.index }}{% endif %}
+              </td>
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <img src="{{ ws.user.avatar_url }}" class="avatar-sm">
+                  <span>{{ ws.user.ingame_name or ws.user.display_name }}</span>
+                </div>
+              </td>
+              <td class="fw-bold">{{ ws.formatted }}</td>
+              <td>{{ ws.count }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script>
+(function() {
+  // Only init charts when reports tab is shown
+  let chartsInitialized = false;
+
+  function initCharts() {
+    if (chartsInitialized) return;
+    chartsInitialized = true;
+
+    const chartTextColor = getComputedStyle(document.documentElement)
+      .getPropertyValue('--csp-text-muted').trim() || '#8b8d9a';
+    const gridColor = getComputedStyle(document.documentElement)
+      .getPropertyValue('--csp-border').trim() || '#2a2d3a';
+
+    const defaultOpts = {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+      },
+      scales: {
+        x: { ticks: { color: chartTextColor, font: { size: 11 } }, grid: { color: gridColor } },
+        y: { ticks: { color: chartTextColor, font: { size: 11 } }, grid: { color: gridColor }, beginAtZero: true },
+      },
+    };
+
+    // Revenue chart
+    const revLabels = {{ report_chart_labels | tojson }};
+    const revData = {{ report_chart_revenue | tojson }};
+    new Chart(document.getElementById('revenueChart'), {
+      type: 'bar',
+      data: {
+        labels: revLabels,
+        datasets: [{
+          data: revData,
+          backgroundColor: 'rgba(52, 211, 153, 0.6)',
+          borderColor: 'rgba(52, 211, 153, 1)',
+          borderWidth: 1,
+          borderRadius: 6,
+        }],
+      },
+      options: defaultOpts,
+    });
+
+    // Workhours chart
+    const whData = {{ report_chart_workhours | tojson }};
+    new Chart(document.getElementById('workhoursChart'), {
+      type: 'line',
+      data: {
+        labels: revLabels,
+        datasets: [{
+          data: whData,
+          borderColor: 'rgba(245, 166, 35, 1)',
+          backgroundColor: 'rgba(245, 166, 35, 0.15)',
+          fill: true,
+          tension: 0.3,
+          pointRadius: 4,
+          pointBackgroundColor: 'rgba(245, 166, 35, 1)',
+        }],
+      },
+      options: defaultOpts,
+    });
+  }
+
+  // Init when tab is shown
+  document.querySelector('button[data-bs-target="#tab-reports"]')
+    ?.addEventListener('shown.bs.tab', initCharts);
+
+  // If tab is active on load (via URL param)
+  if (document.getElementById('tab-reports')?.classList.contains('show')) {
+    setTimeout(initCharts, 100);
+  }
+})();
+</script>
