@@ -1,28 +1,283 @@
 {% extends "base.html" %}
-{% block title %}Borászat{% endblock %}
+{% block title %}Borászat — Itallapunk{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-  <div class="col-lg-10">
-    <div class="card shadow-sm">
-      <div class="card-body text-center">
-        <h2 class="card-title mb-4"><i class="bi bi-cup-straw"></i> Borászat</h2>
-        <hr>
-        <div class="py-5">
-          <i class="bi bi-cup-straw fs-1 d-block mb-3" style="color: #722f37;"></i>
-          <p class="text-muted fst-italic" style="min-height: 150px;">
-            Ez a szekció hamarosan tartalommal bővül.
-            <br>
-            Itt olvashat majd a borainkról, szőlőfajtáinkról és borászati hagyományainkról.
-          </p>
-          <p class="text-muted">[Tartalom hamarosan]</p>
-        </div>
+<style>
+  .drink-card {
+    border: none;
+    border-radius: 16px;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    background: linear-gradient(145deg, #1a1a2e, #16213e);
+    color: #e0e0e0;
+  }
+  .drink-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 12px 40px rgba(114, 47, 55, 0.35);
+  }
+  .drink-img-wrapper {
+    background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+    min-height: 280px;
+  }
+  .drink-img-wrapper img {
+    max-height: 220px;
+    filter: drop-shadow(0 8px 24px rgba(0,0,0,0.5));
+    transition: transform 0.4s ease;
+  }
+  .drink-card:hover .drink-img-wrapper img {
+    transform: scale(1.08);
+  }
+  .drink-body {
+    padding: 1.5rem;
+  }
+  .drink-title {
+    font-family: 'Georgia', serif;
+    font-size: 1.5rem;
+    color: #f5f5f5;
+    margin-bottom: 0.25rem;
+  }
+  .drink-subtitle {
+    color: #b08d57;
+    font-style: italic;
+    font-size: 0.95rem;
+    margin-bottom: 1rem;
+  }
+  .drink-desc {
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: #c0c0c0;
+    margin-bottom: 1rem;
+  }
+  .drink-details-table {
+    width: 100%;
+    font-size: 0.85rem;
+  }
+  .drink-details-table td {
+    padding: 4px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .drink-details-table td:first-child {
+    color: #b08d57;
+    font-weight: 600;
+    white-space: nowrap;
+    padding-right: 12px;
+    width: 40%;
+  }
+  .drink-ingredients {
+    list-style: none;
+    padding: 0;
+    margin: 0.75rem 0 0;
+    font-size: 0.85rem;
+  }
+  .drink-ingredients li {
+    padding: 3px 0;
+    color: #d0d0d0;
+  }
+  .section-header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+  }
+  .section-header h2 {
+    font-family: 'Georgia', serif;
+    font-size: 2.2rem;
+    color: #722f37;
+  }
+  .section-header p {
+    color: #888;
+    font-style: italic;
+  }
+  .drink-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+  }
+  .badge-red { background: rgba(114,47,55,0.3); color: #e07070; }
+  .badge-white { background: rgba(200,190,140,0.2); color: #d4c878; }
+  .badge-rose { background: rgba(219,112,147,0.2); color: #e8a0b8; }
+  .badge-gold { background: rgba(176,141,87,0.25); color: #d4b06a; }
+  .badge-amber { background: rgba(180,120,60,0.25); color: #d4a050; }
+  .badge-yellow { background: rgba(230,200,50,0.2); color: #e0d060; }
+</style>
 
-        <a href="{{ url_for('fraction') }}" class="btn btn-outline-secondary mt-3">
-          <i class="bi bi-arrow-left"></i> Vissza
-        </a>
+<div class="container">
+  <div class="section-header">
+    <h2><i class="bi bi-cup-straw"></i> Casa di Vino — Itallapunk</h2>
+    <p>Válogatott boraink és párlataink az olasz hagyományok jegyében</p>
+    <hr class="mx-auto" style="max-width: 120px; border-color: #722f37; border-width: 2px;">
+  </div>
+
+  <div class="row g-4">
+
+    {# ── Vino di Fuoco ── #}
+    <div class="col-lg-6 col-xl-4">
+      <div class="card drink-card h-100">
+        <div class="drink-img-wrapper">
+          <img src="{{ url_for('static', filename='uploads/vino_di_fuoco.png') }}" alt="Vino di Fuoco">
+        </div>
+        <div class="drink-body">
+          <span class="drink-badge badge-red">🍷 Vörösbor</span>
+          <h3 class="drink-title">Vino di Fuoco</h3>
+          <p class="drink-subtitle">A tüzes különlegesség</p>
+          <p class="drink-desc">
+            A Vino di Fuoco a Casa di Vino borászat különlegessége, mely nevéhez méltóan tüzes karaktert hordoz magában.
+            Érett fekete cseresznye, szilva és egy csipetnyi fahéj keveredik benne, amit finom tölgyes jegyek és bársonyos tanninok tesznek teljessé.
+          </p>
+          <table class="drink-details-table">
+            <tr><td>Szőlőfajták</td><td>Sangiovese, Nero d'Avola, Merlot</td></tr>
+            <tr><td>Aromák</td><td>Fekete cseresznye, Szilva, Szeder, Fahéj</td></tr>
+            <tr><td>Érlelés</td><td>Tölgyfahordóban 12 hónapig</td></tr>
+            <tr><td>Alkohol</td><td>13,5%</td></tr>
+            <tr><td>Cukor</td><td>Száraz</td></tr>
+            <tr><td>Hőmérséklet</td><td>16–18 °C</td></tr>
+          </table>
+        </div>
       </div>
     </div>
+
+    {# ── Luna Bianca ── #}
+    <div class="col-lg-6 col-xl-4">
+      <div class="card drink-card h-100">
+        <div class="drink-img-wrapper">
+          <img src="{{ url_for('static', filename='uploads/luna_bianca.png') }}" alt="Luna Bianca">
+        </div>
+        <div class="drink-body">
+          <span class="drink-badge badge-white">🥂 Fehérbor</span>
+          <h3 class="drink-title">Luna Bianca</h3>
+          <p class="drink-subtitle">A holdfény tisztasága</p>
+          <p class="drink-desc">
+            A Luna Bianca ragyogó fehérbor, mely a holdfény tisztaságát és az olasz vidék frissességét idézi.
+            Ízében a zöldalma, a lédús körte és fehér virágok keverednek, friss ropogós savak és ásványos lecsengés tesznek teljessé.
+          </p>
+          <table class="drink-details-table">
+            <tr><td>Szőlőfajták</td><td>Pinot Grigio, Vermentino, Trebbiano</td></tr>
+            <tr><td>Aromák</td><td>Zöldalma, Körte, Citrusok, Jázmin</td></tr>
+            <tr><td>Érlelés</td><td>Rozsdamentes acéltartályokban</td></tr>
+            <tr><td>Alkohol</td><td>12,5%</td></tr>
+            <tr><td>Cukor</td><td>Száraz</td></tr>
+            <tr><td>Hőmérséklet</td><td>8–10 °C</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    {# ── Fiore Rosa ── #}
+    <div class="col-lg-6 col-xl-4">
+      <div class="card drink-card h-100">
+        <div class="drink-img-wrapper">
+          <img src="{{ url_for('static', filename='uploads/fiore_rosa.png') }}" alt="Fiore Rosa">
+        </div>
+        <div class="drink-body">
+          <span class="drink-badge badge-rose">🌸 Rosé bor</span>
+          <h3 class="drink-title">Fiore Rosa</h3>
+          <p class="drink-subtitle">Elegancia rózsaszínben</p>
+          <p class="drink-desc">
+            Fiore Rosa elegáns és kifinomult rosé bor, finom halvány rózsaszín árnyalatával és gyümölcsös illatával.
+            Az eper, málna és piros ribizli friss aromái találkoznak benne. Hűtött erjesztés acéltartályokban a frissesség megőrzése érdekében.
+          </p>
+          <table class="drink-details-table">
+            <tr><td>Szőlőfajták</td><td>Pinot Noir, Sangiovese</td></tr>
+            <tr><td>Aromák</td><td>Eper, Málna, Piros ribizli, Rózsaszirom</td></tr>
+            <tr><td>Érlelés</td><td>Hűtött erjesztés acéltartályokban</td></tr>
+            <tr><td>Alkohol</td><td>12%</td></tr>
+            <tr><td>Cukor</td><td>Száraz</td></tr>
+            <tr><td>Hőmérséklet</td><td>9–11 °C</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    {# ── Serafina Brut ── #}
+    <div class="col-lg-6 col-xl-4">
+      <div class="card drink-card h-100">
+        <div class="drink-img-wrapper">
+          <img src="{{ url_for('static', filename='uploads/serafina_brut.png') }}" alt="Serafina Brut">
+        </div>
+        <div class="drink-body">
+          <span class="drink-badge badge-gold">🍾 Pezsgő</span>
+          <h3 class="drink-title">Serafina Brut</h3>
+          <p class="drink-subtitle">A különleges alkalmak kísérője</p>
+          <p class="drink-desc">
+            Serafina Brut elegáns pezsgő, hagyományos módszerrel készítve. Világos arany színe, apró kitartó buborékai,
+            fehér virágok és zöldalma illatával. A citrusok frissessége érett gyümölcsök lágyságával találkozik, krémes textúrával.
+          </p>
+          <table class="drink-details-table">
+            <tr><td>Szőlőfajták</td><td>Glera, Chardonnay, Pinot Noir</td></tr>
+            <tr><td>Aromák</td><td>Zöldalma, Citrusok, Őszibarack, Körte</td></tr>
+            <tr><td>Érlelés</td><td>Min. 12 hónap palackos, finomseprőn</td></tr>
+            <tr><td>Alkohol</td><td>12%</td></tr>
+            <tr><td>Cukor</td><td>Száraz</td></tr>
+            <tr><td>Hőmérséklet</td><td>6–8 °C</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    {# ── Grappa ── #}
+    <div class="col-lg-6 col-xl-4">
+      <div class="card drink-card h-100">
+        <div class="drink-img-wrapper">
+          <img src="{{ url_for('static', filename='uploads/grappa.png') }}" alt="Grappa">
+        </div>
+        <div class="drink-body">
+          <span class="drink-badge badge-amber">🥃 Törkölypárlat</span>
+          <h3 class="drink-title">Grappa</h3>
+          <p class="drink-subtitle">Tradicionális olasz párlat</p>
+          <p class="drink-desc">
+            Tradicionális olasz törkölypárlat, a borkészítés melléktermékéből, a szőlő héjából, magjából és kocsányából főzve.
+            Erőteljes karaktere miatt lassan, kortyonként érdemes fogyasztani, hogy kibontakozzon aromavilága. Digestivóként tálaljuk.
+          </p>
+          <table class="drink-details-table">
+            <tr><td>Alapanyag</td><td>Szőlőtörköly (héj, mag, kocsány)</td></tr>
+            <tr><td>Aromák</td><td>Friss szőlős, fűszeres, vaníliás jegyek</td></tr>
+            <tr><td>Érlelés</td><td>Réz üstökben, majd acéltartályban</td></tr>
+            <tr><td>Alkohol</td><td>~40%</td></tr>
+            <tr><td>Cukor</td><td>Száraz</td></tr>
+            <tr><td>Hőmérséklet</td><td>~20 °C (szobahőmérséklet)</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    {# ── Limoncello ── #}
+    <div class="col-lg-6 col-xl-4">
+      <div class="card drink-card h-100">
+        <div class="drink-img-wrapper">
+          <img src="{{ url_for('static', filename='uploads/limoncello.png') }}" alt="Limoncello">
+        </div>
+        <div class="drink-body">
+          <span class="drink-badge badge-yellow">🍋 Citromlikőr</span>
+          <h3 class="drink-title">Limoncello</h3>
+          <p class="drink-subtitle">Az Amalfi-part íze</p>
+          <p class="drink-desc">
+            Hagyományos olasz citromlikőr, válogatott citromhéjból, tiszta szesz és cukor felhasználásával.
+            Élénk sárga színe és friss, édes-savanykás íze a napsütötte Amalfi-part hangulatát idézi.
+            Behűtve tálalva digestivóként különösen finom.
+          </p>
+          <table class="drink-details-table">
+            <tr><td>Összetevők</td><td>Citromhéj, tisztaszesz, víz, cukor</td></tr>
+            <tr><td>Aroma és íz</td><td>Intenzív citromos, édes-savanykás</td></tr>
+            <tr><td>Textúra</td><td>Selymes, üde</td></tr>
+            <tr><td>Alkohol</td><td>28–32%</td></tr>
+            <tr><td>Cukor</td><td>Édes, likőr jellegű</td></tr>
+            <tr><td>Hőmérséklet</td><td>Jól behűtve tálaljuk</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="text-center mt-5">
+    <a href="{{ url_for('fraction') }}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Vissza a főmenübe
+    </a>
   </div>
 </div>
 {% endblock %}
