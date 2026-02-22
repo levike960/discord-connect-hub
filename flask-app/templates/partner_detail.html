@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}{{ partner.name }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-10">
+
+    {# Header #}
+    <div class="card shadow-sm mb-4">
+      <div class="card-body">
+        <div class="d-flex align-items-center gap-3 mb-3">
+          {% if partner.logo_path %}
+            <img src="{{ url_for('static', filename=partner.logo_path) }}" alt="{{ partner.name }}"
+                 style="width:80px;height:80px;object-fit:cover;border-radius:var(--csp-radius);border:2px solid var(--csp-border);">
+          {% else %}
+            <div style="width:80px;height:80px;display:flex;align-items:center;justify-content:center;background:var(--csp-accent-subtle);border-radius:var(--csp-radius);">
+              <span class="fs-1 fw-bold" style="color:var(--csp-accent);">{{ partner.name[:2] }}</span>
+            </div>
+          {% endif %}
+          <div>
+            <h2 class="mb-1">{{ partner.name }}</h2>
+            {% if partner.short_description %}
+              <p class="text-muted mb-0">{{ partner.short_description }}</p>
+            {% endif %}
+          </div>
+        </div>
+
+        <a href="{{ url_for('visitor') }}" class="btn btn-sm btn-outline-secondary">
+          <i class="bi bi-arrow-left me-1"></i> Vissza a főoldalra
+        </a>
+      </div>
+    </div>
+
+    {# Description #}
+    {% if partner.description %}
+    <div class="card shadow-sm mb-4">
+      <div class="card-body">
+        <h4><i class="bi bi-info-circle"></i> Bemutatkozás</h4>
+        <div style="white-space: pre-line;">{{ partner.description }}</div>
+      </div>
+    </div>
+    {% endif %}
+
+    {# Price List #}
+    {% if partner.price_list %}
+    <div class="card shadow-sm mb-4">
+      <div class="card-body">
+        <h4><i class="bi bi-tag"></i> Árlista</h4>
+        <div style="white-space: pre-line;">{{ partner.price_list }}</div>
+      </div>
+    </div>
+    {% endif %}
+
+    {# Images Gallery #}
+    {% set images = partner.images.all() %}
+    {% if images %}
+    <div class="card shadow-sm mb-4">
+      <div class="card-body">
+        <h4><i class="bi bi-images"></i> Galéria</h4>
+        <div class="row g-3 mt-2">
+          {% for img in images %}
+          <div class="col-6 col-md-4">
+            <div class="card border-0">
+              <img src="{{ url_for('static', filename=img.image_path) }}" class="img-fluid rounded"
+                   style="aspect-ratio:4/3;object-fit:cover;width:100%;" alt="{{ img.caption or partner.name }}">
+              {% if img.caption %}
+                <div class="text-center mt-1">
+                  <small class="text-muted">{{ img.caption }}</small>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}

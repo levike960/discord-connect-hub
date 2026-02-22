@@ -74,6 +74,8 @@ Ingredient = models["Ingredient"]
 MenuItem = models["MenuItem"]
 MenuItemIngredient = models["MenuItemIngredient"]
 CompanyDiscount = models["CompanyDiscount"]
+Partner = models["Partner"]
+PartnerImage = models["PartnerImage"]
 
 
 @login_manager.user_loader
@@ -208,7 +210,14 @@ def logout():
 def visitor():
     workers = User.query.filter_by(has_fraction_permission=True).all()
     workers.sort(key=lambda w: w.average_rating, reverse=True)
-    return render_template("visitor.html", workers=workers)
+    partners = Partner.query.order_by(Partner.sort_order).all()
+    return render_template("visitor.html", workers=workers, partners=partners)
+
+
+@app.route("/partner/<slug>")
+def partner_detail(slug):
+    partner = Partner.query.filter_by(slug=slug).first_or_404()
+    return render_template("partner_detail.html", partner=partner)
 
 
 @app.route("/profile", methods=["GET", "POST"])
@@ -875,6 +884,85 @@ def admin():
                 db.session.commit()
                 flash(f"Updated {target.display_name}.", "success")
 
+        # --- Add Partner ---
+        elif form_type == "add_partner":
+            pname = request.form.get("partner_name", "").strip()
+            pslug = request.form.get("partner_slug", "").strip().lower().replace(" ", "-")
+            pshort = request.form.get("partner_short_desc", "").strip()
+            pdesc = request.form.get("partner_description", "").strip()
+            pprice = request.form.get("partner_price_list", "").strip()
+            logo_path = None
+            file = request.files.get("partner_logo")
+            if file and file.filename and allowed_file(file.filename):
+                fname = secure_filename(f"partner_{datetime.utcnow().timestamp()}_{file.filename}")
+                filepath = os.path.join(app.config["UPLOAD_FOLDER"], fname)
+                file.save(filepath)
+                logo_path = f"uploads/{fname}"
+            if pname and pslug:
+                max_order = db.session.query(db.func.max(Partner.sort_order)).scalar() or 0
+                db.session.add(Partner(
+                    name=pname, slug=pslug, short_description=pshort or None,
+                    description=pdesc or None, price_list=pprice or None,
+                    logo_path=logo_path, sort_order=max_order + 1
+                ))
+                db.session.commit()
+                flash("Partner added.", "success")
+
+        # --- Edit Partner ---
+        elif form_type == "edit_partner":
+            pid = request.form.get("partner_id", type=int)
+            partner = db.session.get(Partner, pid)
+            if partner:
+                partner.name = request.form.get("partner_name", partner.name).strip()
+                partner.slug = request.form.get("partner_slug", partner.slug).strip().lower().replace(" ", "-")
+                partner.short_description = request.form.get("partner_short_desc", "").strip() or None
+                partner.description = request.form.get("partner_description", "").strip() or None
+                partner.price_list = request.form.get("partner_price_list", "").strip() or None
+                file = request.files.get("partner_logo")
+                if file and file.filename and allowed_file(file.filename):
+                    fname = secure_filename(f"partner_{datetime.utcnow().timestamp()}_{file.filename}")
+                    filepath = os.path.join(app.config["UPLOAD_FOLDER"], fname)
+                    file.save(filepath)
+                    partner.logo_path = f"uploads/{fname}"
+                db.session.commit()
+                flash("Partner updated.", "success")
+
+        # --- Delete Partner ---
+        elif form_type == "delete_partner":
+            pid = request.form.get("partner_id", type=int)
+            partner = db.session.get(Partner, pid)
+            if partner:
+                db.session.delete(partner)
+                db.session.commit()
+                flash("Partner deleted.", "success")
+
+        # --- Add Partner Image ---
+        elif form_type == "add_partner_image":
+            pid = request.form.get("partner_id", type=int)
+            caption = request.form.get("image_caption", "").strip()
+            file = request.files.get("partner_image")
+            if pid and file and file.filename and allowed_file(file.filename):
+                fname = secure_filename(f"partner_img_{datetime.utcnow().timestamp()}_{file.filename}")
+                filepath = os.path.join(app.config["UPLOAD_FOLDER"], fname)
+                file.save(filepath)
+                max_order = db.session.query(db.func.max(PartnerImage.sort_order)).filter(
+                    PartnerImage.partner_id == pid).scalar() or 0
+                db.session.add(PartnerImage(
+                    partner_id=pid, image_path=f"uploads/{fname}",
+                    caption=caption or None, sort_order=max_order + 1
+                ))
+                db.session.commit()
+                flash("Image added.", "success")
+
+        # --- Delete Partner Image ---
+        elif form_type == "delete_partner_image":
+            img_id = request.form.get("image_id", type=int)
+            img = db.session.get(PartnerImage, img_id)
+            if img:
+                db.session.delete(img)
+                db.session.commit()
+                flash("Image deleted.", "success")
+
         active_tab = request.form.get("active_tab", "")
         return redirect(url_for("admin", tab=active_tab))
 
@@ -945,12 +1033,15 @@ def admin():
         })
     workhour_stats.sort(key=lambda x: x["total_seconds"], reverse=True)
 
+    partners = Partner.query.order_by(Partner.sort_order).all()
+
     return render_template("admin.html", users=users, grouped_dues=grouped_dues,
                             dues_no_company=dues_no_company, ads=ads,
                             companies=companies, contracts=contracts, work_logs=work_logs,
                             ingredients=ingredients, menu_items=menu_items, discounts=discounts,
                             ranks=ranks, fraction_members=fraction_members,
-                            workhour_stats=workhour_stats, wh_period=wh_period)
+                            workhour_stats=workhour_stats, wh_period=wh_period,
+                            partners=partners)
 
 
 # ---------------------------------------------------------------------------

@@ -270,6 +270,32 @@ def define_models(db, app):
             db.UniqueConstraint("company_id", "category", name="uq_company_category_discount"),
         )
 
+    class Partner(db.Model):
+        __tablename__ = "partners"
+
+        id = db.Column(db.Integer, primary_key=True)
+        name = db.Column(db.String(256), nullable=False)
+        slug = db.Column(db.String(256), nullable=False, unique=True)
+        short_description = db.Column(db.String(512), nullable=True)
+        description = db.Column(db.Text, nullable=True)
+        price_list = db.Column(db.Text, nullable=True)
+        logo_path = db.Column(db.String(512), nullable=True)
+        sort_order = db.Column(db.Integer, nullable=False, default=0)
+        created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+        images = db.relationship("PartnerImage", backref="partner",
+                                  cascade="all, delete-orphan", lazy="dynamic",
+                                  order_by="PartnerImage.sort_order")
+
+    class PartnerImage(db.Model):
+        __tablename__ = "partner_images"
+
+        id = db.Column(db.Integer, primary_key=True)
+        partner_id = db.Column(db.Integer, db.ForeignKey("partners.id"), nullable=False)
+        image_path = db.Column(db.String(512), nullable=False)
+        caption = db.Column(db.String(256), nullable=True)
+        sort_order = db.Column(db.Integer, nullable=False, default=0)
+
     return {
         "User": User,
         "Rating": Rating,
@@ -284,4 +310,6 @@ def define_models(db, app):
         "MenuItem": MenuItem,
         "MenuItemIngredient": MenuItemIngredient,
         "CompanyDiscount": CompanyDiscount,
+        "Partner": Partner,
+        "PartnerImage": PartnerImage,
     }
