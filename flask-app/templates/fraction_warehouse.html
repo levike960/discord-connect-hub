@@ -13,11 +13,25 @@
     </div>
 
     {# ── Low Stock Alerts ── #}
-    {% set low_ingredients = ingredients | selectattr('stock', 'lt', 5) | list %}
-    {% set zero_ingredients = ingredients | selectattr('stock', 'le', 0) | list %}
-    {% set low_products = menu_items | selectattr('stock', 'lt', 5) | list %}
-    {% set zero_products = menu_items | selectattr('stock', 'le', 0) | list %}
-    {% set total_alerts = (low_ingredients | length) + (low_products | length) %}
+    {% set low_ingredients = [] %}
+    {% set zero_ingredients = [] %}
+    {% set low_products = [] %}
+    {% set zero_products = [] %}
+    {% for ing in ingredients %}
+      {% if ing.stock <= 0 %}
+        {% set _ = zero_ingredients.append(ing) %}
+      {% elif ing.stock < ing.min_stock %}
+        {% set _ = low_ingredients.append(ing) %}
+      {% endif %}
+    {% endfor %}
+    {% for mi in menu_items %}
+      {% if mi.stock <= 0 %}
+        {% set _ = zero_products.append(mi) %}
+      {% elif mi.stock < mi.min_stock %}
+        {% set _ = low_products.append(mi) %}
+      {% endif %}
+    {% endfor %}
+    {% set total_alerts = (low_ingredients | length) + (zero_ingredients | length) + (low_products | length) + (zero_products | length) %}
 
     {% if total_alerts > 0 %}
     <div class="card border-warning mb-4" style="border-left: 4px solid var(--csp-gold) !important;">
@@ -41,16 +55,14 @@
         </div>
         {% endif %}
 
-        {% set warn_ingredients = low_ingredients | reject('in', zero_ingredients) | list %}
-        {% set warn_products = low_products | reject('in', zero_products) | list %}
-        {% if warn_ingredients or warn_products %}
+        {% if low_ingredients or low_products %}
         <div class="alert alert-warning py-2 px-3 mb-0" style="font-size:0.85rem;">
           <i class="bi bi-exclamation-circle-fill me-1"></i> <strong>Alacsony:</strong>
-          {% for ing in warn_ingredients %}
-            <span class="badge bg-warning text-dark me-1">{{ ing.name }}: {{ "%.1f"|format(ing.stock) }} {{ ing.unit }}</span>
+          {% for ing in low_ingredients %}
+            <span class="badge bg-warning text-dark me-1">{{ ing.name }}: {{ "%.1f"|format(ing.stock) }}/{{ "%.1f"|format(ing.min_stock) }} {{ ing.unit }}</span>
           {% endfor %}
-          {% for mi in warn_products %}
-            <span class="badge bg-warning text-dark me-1">{{ mi.name }}: {{ "%.0f"|format(mi.stock) }} db</span>
+          {% for mi in low_products %}
+            <span class="badge bg-warning text-dark me-1">{{ mi.name }}: {{ "%.0f"|format(mi.stock) }}/{{ "%.0f"|format(mi.min_stock) }} db</span>
           {% endfor %}
         </div>
         {% endif %}
@@ -100,7 +112,7 @@
                 <td><span class="badge bg-secondary">{{ ing.unit }}</span></td>
                 <td>{{ "%.0f"|format(ing.price_per_unit) }} Ft</td>
                 <td>
-                  <span class="fw-bold {% if ing.stock <= 0 %}text-danger{% elif ing.stock < 5 %}text-warning{% else %}text-success{% endif %}">
+                  <span class="fw-bold {% if ing.stock <= 0 %}text-danger{% elif ing.stock < ing.min_stock %}text-warning{% else %}text-success{% endif %}">>
                     {{ "%.1f"|format(ing.stock) }} {{ ing.unit }}
                   </span>
                 </td>
@@ -169,7 +181,7 @@
                 </td>
                 <td>{{ "%.0f"|format(mi.price) }} Ft</td>
                 <td>
-                  <span class="fw-bold {% if mi.stock <= 0 %}text-danger{% elif mi.stock < 5 %}text-warning{% else %}text-success{% endif %}">
+                  <span class="fw-bold {% if mi.stock <= 0 %}text-danger{% elif mi.stock < mi.min_stock %}text-warning{% else %}text-success{% endif %}">>
                     {{ "%.0f"|format(mi.stock) }} db
                   </span>
                 </td>

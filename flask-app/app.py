@@ -807,6 +807,23 @@ def admin():
                 except ValueError:
                     flash("Invalid datetime format.", "danger")
 
+        # --- Update Min Stock ---
+        elif form_type == "update_min_stock":
+            item_type = request.form.get("item_type", "")
+            item_id = request.form.get("item_id", type=int)
+            min_stock = request.form.get("min_stock", type=float)
+            if item_id and min_stock is not None:
+                if item_type == "ingredient":
+                    item = db.session.get(Ingredient, item_id)
+                elif item_type == "menu_item":
+                    item = db.session.get(MenuItem, item_id)
+                else:
+                    item = None
+                if item:
+                    item.min_stock = max(0, min_stock)
+                    db.session.commit()
+                    flash(f"Min. készlet frissítve: {item.name} → {item.min_stock}", "success")
+
         # --- Add Ingredient ---
         elif form_type == "add_ingredient":
             name = request.form.get("ing_name", "").strip()
