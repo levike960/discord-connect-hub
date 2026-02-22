@@ -12,6 +12,52 @@
       </a>
     </div>
 
+    {# ── Low Stock Alerts ── #}
+    {% set low_ingredients = ingredients | selectattr('stock', 'lt', 5) | list %}
+    {% set zero_ingredients = ingredients | selectattr('stock', 'le', 0) | list %}
+    {% set low_products = menu_items | selectattr('stock', 'lt', 5) | list %}
+    {% set zero_products = menu_items | selectattr('stock', 'le', 0) | list %}
+    {% set total_alerts = (low_ingredients | length) + (low_products | length) %}
+
+    {% if total_alerts > 0 %}
+    <div class="card border-warning mb-4" style="border-left: 4px solid var(--csp-gold) !important;">
+      <div class="card-body py-3">
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <i class="bi bi-exclamation-triangle-fill text-warning fs-5"></i>
+          <h5 class="mb-0">Alacsony készlet figyelmeztetés
+            <span class="badge bg-warning text-dark ms-1">{{ total_alerts }}</span>
+          </h5>
+        </div>
+
+        {% if zero_ingredients or zero_products %}
+        <div class="alert alert-danger py-2 px-3 mb-2" style="font-size:0.85rem;">
+          <i class="bi bi-x-circle-fill me-1"></i> <strong>Elfogyott:</strong>
+          {% for ing in zero_ingredients %}
+            <span class="badge bg-danger me-1">{{ ing.name }} ({{ ing.unit }})</span>
+          {% endfor %}
+          {% for mi in zero_products %}
+            <span class="badge bg-danger me-1">{{ mi.name }}</span>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        {% set warn_ingredients = low_ingredients | reject('in', zero_ingredients) | list %}
+        {% set warn_products = low_products | reject('in', zero_products) | list %}
+        {% if warn_ingredients or warn_products %}
+        <div class="alert alert-warning py-2 px-3 mb-0" style="font-size:0.85rem;">
+          <i class="bi bi-exclamation-circle-fill me-1"></i> <strong>Alacsony:</strong>
+          {% for ing in warn_ingredients %}
+            <span class="badge bg-warning text-dark me-1">{{ ing.name }}: {{ "%.1f"|format(ing.stock) }} {{ ing.unit }}</span>
+          {% endfor %}
+          {% for mi in warn_products %}
+            <span class="badge bg-warning text-dark me-1">{{ mi.name }}: {{ "%.0f"|format(mi.stock) }} db</span>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
     {# ── Tab navigation ── #}
     <ul class="nav nav-tabs mb-4" id="warehouseTabs" role="tablist">
       <li class="nav-item">
