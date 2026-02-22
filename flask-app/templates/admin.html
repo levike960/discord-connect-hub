@@ -540,14 +540,10 @@
     <div class="d-flex flex-wrap align-items-center justify-content-between mb-4">
       <h4 class="mb-0"><i class="bi bi-clock-history text-primary"></i> Munkaidő áttekintés</h4>
       <div class="btn-group" role="group">
-        <a href="?wh_period=day#tab-worklogs" class="btn btn-sm btn-{{ 'primary' if wh_period == 'day' else 'outline-primary' }}"
-           onclick="activateWorklogsTab()">Nap</a>
-        <a href="?wh_period=week#tab-worklogs" class="btn btn-sm btn-{{ 'primary' if wh_period == 'week' else 'outline-primary' }}"
-           onclick="activateWorklogsTab()">Hét</a>
-        <a href="?wh_period=month#tab-worklogs" class="btn btn-sm btn-{{ 'primary' if wh_period == 'month' else 'outline-primary' }}"
-           onclick="activateWorklogsTab()">Hónap</a>
-        <a href="?wh_period=year#tab-worklogs" class="btn btn-sm btn-{{ 'primary' if wh_period == 'year' else 'outline-primary' }}"
-           onclick="activateWorklogsTab()">Év</a>
+        <a href="?wh_period=day&tab=%23tab-worklogs" class="btn btn-sm btn-{{ 'primary' if wh_period == 'day' else 'outline-primary' }}">Nap</a>
+        <a href="?wh_period=week&tab=%23tab-worklogs" class="btn btn-sm btn-{{ 'primary' if wh_period == 'week' else 'outline-primary' }}">Hét</a>
+        <a href="?wh_period=month&tab=%23tab-worklogs" class="btn btn-sm btn-{{ 'primary' if wh_period == 'month' else 'outline-primary' }}">Hónap</a>
+        <a href="?wh_period=year&tab=%23tab-worklogs" class="btn btn-sm btn-{{ 'primary' if wh_period == 'year' else 'outline-primary' }}">Év</a>
       </div>
     </div>
 
@@ -697,9 +693,7 @@
       });
     });
   })();
-  function activateWorklogsTab() {
-    sessionStorage.setItem('adminActiveTab', '#tab-worklogs');
-  }
+  // activateWorklogsTab removed — tab param now handled via URL
   </script>
 
   {% include "admin_calculator.html" %}
