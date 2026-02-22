@@ -513,16 +513,43 @@
   </div>
 
   <script>
-  // Auto-activate worklogs tab when navigating with wh_period
   (function() {
     const params = new URLSearchParams(window.location.search);
-    if (params.has('wh_period')) {
+
+    // Restore active tab from URL param or wh_period
+    const tabParam = params.get('tab');
+    if (tabParam) {
+      const triggerEl = document.querySelector('button[data-bs-target="' + tabParam + '"]');
+      if (triggerEl) {
+        const tab = new bootstrap.Tab(triggerEl);
+        tab.show();
+      }
+    } else if (params.has('wh_period')) {
       const triggerEl = document.querySelector('button[data-bs-target="#tab-worklogs"]');
       if (triggerEl) {
         const tab = new bootstrap.Tab(triggerEl);
         tab.show();
       }
     }
+
+    // Inject active_tab hidden field into all forms before submit
+    document.querySelectorAll('#adminTabs + .tab-content form, .tab-content form').forEach(function(form) {
+      form.addEventListener('submit', function() {
+        // Find which tab is currently active
+        const activeBtn = document.querySelector('#adminTabs .nav-link.active');
+        if (activeBtn) {
+          const target = activeBtn.getAttribute('data-bs-target');
+          let input = form.querySelector('input[name="active_tab"]');
+          if (!input) {
+            input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'active_tab';
+            form.appendChild(input);
+          }
+          input.value = target;
+        }
+      });
+    });
   })();
   function activateWorklogsTab() {
     sessionStorage.setItem('adminActiveTab', '#tab-worklogs');

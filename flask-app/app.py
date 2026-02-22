@@ -875,7 +875,8 @@ def admin():
                 db.session.commit()
                 flash(f"Updated {target.display_name}.", "success")
 
-        return redirect(url_for("admin"))
+        active_tab = request.form.get("active_tab", "")
+        return redirect(url_for("admin", tab=active_tab))
 
     # --- Workhour stats period ---
     wh_period = request.args.get("wh_period", "day")
