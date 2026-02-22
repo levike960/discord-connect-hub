@@ -76,6 +76,7 @@ MenuItemIngredient = models["MenuItemIngredient"]
 CompanyDiscount = models["CompanyDiscount"]
 Partner = models["Partner"]
 PartnerImage = models["PartnerImage"]
+StockMovement = models["StockMovement"]
 
 
 @login_manager.user_loader
@@ -558,6 +559,73 @@ def fraction_delivery_wall(company_id):
 @fraction_required
 def fraction_brewery():
     return render_template("fraction_brewery.html")
+
+
+@app.route("/fraction/warehouse", methods=["GET", "POST"])
+@fraction_required
+def fraction_warehouse():
+    if request.method == "POST":
+        form_type = request.form.get("form_type")
+        item_type = request.form.get("item_type", "")  # 'ingredient' or 'menu_item'
+        item_id = request.form.get("item_id", type=int)
+        quantity = request.form.get("quantity", type=float)
+        reason = request.form.get("reason", "").strip()
+
+        if item_id and quantity and quantity != 0:
+            if form_type == "stock_add":
+                qty = abs(quantity)
+            elif form_type == "stock_remove":
+                qty = -abs(quantity)
+            else:
+                flash("Érvénytelen művelet.", "danger")
+                return redirect(url_for("fraction_warehouse"))
+
+            # Update stock on the item
+            if item_type == "ingredient":
+                item = db.session.get(Ingredient, item_id)
+            elif item_type == "menu_item":
+                item = db.session.get(MenuItem, item_id)
+            else:
+                flash("Érvénytelen típus.", "danger")
+                return redirect(url_for("fraction_warehouse"))
+
+            if item:
+                item.stock = max(0, item.stock + qty)
+                db.session.add(StockMovement(
+                    item_type=item_type, item_id=item_id,
+                    quantity=qty, reason=reason or None,
+                    user_id=current_user.id
+                ))
+                db.session.commit()
+                action_word = "hozzáadva" if qty > 0 else "elvéve"
+                flash(f"{abs(qty)} {action_word}: {item.name}", "success")
+            else:
+                flash("Tétel nem található.", "danger")
+
+        return redirect(url_for("fraction_warehouse"))
+
+    # GET
+    ingredients = Ingredient.query.order_by(Ingredient.name).all()
+    menu_items = MenuItem.query.order_by(MenuItem.category, MenuItem.name).all()
+    recent_movements = StockMovement.query.order_by(
+        StockMovement.created_at.desc()).limit(50).all()
+
+    # Resolve item names for movements
+    movement_data = []
+    for mv in recent_movements:
+        if mv.item_type == "ingredient":
+            item = db.session.get(Ingredient, mv.item_id)
+        else:
+            item = db.session.get(MenuItem, mv.item_id)
+        movement_data.append({
+            "movement": mv,
+            "item_name": item.name if item else "Törölt tétel",
+            "item_unit": item.unit if hasattr(item, 'unit') and item else "db",
+        })
+
+    return render_template("fraction_warehouse.html",
+                           ingredients=ingredients, menu_items=menu_items,
+                           movement_data=movement_data)
 
 
 @app.route("/fraction/contracts")

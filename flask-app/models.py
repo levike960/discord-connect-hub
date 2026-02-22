@@ -221,6 +221,7 @@ def define_models(db, app):
         name = db.Column(db.String(128), nullable=False, unique=True)
         unit = db.Column(db.String(32), nullable=False, default="db")
         price_per_unit = db.Column(db.Float, nullable=False, default=0.0)
+        stock = db.Column(db.Float, nullable=False, default=0.0)
         created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     class MenuItem(db.Model):
@@ -233,6 +234,7 @@ def define_models(db, app):
         production_cost = db.Column(db.Float, nullable=False, default=0.0)
         production_time_seconds = db.Column(db.Integer, nullable=False, default=0)
         image_path = db.Column(db.String(512), nullable=True)
+        stock = db.Column(db.Float, nullable=False, default=0.0)
         created_at = db.Column(db.DateTime, default=datetime.utcnow)
         created_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
 
@@ -296,6 +298,19 @@ def define_models(db, app):
         caption = db.Column(db.String(256), nullable=True)
         sort_order = db.Column(db.Integer, nullable=False, default=0)
 
+    class StockMovement(db.Model):
+        __tablename__ = "stock_movements"
+
+        id = db.Column(db.Integer, primary_key=True)
+        item_type = db.Column(db.String(32), nullable=False)  # 'ingredient' or 'menu_item'
+        item_id = db.Column(db.Integer, nullable=False)
+        quantity = db.Column(db.Float, nullable=False)  # positive=add, negative=remove
+        reason = db.Column(db.String(256), nullable=True)
+        user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+        created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+        user = db.relationship("User")
+
     return {
         "User": User,
         "Rating": Rating,
@@ -312,4 +327,5 @@ def define_models(db, app):
         "CompanyDiscount": CompanyDiscount,
         "Partner": Partner,
         "PartnerImage": PartnerImage,
+        "StockMovement": StockMovement,
     }
