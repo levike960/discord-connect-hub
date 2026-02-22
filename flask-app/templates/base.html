@@ -335,12 +335,13 @@
 <nav class="navbar navbar-expand-lg csp-navbar sticky-top">
   <div class="container">
     <a class="navbar-brand d-flex align-items-center gap-2" href="{{ url_for('visitor') }}">
-      <div class="brand-icon">
-        <i class="bi bi-hexagon-fill"></i>
-      </div>
+      <img src="{{ url_for('static', filename='uploads/logo_dark.png') }}" alt="Casa di Vino" 
+           style="width:40px;height:40px;border-radius:10px;object-fit:cover;" class="brand-logo-dark">
+      <img src="{{ url_for('static', filename='uploads/logo_light.png') }}" alt="Casa di Vino" 
+           style="width:40px;height:40px;border-radius:10px;object-fit:cover;display:none;" class="brand-logo-light">
       <div class="d-flex flex-column lh-1">
-        <span class="fw-bold" style="font-size: 1.05rem; letter-spacing: -0.03em;">CSP Reborn</span>
-        <span style="font-size: 0.65rem; color: var(--csp-text-muted); letter-spacing: 0.08em; text-transform: uppercase;">Management</span>
+        <span class="fw-bold" style="font-size: 1.05rem; letter-spacing: -0.03em;">Casa di Vino</span>
+        <span style="font-size: 0.65rem; color: var(--csp-text-muted); letter-spacing: 0.08em; text-transform: uppercase;">Borászat</span>
       </div>
     </a>
 
@@ -447,6 +448,9 @@
       html.setAttribute('data-bs-theme', theme);
       icon.className = theme === 'dark' ? 'bi bi-moon-stars-fill' : 'bi bi-sun-fill';
       localStorage.setItem('csp-theme', theme);
+      // Swap logos
+      document.querySelectorAll('.brand-logo-dark').forEach(el => el.style.display = theme === 'dark' ? '' : 'none');
+      document.querySelectorAll('.brand-logo-light').forEach(el => el.style.display = theme === 'light' ? '' : 'none');
     }
 
     if (stored) applyTheme(stored);

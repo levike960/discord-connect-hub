@@ -108,14 +108,18 @@
 
 <div class="container">
   <div class="section-header">
+    <img src="{{ url_for('static', filename='uploads/logo_dark.png') }}" alt="Casa di Vino" style="height:80px;margin-bottom:1rem;" class="brand-logo-dark">
+    <img src="{{ url_for('static', filename='uploads/logo_light.png') }}" alt="Casa di Vino" style="height:80px;margin-bottom:1rem;display:none;" class="brand-logo-light">
     <h2><i class="bi bi-cup-straw"></i> Casa di Vino — Itallapunk</h2>
-    <p>Válogatott boraink és párlataink az olasz hagyományok jegyében</p>
+    <p>Válogatott boraink, koktéljaink és ételeink az olasz hagyományok jegyében</p>
     <hr class="mx-auto" style="max-width: 120px; border-color: #722f37; border-width: 2px;">
   </div>
 
+  {# ════ BOROK ════ #}
+  <h4 class="mb-3 mt-4" style="color:#b08d57;"><i class="bi bi-cup-fill"></i> Boraink</h4>
   <div class="row g-4">
 
-    {# ── Vino di Fuoco ── #}
+    {# Vino di Fuoco #}
     <div class="col-lg-6 col-xl-4">
       <div class="card drink-card h-100">
         <div class="drink-img-wrapper">
@@ -125,10 +129,7 @@
           <span class="drink-badge badge-red">🍷 Vörösbor</span>
           <h3 class="drink-title">Vino di Fuoco</h3>
           <p class="drink-subtitle">A tüzes különlegesség</p>
-          <p class="drink-desc">
-            A Vino di Fuoco a Casa di Vino borászat különlegessége, mely nevéhez méltóan tüzes karaktert hordoz magában.
-            Érett fekete cseresznye, szilva és egy csipetnyi fahéj keveredik benne, amit finom tölgyes jegyek és bársonyos tanninok tesznek teljessé.
-          </p>
+          <p class="drink-desc">A Vino di Fuoco a Casa di Vino borászat különlegessége, mely nevéhez méltóan tüzes karaktert hordoz magában. Érett fekete cseresznye, szilva és egy csipetnyi fahéj keveredik benne, amit finom tölgyes jegyek és bársonyos tanninok tesznek teljessé.</p>
           <table class="drink-details-table">
             <tr><td>Szőlőfajták</td><td>Sangiovese, Nero d'Avola, Merlot</td></tr>
             <tr><td>Aromák</td><td>Fekete cseresznye, Szilva, Szeder, Fahéj</td></tr>
@@ -141,20 +142,17 @@
       </div>
     </div>
 
-    {# ── Luna Bianca ── #}
+    {# Luna Bianca #}
     <div class="col-lg-6 col-xl-4">
       <div class="card drink-card h-100">
         <div class="drink-img-wrapper">
-          <img src="{{ url_for('static', filename='uploads/luna_bianca.png') }}" alt="Luna Bianca">
+          <img src="{{ url_for('static', filename='uploads/luna_bianca_bottle.png') }}" alt="Luna Bianca">
         </div>
         <div class="drink-body">
           <span class="drink-badge badge-white">🥂 Fehérbor</span>
           <h3 class="drink-title">Luna Bianca</h3>
           <p class="drink-subtitle">A holdfény tisztasága</p>
-          <p class="drink-desc">
-            A Luna Bianca ragyogó fehérbor, mely a holdfény tisztaságát és az olasz vidék frissességét idézi.
-            Ízében a zöldalma, a lédús körte és fehér virágok keverednek, friss ropogós savak és ásványos lecsengés tesznek teljessé.
-          </p>
+          <p class="drink-desc">A Luna Bianca ragyogó fehérbor, mely a holdfény tisztaságát és az olasz vidék frissességét idézi. Ízében a zöldalma, a lédús körte és fehér virágok keverednek, friss ropogós savak és ásványos lecsengés tesznek teljessé.</p>
           <table class="drink-details-table">
             <tr><td>Szőlőfajták</td><td>Pinot Grigio, Vermentino, Trebbiano</td></tr>
             <tr><td>Aromák</td><td>Zöldalma, Körte, Citrusok, Jázmin</td></tr>
@@ -167,20 +165,17 @@
       </div>
     </div>
 
-    {# ── Fiore Rosa ── #}
+    {# Fiore Rosa #}
     <div class="col-lg-6 col-xl-4">
       <div class="card drink-card h-100">
         <div class="drink-img-wrapper">
-          <img src="{{ url_for('static', filename='uploads/fiore_rosa.png') }}" alt="Fiore Rosa">
+          <img src="{{ url_for('static', filename='uploads/fiore_rosa_bottle.png') }}" alt="Fiore Rosa">
         </div>
         <div class="drink-body">
           <span class="drink-badge badge-rose">🌸 Rosé bor</span>
           <h3 class="drink-title">Fiore Rosa</h3>
           <p class="drink-subtitle">Elegancia rózsaszínben</p>
-          <p class="drink-desc">
-            Fiore Rosa elegáns és kifinomult rosé bor, finom halvány rózsaszín árnyalatával és gyümölcsös illatával.
-            Az eper, málna és piros ribizli friss aromái találkoznak benne. Hűtött erjesztés acéltartályokban a frissesség megőrzése érdekében.
-          </p>
+          <p class="drink-desc">Fiore Rosa elegáns és kifinomult rosé bor, finom halvány rózsaszín árnyalatával és gyümölcsös illatával. Az eper, málna és piros ribizli friss aromái találkoznak benne.</p>
           <table class="drink-details-table">
             <tr><td>Szőlőfajták</td><td>Pinot Noir, Sangiovese</td></tr>
             <tr><td>Aromák</td><td>Eper, Málna, Piros ribizli, Rózsaszirom</td></tr>
@@ -193,20 +188,17 @@
       </div>
     </div>
 
-    {# ── Serafina Brut ── #}
+    {# Serafina Brut #}
     <div class="col-lg-6 col-xl-4">
       <div class="card drink-card h-100">
         <div class="drink-img-wrapper">
-          <img src="{{ url_for('static', filename='uploads/serafina_brut.png') }}" alt="Serafina Brut">
+          <img src="{{ url_for('static', filename='uploads/serafina_brut_bottle.png') }}" alt="Serafina Brut">
         </div>
         <div class="drink-body">
           <span class="drink-badge badge-gold">🍾 Pezsgő</span>
           <h3 class="drink-title">Serafina Brut</h3>
           <p class="drink-subtitle">A különleges alkalmak kísérője</p>
-          <p class="drink-desc">
-            Serafina Brut elegáns pezsgő, hagyományos módszerrel készítve. Világos arany színe, apró kitartó buborékai,
-            fehér virágok és zöldalma illatával. A citrusok frissessége érett gyümölcsök lágyságával találkozik, krémes textúrával.
-          </p>
+          <p class="drink-desc">Serafina Brut elegáns pezsgő, hagyományos módszerrel készítve. Világos arany színe, apró kitartó buborékai, fehér virágok és zöldalma illatával.</p>
           <table class="drink-details-table">
             <tr><td>Szőlőfajták</td><td>Glera, Chardonnay, Pinot Noir</td></tr>
             <tr><td>Aromák</td><td>Zöldalma, Citrusok, Őszibarack, Körte</td></tr>
@@ -219,33 +211,29 @@
       </div>
     </div>
 
-    {# ── Grappa ── #}
+    {# Grappa #}
     <div class="col-lg-6 col-xl-4">
       <div class="card drink-card h-100">
         <div class="drink-img-wrapper">
-          <img src="{{ url_for('static', filename='uploads/grappa.png') }}" alt="Grappa">
+          <img src="{{ url_for('static', filename='uploads/grappa_glass.png') }}" alt="Grappa">
         </div>
         <div class="drink-body">
           <span class="drink-badge badge-amber">🥃 Törkölypárlat</span>
           <h3 class="drink-title">Grappa</h3>
           <p class="drink-subtitle">Tradicionális olasz párlat</p>
-          <p class="drink-desc">
-            Tradicionális olasz törkölypárlat, a borkészítés melléktermékéből, a szőlő héjából, magjából és kocsányából főzve.
-            Erőteljes karaktere miatt lassan, kortyonként érdemes fogyasztani, hogy kibontakozzon aromavilága. Digestivóként tálaljuk.
-          </p>
+          <p class="drink-desc">Tradicionális olasz törkölypárlat, a borkészítés melléktermékéből főzve. Erőteljes karaktere miatt lassan, kortyonként érdemes fogyasztani. Digestivóként tálaljuk.</p>
           <table class="drink-details-table">
             <tr><td>Alapanyag</td><td>Szőlőtörköly (héj, mag, kocsány)</td></tr>
             <tr><td>Aromák</td><td>Friss szőlős, fűszeres, vaníliás jegyek</td></tr>
             <tr><td>Érlelés</td><td>Réz üstökben, majd acéltartályban</td></tr>
             <tr><td>Alkohol</td><td>~40%</td></tr>
-            <tr><td>Cukor</td><td>Száraz</td></tr>
             <tr><td>Hőmérséklet</td><td>~20 °C (szobahőmérséklet)</td></tr>
           </table>
         </div>
       </div>
     </div>
 
-    {# ── Limoncello ── #}
+    {# Limoncello #}
     <div class="col-lg-6 col-xl-4">
       <div class="card drink-card h-100">
         <div class="drink-img-wrapper">
@@ -255,23 +243,158 @@
           <span class="drink-badge badge-yellow">🍋 Citromlikőr</span>
           <h3 class="drink-title">Limoncello</h3>
           <p class="drink-subtitle">Az Amalfi-part íze</p>
-          <p class="drink-desc">
-            Hagyományos olasz citromlikőr, válogatott citromhéjból, tiszta szesz és cukor felhasználásával.
-            Élénk sárga színe és friss, édes-savanykás íze a napsütötte Amalfi-part hangulatát idézi.
-            Behűtve tálalva digestivóként különösen finom.
-          </p>
+          <p class="drink-desc">Hagyományos olasz citromlikőr, válogatott citromhéjból. Élénk sárga színe és friss, édes-savanykás íze a napsütötte Amalfi-part hangulatát idézi.</p>
           <table class="drink-details-table">
             <tr><td>Összetevők</td><td>Citromhéj, tisztaszesz, víz, cukor</td></tr>
             <tr><td>Aroma és íz</td><td>Intenzív citromos, édes-savanykás</td></tr>
-            <tr><td>Textúra</td><td>Selymes, üde</td></tr>
             <tr><td>Alkohol</td><td>28–32%</td></tr>
-            <tr><td>Cukor</td><td>Édes, likőr jellegű</td></tr>
             <tr><td>Hőmérséklet</td><td>Jól behűtve tálaljuk</td></tr>
           </table>
         </div>
       </div>
     </div>
+  </div>
 
+  {# ════ ALKOHOLMENTES ════ #}
+  <h4 class="mb-3 mt-5" style="color:#38bdf8;"><i class="bi bi-cup-straw"></i> Alkoholmentes italaink</h4>
+  <div class="row g-4">
+
+    {# Mosto Fiore #}
+    <div class="col-lg-6 col-xl-4">
+      <div class="card drink-card h-100">
+        <div class="drink-img-wrapper">
+          <img src="{{ url_for('static', filename='uploads/mosto_fiore.png') }}" alt="Mosto Fiore">
+        </div>
+        <div class="drink-body">
+          <span class="drink-badge" style="background:rgba(120,180,80,0.2);color:#90d050;">🍇 Alkoholmentes</span>
+          <h3 class="drink-title">Mosto Fiore</h3>
+          <p class="drink-subtitle">Dolce analcolico — Moscato & Trebbiano</p>
+          <p class="drink-desc">Alkoholmentes szőlőital Moscato és Trebbiano szőlőből. Édes, gyümölcsös íze tökéletes aperitifként vagy desszert mellé.</p>
+          <table class="drink-details-table">
+            <tr><td>Szőlőfajták</td><td>Moscato, Trebbiano</td></tr>
+            <tr><td>Íz</td><td>Édes, gyümölcsös, virágos</td></tr>
+            <tr><td>Alkohol</td><td>0%</td></tr>
+            <tr><td>Hőmérséklet</td><td>6–8 °C</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    {# Bambino Rosatto #}
+    <div class="col-lg-6 col-xl-4">
+      <div class="card drink-card h-100">
+        <div class="drink-img-wrapper">
+          <img src="{{ url_for('static', filename='uploads/bambino_rosatto.png') }}" alt="Bambino Rosatto">
+        </div>
+        <div class="drink-body">
+          <span class="drink-badge" style="background:rgba(219,112,147,0.2);color:#e8a0b8;">🎉 Gyerek pezsgő</span>
+          <h3 class="drink-title">Bambino Rosatto</h3>
+          <p class="drink-subtitle">Szőlős gyerek pezsgő — 0% alkohol</p>
+          <p class="drink-desc">Vidám, szőlős ízű gyerekpezsgő, tökéletes ünnepekre és családi alkalmakra. Alkoholmentes, buborékos, szórakoztató!</p>
+          <table class="drink-details-table">
+            <tr><td>Íz</td><td>Szőlős, édes, pezsgős</td></tr>
+            <tr><td>Alkohol</td><td>0%</td></tr>
+            <tr><td>Ajánlás</td><td>Gyerekeknek és családoknak</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    {# Limonádé #}
+    <div class="col-lg-6 col-xl-4">
+      <div class="card drink-card h-100">
+        <div class="drink-img-wrapper">
+          <img src="{{ url_for('static', filename='uploads/limonada.png') }}" alt="Házi limonádé">
+        </div>
+        <div class="drink-body">
+          <span class="drink-badge" style="background:rgba(120,200,80,0.2);color:#a0d860;">🍃 Frissítő</span>
+          <h3 class="drink-title">Házi Limonádé</h3>
+          <p class="drink-subtitle">Mentás-citromos frissesség</p>
+          <p class="drink-desc">Frissen facsart citromlével és friss mentával készült házi limonádé, jégen tálalva. Nyári napok tökéletes kísérője.</p>
+          <table class="drink-details-table">
+            <tr><td>Összetevők</td><td>Citromlé, menta, cukor, jég</td></tr>
+            <tr><td>Alkohol</td><td>0%</td></tr>
+            <tr><td>Hőmérséklet</td><td>Jégen tálalva</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ════ KOKTÉLOK ════ #}
+  <h4 class="mb-3 mt-5" style="color:#fb923c;"><i class="bi bi-tropical-drink"></i> Koktéljaink</h4>
+  <div class="row g-4">
+
+    {# Spritz #}
+    <div class="col-lg-6 col-xl-4">
+      <div class="card drink-card h-100">
+        <div class="drink-img-wrapper">
+          <img src="{{ url_for('static', filename='uploads/spritz.png') }}" alt="Aperol Spritz">
+        </div>
+        <div class="drink-body">
+          <span class="drink-badge" style="background:rgba(251,146,60,0.25);color:#fb923c;">🍹 Koktél</span>
+          <h3 class="drink-title">Aperol Spritz</h3>
+          <p class="drink-subtitle">Az olasz nyár íze</p>
+          <p class="drink-desc">Klasszikus olasz aperitif koktél — Aperol, prosecco és szódavíz narancsszelettel. Az olasz életérzés egy pohárban.</p>
+          <table class="drink-details-table">
+            <tr><td>Összetevők</td><td>Aperol, Prosecco, Szódavíz</td></tr>
+            <tr><td>Díszítés</td><td>Narancsszelet, rozmaring</td></tr>
+            <tr><td>Alkohol</td><td>~11%</td></tr>
+            <tr><td>Hőmérséklet</td><td>Jégen tálalva</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ════ ÉTELEK ════ #}
+  <h4 class="mb-3 mt-5" style="color:#34d399;"><i class="bi bi-egg-fried"></i> Ételeink</h4>
+  <div class="row g-4">
+
+    {# Sajttál #}
+    <div class="col-lg-6 col-xl-4">
+      <div class="card drink-card h-100">
+        <div class="drink-img-wrapper">
+          <img src="{{ url_for('static', filename='uploads/sajt_tal.png') }}" alt="Olasz sajttál">
+        </div>
+        <div class="drink-body">
+          <span class="drink-badge" style="background:rgba(200,180,100,0.2);color:#d4c070;">🧀 Előétel</span>
+          <h3 class="drink-title">Olasz Sajttál</h3>
+          <p class="drink-subtitle">Válogatott olasz sajtok</p>
+          <p class="drink-desc">Pecorino, Parmigiano, Gorgonzola és friss sajtkülönlegességek dióval, szőlővel és házi lekvárral.</p>
+        </div>
+      </div>
+    </div>
+
+    {# Gnocchi #}
+    <div class="col-lg-6 col-xl-4">
+      <div class="card drink-card h-100">
+        <div class="drink-img-wrapper">
+          <img src="{{ url_for('static', filename='uploads/gnocchi.png') }}" alt="Gnocchi al Pomodoro">
+        </div>
+        <div class="drink-body">
+          <span class="drink-badge" style="background:rgba(220,80,60,0.2);color:#e06050;">🍝 Főétel</span>
+          <h3 class="drink-title">Gnocchi al Pomodoro</h3>
+          <p class="drink-subtitle">Házi gnocchi paradicsomszószban</p>
+          <p class="drink-desc">Kézzel formázott burgonyagnocchi házi paradicsomszószban, friss bazsalikommal és parmezánnal.</p>
+        </div>
+      </div>
+    </div>
+
+    {# Panna Cotta #}
+    <div class="col-lg-6 col-xl-4">
+      <div class="card drink-card h-100">
+        <div class="drink-img-wrapper">
+          <img src="{{ url_for('static', filename='uploads/panna_cotta.png') }}" alt="Panna Cotta">
+        </div>
+        <div class="drink-body">
+          <span class="drink-badge" style="background:rgba(180,80,120,0.2);color:#d090a0;">🍮 Desszert</span>
+          <h3 class="drink-title">Szőlős Panna Cotta</h3>
+          <p class="drink-subtitle">Olasz desszert szőlő szósszal</p>
+          <p class="drink-desc">Krémes vaníliás panna cotta házi szőlő borszósszal és friss szőlőszemekkel. Könnyű és elegáns lezárás.</p>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="text-center mt-5">
