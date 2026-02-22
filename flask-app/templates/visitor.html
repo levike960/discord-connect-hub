@@ -203,35 +203,32 @@
           <h2 class="card-title mb-4"><i class="bi bi-people-fill"></i> Partnereink</h2>
           <hr>
           <div class="row justify-content-center align-items-center g-4 mt-3">
-
-            {# Partner 1 — UwU #}
+            {% for partner in partners %}
             <div class="col-md-5">
-              <div class="card border-0 shadow-sm h-100">
-                <div class="card-body text-center py-4">
-                  {# Replace src with actual logo path #}
-                  <div class="mb-3" style="height: 80px; display: flex; align-items: center; justify-content: center;">
-                    <span class="fs-1 fw-bold text-primary">UwU</span>
+              <a href="{{ url_for('partner_detail', slug=partner.slug) }}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100">
+                  <div class="card-body text-center py-4">
+                    <div class="mb-3" style="height: 80px; display: flex; align-items: center; justify-content: center;">
+                      {% if partner.logo_path %}
+                        <img src="{{ url_for('static', filename=partner.logo_path) }}" alt="{{ partner.name }}"
+                             style="max-height:80px;max-width:100%;object-fit:contain;">
+                      {% else %}
+                        <span class="fs-1 fw-bold text-primary">{{ partner.name[:3] }}</span>
+                      {% endif %}
+                    </div>
+                    <h5>{{ partner.name }}</h5>
+                    {% if partner.short_description %}
+                      <p class="text-muted fst-italic">{{ partner.short_description }}</p>
+                    {% endif %}
                   </div>
-                  <h5>UwU</h5>
-                  <p class="text-muted fst-italic">"Megbízható partnerünk, akikkel öröm együtt dolgozni."</p>
                 </div>
-              </div>
+              </a>
             </div>
+            {% endfor %}
 
-            {# Partner 2 — La Fuente Blanca #}
-            <div class="col-md-5">
-              <div class="card border-0 shadow-sm h-100">
-                <div class="card-body text-center py-4">
-                  {# Replace src with actual logo path #}
-                  <div class="mb-3" style="height: 80px; display: flex; align-items: center; justify-content: center;">
-                    <span class="fs-1 fw-bold text-primary">LFB</span>
-                  </div>
-                  <h5>La Fuente Blanca</h5>
-                  <p class="text-muted fst-italic">"Kiváló minőség és professzionális együttműködés."</p>
-                </div>
-              </div>
-            </div>
-
+            {% if not partners %}
+            <p class="text-muted">Jelenleg nincsenek partnerek.</p>
+            {% endif %}
           </div>
         </div>
       </div>
