@@ -492,10 +492,67 @@ def fraction_calculator_add():
     return redirect(url_for("fraction_calculator"))
 
 
+@app.route("/fraction/calculator/confirm", methods=["POST"])
+@fraction_required
+def fraction_calculator_confirm():
+    """Process stock changes based on POS mode and clear cart."""
+    mode = request.form.get("mode", "")
+    cart = session.get("pos_cart", [])
+
+    if not cart:
+        flash("A kosár üres.", "warning")
+        return redirect(url_for("fraction_calculator"))
+
+    if mode in ("basic", "discount"):
+        # Deduct finished products from stock
+        for c in cart:
+            mi = db.session.get(MenuItem, c["id"])
+            if mi:
+                mi.stock = max(0, mi.stock - c["qty"])
+                db.session.add(StockMovement(
+                    item_type="menu_item", item_id=mi.id,
+                    quantity=-c["qty"],
+                    reason=f"POS eladás ({mode})",
+                    user_id=current_user.id
+                ))
+        db.session.commit()
+        session["pos_cart"] = []
+        flash("Eladás rögzítve, raktár frissítve.", "success")
+
+    elif mode == "production":
+        # Add finished products to stock, deduct ingredients
+        for c in cart:
+            mi = db.session.get(MenuItem, c["id"])
+            if mi:
+                mi.stock += c["qty"]
+                db.session.add(StockMovement(
+                    item_type="menu_item", item_id=mi.id,
+                    quantity=c["qty"],
+                    reason="POS gyártás",
+                    user_id=current_user.id
+                ))
+                # Deduct ingredients based on recipe
+                for ri in mi.recipe_items.all():
+                    ing = ri.ingredient
+                    used = ri.quantity * c["qty"]
+                    ing.stock = max(0, ing.stock - used)
+                    db.session.add(StockMovement(
+                        item_type="ingredient", item_id=ing.id,
+                        quantity=-used,
+                        reason=f"POS gyártás: {mi.name}",
+                        user_id=current_user.id
+                    ))
+        db.session.commit()
+        session["pos_cart"] = []
+        flash("Gyártás rögzítve, raktár frissítve.", "success")
+
+    return redirect(url_for("fraction_calculator"))
+
+
 @app.route("/fraction/calculator/record_due", methods=["POST"])
 @fraction_required
 def fraction_calculator_record_due():
-    """Record discounted total as a Due for the selected company."""
+    """Record discounted total as a Due for the selected company + deduct stock."""
     company_id = request.form.get("company_id", type=int)
     discount_total = request.form.get("discount_total", type=float)
     if company_id and discount_total is not None:
@@ -509,9 +566,21 @@ def fraction_calculator_record_due():
                 created_by=current_user.id,
             )
             db.session.add(due)
+            # Also deduct products from stock
+            cart = session.get("pos_cart", [])
+            for c in cart:
+                mi = db.session.get(MenuItem, c["id"])
+                if mi:
+                    mi.stock = max(0, mi.stock - c["qty"])
+                    db.session.add(StockMovement(
+                        item_type="menu_item", item_id=mi.id,
+                        quantity=-c["qty"],
+                        reason=f"POS felírás: {company.name}",
+                        user_id=current_user.id
+                    ))
             db.session.commit()
             session["pos_cart"] = []
-            flash(f"Tartozás felírva: {company.name} — {'%.0f' % discount_total} Ft", "success")
+            flash(f"Tartozás felírva + raktár frissítve: {company.name} — {'%.0f' % discount_total} Ft", "success")
         else:
             flash("Cég nem található.", "danger")
     return redirect(url_for("fraction_calculator"))

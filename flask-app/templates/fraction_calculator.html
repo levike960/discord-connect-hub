@@ -392,6 +392,11 @@
     </div>
     <div class="d-flex gap-2 mt-3 no-print">
       <button onclick="window.print()" class="btn btn-outline-primary"><i class="bi bi-printer"></i> Nyomtatás</button>
+      <form method="POST" action="{{ url_for('fraction_calculator_confirm') }}" class="d-inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="mode" value="discount">
+        <button type="submit" class="btn btn-success"><i class="bi bi-check-circle"></i> OK — Lezárás</button>
+      </form>
       <form method="POST" action="{{ url_for('fraction_calculator_record_due') }}" class="d-inline">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="company_id" value="{{ selected_company.id }}">
@@ -423,7 +428,14 @@
         <div class="pos-cart-total">Összesen: {{ "%.0f"|format(cart_total) }} Ft</div>
       </div>
     </div>
-    <button onclick="window.print()" class="btn btn-outline-primary mt-3 no-print"><i class="bi bi-printer"></i> Nyomtatás</button>
+    <div class="d-flex gap-2 mt-3 no-print">
+      <button onclick="window.print()" class="btn btn-outline-primary"><i class="bi bi-printer"></i> Nyomtatás</button>
+      <form method="POST" action="{{ url_for('fraction_calculator_confirm') }}" class="d-inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="mode" value="basic">
+        <button type="submit" class="btn btn-success"><i class="bi bi-check-circle"></i> OK — Lezárás</button>
+      </form>
+    </div>
 
   {% elif mode == 'production' %}
     <h5 class="mb-3"><i class="bi bi-gear"></i> Gyártás kalkuláció</h5>
@@ -464,7 +476,14 @@
         </div>
       </div>
     </div>
-    <button onclick="window.print()" class="btn btn-outline-primary no-print"><i class="bi bi-printer"></i> Nyomtatás</button>
+    <div class="d-flex gap-2 no-print">
+      <button onclick="window.print()" class="btn btn-outline-primary"><i class="bi bi-printer"></i> Nyomtatás</button>
+      <form method="POST" action="{{ url_for('fraction_calculator_confirm') }}" class="d-inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="mode" value="production">
+        <button type="submit" class="btn btn-success"><i class="bi bi-check-circle"></i> OK — Gyártás indítása</button>
+      </form>
+    </div>
   {% endif %}
 
   {% endif %}
