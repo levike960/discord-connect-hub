@@ -666,10 +666,14 @@
     // Initially hide tab content, show grid
     tabContent.style.display = 'none';
 
-    // Restore active tab from URL param, wh_period, or session
-    const tabParam = params.get('tab');
+    // Restore active tab from URL param, hash fragment, wh_period, or session
+    let tabParam = params.get('tab');
+    // Ensure tab param has # prefix
+    if (tabParam && !tabParam.startsWith('#')) tabParam = '#' + tabParam;
+    // Also check hash fragment (e.g. /admin#tab-partners)
+    const hashTab = window.location.hash && window.location.hash.startsWith('#tab-') ? window.location.hash : null;
     const savedTab = sessionStorage.getItem('adminActiveTab');
-    const restoreTarget = tabParam || (params.has('wh_period') ? '#tab-worklogs' : null) || savedTab;
+    const restoreTarget = tabParam || hashTab || (params.has('wh_period') ? '#tab-worklogs' : null) || savedTab;
 
     if (restoreTarget) {
       openAdminTab(restoreTarget);
@@ -688,7 +692,8 @@
             input.name = 'active_tab';
             form.appendChild(input);
           }
-          input.value = target;
+          // Strip # so it doesn't become a URL fragment in redirect
+          input.value = target.replace('#', '');
         }
       });
     });
