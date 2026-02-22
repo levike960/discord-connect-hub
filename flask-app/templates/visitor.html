@@ -3,31 +3,15 @@
 
 {% block content %}
 
-{# ── Information Section ── #}
+{# ── Étlap Section ── #}
 <section class="mb-5">
   <div class="row justify-content-center">
     <div class="col-lg-10">
       <div class="card shadow-sm">
-        <div class="card-body">
-          <h2 class="card-title mb-4"><i class="bi bi-info-circle"></i> Információ</h2>
-
-          {# Prices #}
-          <div class="mb-4">
-            <h4>Árlista &amp; Kedvezmények</h4>
-            <p>Tekintse meg aktuális árlistánkat és kedvezményeinket:</p>
-            <a href="INSERT_PATH_HERE" target="_blank" rel="noopener noreferrer"
-               class="btn btn-outline-primary">
-              <i class="bi bi-image"></i> Árlista megtekintése (PNG)
-            </a>
-          </div>
-
-          <hr>
-
-          {# Contact #}
-          <div class="mb-3">
-            <h4>Kapcsolat</h4>
-            <p><i class="bi bi-envelope"></i> Email: <a href="mailto:casadivino@cspreborn.com">casadivino@cspreborn.com</a></p>
-          </div>
+        <div class="card-body text-center">
+          <h2 class="card-title mb-4"><i class="bi bi-journal-richtext"></i> Étlapunk</h2>
+          <img src="{{ url_for('static', filename='uploads/eteleink.png') }}" alt="Casa di Vino Étlap"
+               class="img-fluid rounded shadow" style="max-width:100%;cursor:pointer;" data-lightbox>
         </div>
       </div>
     </div>
@@ -74,7 +58,7 @@
                 <div class="card border-0 bg-light h-100 text-center p-3">
                   <img src="{{ url_for('static', filename='uploads/vino_di_fuoco.png') }}" alt="Vino di Fuoco" data-lightbox style="height:80px;object-fit:contain;margin:0 auto;cursor:pointer;">
                   <h6 class="mt-2">Vino di Fuoco</h6>
-                  <small class="text-muted">Tüzes vörösbor — fűszeres, intenzív ízvilág a római dombok szőlőjéből</small>
+                  <small class="text-muted">Fekete cseresznye, szilva, szeder, fahéj, szerecsendió</small>
                 </div>
               </div>
               <div class="col-md-4 col-sm-6">
@@ -271,6 +255,22 @@
             {% if not partners %}
             <p class="text-muted">Jelenleg nincsenek partnerek.</p>
             {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# ── Elérhetőségek ── #}
+<section class="mb-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-10">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h2 class="card-title mb-4"><i class="bi bi-telephone-fill"></i> Elérhetőségek</h2>
+          <div class="mb-3">
+            <p><i class="bi bi-envelope"></i> Email: <a href="mailto:casadivino@cspreborn.com">casadivino@cspreborn.com</a></p>
           </div>
         </div>
       </div>
