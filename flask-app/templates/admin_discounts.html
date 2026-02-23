@@ -1,0 +1,65 @@
+{% extends "admin_base.html" %}
+{% set section_title = "Kedvezmények" %}
+{% set section_icon = "bi bi-percent" %}
+
+{% block admin_content %}
+<h4 class="mb-3">Cég kedvezmények</h4>
+<form method="POST" class="row g-3 mb-4">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="form_type" value="add_discount">
+  <div class="col-md-3">
+    <select name="disc_company_id" class="form-select" required>
+      <option value="">Cég...</option>
+      {% for c in companies %}
+      <option value="{{ c.id }}">{{ c.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-3">
+    <select name="disc_category" class="form-select" required>
+      <option value="alc">Alkoholos ital</option>
+      <option value="non_alc">Alkoholmentes ital</option>
+      <option value="food">Étel</option>
+    </select>
+  </div>
+  <div class="col-md-3">
+    <input type="number" name="disc_percent" class="form-control" placeholder="Kedvezmény %" step="1" min="0" max="100" required>
+  </div>
+  <div class="col-md-3">
+    <button type="submit" class="btn btn-success w-100">Hozzáadás</button>
+  </div>
+</form>
+
+{% if discounts %}
+<div class="table-responsive">
+  <table class="table table-striped">
+    <thead class="table-dark">
+      <tr><th>Cég</th><th>Kategória</th><th>Kedvezmény</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for d in discounts %}
+      <tr>
+        <td>{{ d.company.name }}</td>
+        <td>
+          {% if d.category == 'alc' %}Alkoholos
+          {% elif d.category == 'non_alc' %}Alkoholmentes
+          {% else %}Étel{% endif %}
+        </td>
+        <td>{{ "%.0f"|format(d.discount_percent) }}%</td>
+        <td>
+          <form method="POST" class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="form_type" value="delete_discount">
+            <input type="hidden" name="disc_id" value="{{ d.id }}">
+            <button class="btn btn-sm btn-danger">Törlés</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="text-muted">Nincsenek kedvezmények beállítva.</p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,47 @@
+{% extends "admin_base.html" %}
+{% set section_title = "Hirdetések" %}
+{% set section_icon = "bi bi-megaphone-fill" %}
+
+{% block admin_content %}
+<h4 class="mb-3">Hirdetés hozzáadása</h4>
+<form method="POST" class="mb-4">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="form_type" value="add_ad">
+  <div class="mb-3">
+    <input type="text" name="ad_title" class="form-control" placeholder="Cím" required maxlength="256">
+  </div>
+  <div class="mb-3">
+    <textarea name="ad_content" class="form-control" rows="3" placeholder="Tartalom" required></textarea>
+  </div>
+  <button type="submit" class="btn btn-success">Hozzáadás</button>
+</form>
+
+{% if ads %}
+<div class="table-responsive">
+  <table class="table table-striped">
+    <thead class="table-dark">
+      <tr><th>Cím</th><th>Tartalom</th><th>Dátum</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for ad in ads %}
+      <tr>
+        <td>{{ ad.title }}</td>
+        <td>{{ ad.content[:80] }}{% if ad.content|length > 80 %}...{% endif %}</td>
+        <td>{{ ad.created_at.strftime('%Y-%m-%d') }}</td>
+        <td>
+          <form method="POST" class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="form_type" value="delete_ad">
+            <input type="hidden" name="ad_id" value="{{ ad.id }}">
+            <button class="btn btn-sm btn-danger">Törlés</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="text-muted">Nincsenek hirdetések.</p>
+{% endif %}
+{% endblock %}

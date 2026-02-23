@@ -34,14 +34,15 @@
   }
   .admin-nav-card {
     cursor: pointer;
+    text-decoration: none !important;
     transition: transform 0.25s cubic-bezier(.4,0,.2,1), box-shadow 0.25s ease, border-color 0.25s ease;
     animation: scaleIn 0.35s ease-out backwards;
   }
   .admin-nav-card:hover {
     transform: translateY(-6px) scale(1.02);
     box-shadow: 0 12px 36px rgba(124,92,252,0.18);
-    border-color: var(--csp-accent) !important;
   }
+  .admin-nav-card:hover .card { border-color: var(--csp-accent) !important; }
   .admin-nav-card .nav-icon {
     width: 56px; height: 56px; border-radius: 14px;
     display: flex; align-items: center; justify-content: center;
@@ -64,11 +65,7 @@
   .admin-nav-card:nth-child(11) { animation-delay: 0.22s; }
   .admin-nav-card:nth-child(12) { animation-delay: 0.24s; }
   .admin-nav-card:nth-child(13) { animation-delay: 0.26s; }
-  .admin-back-btn {
-    display: none;
-    margin-bottom: 1rem;
-  }
-  .admin-back-btn.visible { display: inline-flex; }
+  .admin-nav-card:nth-child(14) { animation-delay: 0.28s; }
 </style>
 
 {# ── Hero Header ── #}
@@ -128,586 +125,41 @@
   </div>
 </div>
 
-{# ── Back Button (shown when a tab is active) ── #}
-<button class="btn btn-outline-secondary admin-back-btn" id="adminBackBtn" onclick="showAdminGrid()">
-  <i class="bi bi-arrow-left me-1"></i> Vissza a menühöz
-</button>
-
 {# ── Card Grid Navigation ── #}
-<div class="row g-3 mb-4" id="adminNavGrid">
+<div class="row g-3 mb-4">
   {% set nav_items = [
-    ('#tab-users',       'bi-people-fill',           'Felhasználók',     'Jogosultságok kezelése',   '--csp-accent',   'rgba(124,92,252,0.12)'),
-    ('#tab-ranks',       'bi-award-fill',            'Rangok',           'Rangrendszer beállítása',  '--csp-gold',     'rgba(245,166,35,0.12)'),
-    ('#tab-members',     'bi-person-lines-fill',     'Tagok',            'Fraction tagok',           '--csp-green',    'rgba(52,211,153,0.12)'),
-    ('#tab-dues',        'bi-cash-coin',             'Tartozások',       'Pénzügyi nyilvántartás',   '--csp-red',      'rgba(248,113,113,0.12)'),
-    ('#tab-ads',         'bi-megaphone-fill',        'Hirdetések',       'Közlemények kezelése',     '#38bdf8',        'rgba(56,189,248,0.12)'),
-    ('#tab-companies',   'bi-truck',                 'Cégek',            'Szállítási partnerek',     '--csp-accent',   'rgba(124,92,252,0.12)'),
-    ('#tab-contracts',   'bi-file-earmark-text-fill','Szerződések',      'Dokumentumkezelés',        '--csp-gold',     'rgba(245,166,35,0.12)'),
-    ('#tab-worklogs',    'bi-clock-history',         'Munkaórák',        'Munkaidő áttekintés',      '--csp-green',    'rgba(52,211,153,0.12)'),
-    ('#tab-ingredients', 'bi-box-seam-fill',         'Alapanyagok',      'Raktárkészlet',            '#e67e22',        'rgba(230,126,34,0.12)'),
-    ('#tab-menuitems',   'bi-cup-straw',             'Tételek / Receptek','Étlap és receptek',       '#722f37',        'rgba(114,47,55,0.12)'),
-    ('#tab-discounts',   'bi-percent',               'Kedvezmények',     'Árazás és akciók',        '--csp-accent',   'rgba(124,92,252,0.12)'),
-    ('#tab-partners',    'bi-people-fill',           'Partnerek',        'Partner nyilvántartás',    '#38bdf8',        'rgba(56,189,248,0.12)'),
-    ('#tab-reports',     'bi-bar-chart-line-fill',   'Riport',           'Statisztikák és grafikonok','--csp-green',  'rgba(52,211,153,0.12)'),
-    ('#tab-events',      'bi-calendar-event-fill',   'Események & Foglalások', 'Rendezvények kezelése', '#e74c3c', 'rgba(231,76,60,0.12)')
+    ('admin_users',       'bi-people-fill',           'Felhasználók',     'Jogosultságok kezelése',   '--csp-accent',   'rgba(124,92,252,0.12)'),
+    ('admin_ranks',       'bi-award-fill',            'Rangok',           'Rangrendszer beállítása',  '--csp-gold',     'rgba(245,166,35,0.12)'),
+    ('admin_members',     'bi-person-lines-fill',     'Tagok',            'Fraction tagok',           '--csp-green',    'rgba(52,211,153,0.12)'),
+    ('admin_dues',        'bi-cash-coin',             'Tartozások',       'Pénzügyi nyilvántartás',   '--csp-red',      'rgba(248,113,113,0.12)'),
+    ('admin_ads',         'bi-megaphone-fill',        'Hirdetések',       'Közlemények kezelése',     '#38bdf8',        'rgba(56,189,248,0.12)'),
+    ('admin_companies',   'bi-truck',                 'Cégek',            'Szállítási partnerek',     '--csp-accent',   'rgba(124,92,252,0.12)'),
+    ('admin_contracts',   'bi-file-earmark-text-fill','Szerződések',      'Dokumentumkezelés',        '--csp-gold',     'rgba(245,166,35,0.12)'),
+    ('admin_worklogs',    'bi-clock-history',         'Munkaórák',        'Munkaidő áttekintés',      '--csp-green',    'rgba(52,211,153,0.12)'),
+    ('admin_ingredients', 'bi-box-seam-fill',         'Alapanyagok',      'Raktárkészlet',            '#e67e22',        'rgba(230,126,34,0.12)'),
+    ('admin_menuitems',   'bi-cup-straw',             'Tételek / Receptek','Étlap és receptek',       '#722f37',        'rgba(114,47,55,0.12)'),
+    ('admin_discounts',   'bi-percent',               'Kedvezmények',     'Árazás és akciók',        '--csp-accent',   'rgba(124,92,252,0.12)'),
+    ('admin_partners_page','bi-people-fill',          'Partnerek',        'Partner nyilvántartás',    '#38bdf8',        'rgba(56,189,248,0.12)'),
+    ('admin_reports_page','bi-bar-chart-line-fill',   'Riport',           'Statisztikák és grafikonok','--csp-green',  'rgba(52,211,153,0.12)'),
+    ('admin_events_page', 'bi-calendar-event-fill',   'Események & Foglalások', 'Rendezvények kezelése', '#e74c3c', 'rgba(231,76,60,0.12)')
   ] %}
-  {% for target, icon, label, desc, color, bg in nav_items %}
-  <div class="col-md-4 col-sm-6 admin-nav-card" onclick="openAdminTab('{{ target }}')">
-    <div class="card h-100 border-0 shadow-sm">
-      <div class="card-body d-flex align-items-center gap-3 py-3">
-        <div class="nav-icon" style="background:{{ bg }};color:var({{ color }});">
-          <i class="bi {{ icon }}"></i>
+  {% for route, icon, label, desc, color, bg in nav_items %}
+  <div class="col-md-4 col-sm-6">
+    <a href="{{ url_for(route) }}" class="admin-nav-card d-block">
+      <div class="card h-100 border-0 shadow-sm">
+        <div class="card-body d-flex align-items-center gap-3 py-3">
+          <div class="nav-icon" style="background:{{ bg }};color:var({{ color }});">
+            <i class="bi {{ icon }}"></i>
+          </div>
+          <div>
+            <h6 class="mb-0 fw-semibold">{{ label }}</h6>
+            <span class="text-muted" style="font-size:0.78rem;">{{ desc }}</span>
+          </div>
+          <i class="bi bi-chevron-right ms-auto text-muted"></i>
         </div>
-        <div>
-          <h6 class="mb-0 fw-semibold">{{ label }}</h6>
-          <span class="text-muted" style="font-size:0.78rem;">{{ desc }}</span>
-        </div>
-        <i class="bi bi-chevron-right ms-auto text-muted"></i>
       </div>
-    </div>
+    </a>
   </div>
   {% endfor %}
-</div>
-
-{# Hidden tab triggers #}
-<ul class="nav nav-tabs mb-4 d-none" id="adminTabs" role="tablist">
-  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-users" type="button"></button></li>
-  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-ranks" type="button"></button></li>
-  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-members" type="button"></button></li>
-  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-dues" type="button"></button></li>
-  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-ads" type="button"></button></li>
-  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-companies" type="button"></button></li>
-  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-contracts" type="button"></button></li>
-  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-worklogs" type="button"></button></li>
-  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-ingredients" type="button"></button></li>
-  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-menuitems" type="button"></button></li>
-  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-discounts" type="button"></button></li>
-  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-partners" type="button"></button></li>
-  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-reports" type="button"></button></li>
-  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-events" type="button"></button></li>
-</ul>
-
-<div class="tab-content">
-
-  {# ═══ Users Tab ═══ #}
-  <div class="tab-pane fade" id="tab-users">
-    <div class="table-responsive">
-      <table class="table table-striped table-hover align-middle">
-        <thead class="table-dark">
-          <tr>
-            <th>Avatar</th>
-            <th>Username</th>
-            <th>Discord ID</th>
-            <th>Admin</th>
-            <th>Fraction</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for user in users %}
-          <tr>
-            <td><img src="{{ user.avatar_url }}" alt="avatar" class="avatar-sm"></td>
-            <td>{{ user.display_name }}</td>
-            <td><code>{{ user.discord_id }}</code></td>
-            <td>
-              {% if user.is_admin %}
-                <span class="badge bg-success">Yes</span>
-              {% else %}
-                <span class="badge bg-secondary">No</span>
-              {% endif %}
-            </td>
-            <td>
-              {% if user.has_fraction_permission %}
-                <span class="badge bg-primary">Yes</span>
-              {% else %}
-                <span class="badge bg-secondary">No</span>
-              {% endif %}
-            </td>
-            <td>
-              <form method="POST" class="d-inline">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <input type="hidden" name="form_type" value="user_perm">
-                <input type="hidden" name="user_id" value="{{ user.id }}">
-                {% if user.has_fraction_permission %}
-                  <button name="action" value="revoke" class="btn btn-sm btn-warning">Revoke</button>
-                {% else %}
-                  <button name="action" value="grant" class="btn btn-sm btn-success">Grant</button>
-                {% endif %}
-              </form>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  {# ═══ Dues Tab ═══ #}
-  <div class="tab-pane fade" id="tab-dues">
-    <h4 class="mb-3">Tartozás hozzáadása</h4>
-    <form method="POST" class="row g-3 mb-4">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <input type="hidden" name="form_type" value="add_due">
-      <div class="col-md-4">
-        <input type="text" name="due_name" class="form-control" placeholder="Név" required maxlength="128">
-      </div>
-      <div class="col-md-3">
-        <input type="number" name="due_amount" class="form-control" placeholder="Összeg" step="1" required>
-      </div>
-      <div class="col-md-3">
-        <input type="date" name="due_date" class="form-control" required>
-      </div>
-      <div class="col-md-2">
-        <button type="submit" class="btn btn-success w-100">Hozzáadás</button>
-      </div>
-    </form>
-
-    {% if grouped_dues %}
-    <h5 class="mb-3"><i class="bi bi-truck"></i> Céges tartozások</h5>
-    <div class="accordion mb-4" id="duesAccordion">
-      {% for group in grouped_dues %}
-      <div class="accordion-item">
-        <h2 class="accordion-header">
-          <button class="accordion-button collapsed d-flex align-items-center gap-2" type="button"
-                  data-bs-toggle="collapse" data-bs-target="#dues-company-{{ group.company.id }}">
-            <strong>{{ group.company.name }}</strong>
-            <span class="ms-auto me-3">
-              {% if group.all_paid %}
-                <span class="badge bg-success">Rendezve</span>
-              {% else %}
-                <span class="badge bg-warning text-dark">{{ "%.0f"|format(group.unpaid) }} Ft nyitott</span>
-              {% endif %}
-              <span class="badge bg-secondary">Össz: {{ "%.0f"|format(group.total) }} Ft</span>
-            </span>
-          </button>
-        </h2>
-        <div id="dues-company-{{ group.company.id }}" class="accordion-collapse collapse" data-bs-parent="#duesAccordion">
-          <div class="accordion-body p-0">
-            {% if not group.all_paid %}
-            <div class="p-2 bg-light border-bottom d-flex justify-content-end gap-2">
-              <form method="POST" class="d-inline">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <input type="hidden" name="form_type" value="monthly_close_company">
-                <input type="hidden" name="company_id" value="{{ group.company.id }}">
-                <button class="btn btn-sm btn-warning" onclick="return confirm('Biztosan lezárod a hónapot ennél a cégnél? Az összes nyitott tartozás rendezettnek lesz jelölve.')">
-                  <i class="bi bi-calendar-check"></i> Hó zárás
-                </button>
-              </form>
-              <form method="POST" class="d-inline">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <input type="hidden" name="form_type" value="settle_company_dues">
-                <input type="hidden" name="company_id" value="{{ group.company.id }}">
-                <button class="btn btn-sm btn-success"><i class="bi bi-check-all"></i> Összes rendezése</button>
-              </form>
-            </div>
-            {% endif %}
-            <table class="table table-striped mb-0">
-              <thead class="table-light">
-                <tr><th>Név</th><th>Összeg</th><th>Határidő</th><th>Státusz</th><th></th></tr>
-              </thead>
-              <tbody>
-                {% for due in group.dues %}
-                <tr class="{{ 'table-success' if due.is_paid else '' }}">
-                  <td>{{ due.name }}</td>
-                  <td>{{ "%.0f"|format(due.amount) }} Ft</td>
-                  <td>{{ due.due_date.strftime('%Y-%m-%d') }}</td>
-                  <td>
-                    {% if due.is_paid %}
-                      <span class="badge bg-success"><i class="bi bi-check-circle"></i> Rendezve</span>
-                    {% else %}
-                      <span class="badge bg-warning text-dark">Nyitott</span>
-                    {% endif %}
-                  </td>
-                  <td>
-                    {% if not due.is_paid %}
-                    <form method="POST" class="d-inline">
-                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                      <input type="hidden" name="form_type" value="settle_due">
-                      <input type="hidden" name="due_id" value="{{ due.id }}">
-                      <button class="btn btn-sm btn-success" title="Rendezés"><i class="bi bi-check-lg"></i></button>
-                    </form>
-                    {% endif %}
-                    <form method="POST" class="d-inline">
-                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                      <input type="hidden" name="form_type" value="delete_due">
-                      <input type="hidden" name="due_id" value="{{ due.id }}">
-                      <button class="btn btn-sm btn-danger">Törlés</button>
-                    </form>
-                  </td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-      {% endfor %}
-    </div>
-    {% endif %}
-
-    {% if dues_no_company %}
-    <h5 class="mb-3"><i class="bi bi-cash-coin"></i> Egyéb tartozások</h5>
-    <div class="table-responsive">
-      <table class="table table-striped">
-        <thead class="table-dark">
-          <tr><th>Név</th><th>Összeg</th><th>Határidő</th><th>Státusz</th><th></th></tr>
-        </thead>
-        <tbody>
-          {% for due in dues_no_company %}
-          <tr class="{{ 'table-success' if due.is_paid else '' }}">
-            <td>{{ due.name }}</td>
-            <td>{{ "%.0f"|format(due.amount) }} Ft</td>
-            <td>{{ due.due_date.strftime('%Y-%m-%d') }}</td>
-            <td>
-              {% if due.is_paid %}
-                <span class="badge bg-success"><i class="bi bi-check-circle"></i> Rendezve</span>
-              {% else %}
-                <span class="badge bg-warning text-dark">Nyitott</span>
-              {% endif %}
-            </td>
-            <td>
-              {% if not due.is_paid %}
-              <form method="POST" class="d-inline">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <input type="hidden" name="form_type" value="settle_due">
-                <input type="hidden" name="due_id" value="{{ due.id }}">
-                <button class="btn btn-sm btn-success" title="Rendezés"><i class="bi bi-check-lg"></i></button>
-              </form>
-              {% endif %}
-              <form method="POST" class="d-inline">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <input type="hidden" name="form_type" value="delete_due">
-                <input type="hidden" name="due_id" value="{{ due.id }}">
-                <button class="btn btn-sm btn-danger">Törlés</button>
-              </form>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    {% endif %}
-
-    {% if not grouped_dues and not dues_no_company %}
-    <p class="text-muted">Nincsenek tartozások.</p>
-    {% endif %}
-  </div>
-
-  {# ═══ Ads Tab ═══ #}
-  <div class="tab-pane fade" id="tab-ads">
-    <h4 class="mb-3">Hirdetés hozzáadása</h4>
-    <form method="POST" class="mb-4">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <input type="hidden" name="form_type" value="add_ad">
-      <div class="mb-3">
-        <input type="text" name="ad_title" class="form-control" placeholder="Cím" required maxlength="256">
-      </div>
-      <div class="mb-3">
-        <textarea name="ad_content" class="form-control" rows="3" placeholder="Tartalom" required></textarea>
-      </div>
-      <button type="submit" class="btn btn-success">Hozzáadás</button>
-    </form>
-
-    {% if ads %}
-    <div class="table-responsive">
-      <table class="table table-striped">
-        <thead class="table-dark">
-          <tr><th>Cím</th><th>Tartalom</th><th>Dátum</th><th></th></tr>
-        </thead>
-        <tbody>
-          {% for ad in ads %}
-          <tr>
-            <td>{{ ad.title }}</td>
-            <td>{{ ad.content[:80] }}{% if ad.content|length > 80 %}...{% endif %}</td>
-            <td>{{ ad.created_at.strftime('%Y-%m-%d') }}</td>
-            <td>
-              <form method="POST" class="d-inline">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <input type="hidden" name="form_type" value="delete_ad">
-                <input type="hidden" name="ad_id" value="{{ ad.id }}">
-                <button class="btn btn-sm btn-danger">Törlés</button>
-              </form>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    {% else %}
-    <p class="text-muted">Nincsenek hirdetések.</p>
-    {% endif %}
-  </div>
-
-  {# ═══ Companies Tab ═══ #}
-  <div class="tab-pane fade" id="tab-companies">
-    <h4 class="mb-3">Szállítási cég hozzáadása</h4>
-    <form method="POST" class="row g-3 mb-4">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <input type="hidden" name="form_type" value="add_company">
-      <div class="col-md-8">
-        <input type="text" name="company_name" class="form-control" placeholder="Cég neve" required maxlength="128">
-      </div>
-      <div class="col-md-4">
-        <button type="submit" class="btn btn-success w-100">Hozzáadás</button>
-      </div>
-    </form>
-
-    {% if companies %}
-    <div class="table-responsive">
-      <table class="table table-striped">
-        <thead class="table-dark">
-          <tr><th>Név</th><th>Üzenetek</th><th></th></tr>
-        </thead>
-        <tbody>
-          {% for company in companies %}
-          <tr>
-            <td>{{ company.name }}</td>
-            <td>{{ company.messages.count() }}</td>
-            <td>
-              <form method="POST" class="d-inline">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <input type="hidden" name="form_type" value="delete_company">
-                <input type="hidden" name="company_id" value="{{ company.id }}">
-                <button class="btn btn-sm btn-danger">Törlés</button>
-              </form>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    {% else %}
-    <p class="text-muted">Nincsenek cégek.</p>
-    {% endif %}
-  </div>
-
-  {# ═══ Contracts Tab ═══ #}
-  <div class="tab-pane fade" id="tab-contracts">
-    <h4 class="mb-3">Szerződés hozzáadása</h4>
-    <form method="POST" enctype="multipart/form-data" class="mb-4">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <input type="hidden" name="form_type" value="add_contract">
-      <div class="mb-3">
-        <input type="text" name="contract_company" class="form-control" placeholder="Cég neve" required maxlength="256">
-      </div>
-      <div class="mb-3">
-        <textarea name="contract_desc" class="form-control" rows="4" placeholder="Szerződés leírása" required></textarea>
-      </div>
-      <div class="mb-3">
-        <label class="form-label">Kép (opcionális)</label>
-        <input type="file" name="contract_image" class="form-control" accept="image/*">
-      </div>
-      <button type="submit" class="btn btn-success">Hozzáadás</button>
-    </form>
-
-    {% if contracts %}
-    <div class="table-responsive">
-      <table class="table table-striped">
-        <thead class="table-dark">
-          <tr><th>Cég</th><th>Leírás</th><th>Kép</th><th>Dátum</th><th></th></tr>
-        </thead>
-        <tbody>
-          {% for c in contracts %}
-          <tr>
-            <td>{{ c.company_name }}</td>
-            <td>{{ c.description[:60] }}{% if c.description|length > 60 %}...{% endif %}</td>
-            <td>
-              {% if c.image_path %}
-                <img src="{{ url_for('static', filename=c.image_path) }}" width="50" class="rounded">
-              {% else %}
-                —
-              {% endif %}
-            </td>
-            <td>{{ c.created_at.strftime('%Y-%m-%d') }}</td>
-            <td>
-              <form method="POST" class="d-inline">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <input type="hidden" name="form_type" value="delete_contract">
-                <input type="hidden" name="contract_id" value="{{ c.id }}">
-                <button class="btn btn-sm btn-danger">Törlés</button>
-              </form>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    {% else %}
-    <p class="text-muted">Nincsenek szerződések.</p>
-    {% endif %}
-  </div>
-
-  {# ═══ Work Hours Tab — Per-User Breakdown ═══ #}
-  <div class="tab-pane fade" id="tab-worklogs">
-    <div class="d-flex flex-wrap align-items-center justify-content-between mb-4">
-      <h4 class="mb-0"><i class="bi bi-clock-history text-primary"></i> Munkaidő áttekintés</h4>
-      <div class="btn-group" role="group">
-        <a href="?wh_period=day&tab=%23tab-worklogs" class="btn btn-sm btn-{{ 'primary' if wh_period == 'day' else 'outline-primary' }}">Nap</a>
-        <a href="?wh_period=week&tab=%23tab-worklogs" class="btn btn-sm btn-{{ 'primary' if wh_period == 'week' else 'outline-primary' }}">Hét</a>
-        <a href="?wh_period=month&tab=%23tab-worklogs" class="btn btn-sm btn-{{ 'primary' if wh_period == 'month' else 'outline-primary' }}">Hónap</a>
-        <a href="?wh_period=year&tab=%23tab-worklogs" class="btn btn-sm btn-{{ 'primary' if wh_period == 'year' else 'outline-primary' }}">Év</a>
-      </div>
-    </div>
-
-    {% if workhour_stats %}
-    <div class="row g-3">
-      {% for stat in workhour_stats %}
-      <div class="col-md-6 col-lg-4">
-        <div class="card h-100">
-          <div class="card-body">
-            <div class="d-flex align-items-center gap-3 mb-3">
-              <img src="{{ stat.user.avatar_url }}" alt="avatar" class="avatar-sm">
-              <div>
-                <h6 class="mb-0">{{ stat.user.ingame_name or stat.user.display_name }}</h6>
-                {% if stat.user.rank %}
-                  <span class="badge" style="background: {{ stat.user.rank.color or 'var(--csp-accent)' }}; font-size: 0.7rem;">
-                    {{ stat.user.rank.name }}
-                  </span>
-                {% endif %}
-              </div>
-              <div class="ms-auto text-end">
-                <span class="fs-5 fw-bold" style="color: var(--csp-accent);">{{ stat.total_formatted }}</span>
-              </div>
-            </div>
-
-            {% if stat.logs %}
-            <div class="table-responsive" style="max-height: 200px; overflow-y: auto;">
-              <table class="table table-sm table-striped mb-0" style="font-size: 0.8rem;">
-                <thead>
-                  <tr>
-                    <th>Be</th>
-                    <th>Ki</th>
-                    <th>Idő</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {% for log in stat.logs %}
-                  <tr>
-                    <td>{{ log.clock_in.strftime('%m.%d %H:%M') }}</td>
-                    <td>
-                      {% if log.clock_out %}
-                        {{ log.clock_out.strftime('%m.%d %H:%M') }}
-                      {% else %}
-                        <span class="badge bg-success" style="font-size:0.65rem;">Aktív</span>
-                      {% endif %}
-                    </td>
-                    <td>{{ log.duration_formatted }}</td>
-                    <td>
-                      <button class="btn btn-sm btn-outline-primary p-0 px-1" type="button"
-                              data-bs-toggle="collapse" data-bs-target="#edit-log-{{ log.id }}"
-                              style="font-size:0.7rem;">
-                        <i class="bi bi-pencil"></i>
-                      </button>
-                    </td>
-                  </tr>
-                  <tr class="collapse" id="edit-log-{{ log.id }}">
-                    <td colspan="4">
-                      <form method="POST" class="row g-1 align-items-end p-1 bg-light rounded">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <input type="hidden" name="form_type" value="edit_worklog">
-                        <input type="hidden" name="log_id" value="{{ log.id }}">
-                        <div class="col-5">
-                          <input type="datetime-local" name="new_clock_in" class="form-control form-control-sm"
-                                 value="{{ log.clock_in.strftime('%Y-%m-%dT%H:%M') }}" style="font-size:0.75rem;">
-                        </div>
-                        <div class="col-5">
-                          <input type="datetime-local" name="new_clock_out" class="form-control form-control-sm"
-                                 value="{{ log.clock_out.strftime('%Y-%m-%dT%H:%M') if log.clock_out else '' }}" style="font-size:0.75rem;">
-                        </div>
-                        <div class="col-2">
-                          <button type="submit" class="btn btn-sm btn-primary w-100" style="font-size:0.7rem;">
-                            <i class="bi bi-check"></i>
-                          </button>
-                        </div>
-                      </form>
-                    </td>
-                  </tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-            </div>
-            {% else %}
-            <p class="text-muted small mb-0">Nincs bejegyzés ebben az időszakban.</p>
-            {% endif %}
-          </div>
-        </div>
-      </div>
-      {% endfor %}
-    </div>
-    {% else %}
-    <p class="text-muted">Nincsenek fraction tagok.</p>
-    {% endif %}
-  </div>
-
-  <script>
-  function openAdminTab(target) {
-    document.getElementById('adminNavGrid').style.display = 'none';
-    document.getElementById('adminBackBtn').classList.add('visible');
-    document.querySelector('.tab-content').style.display = 'block';
-    const triggerEl = document.querySelector('#adminTabs button[data-bs-target="' + target + '"]');
-    if (triggerEl) {
-      const tab = new bootstrap.Tab(triggerEl);
-      tab.show();
-    }
-    sessionStorage.setItem('adminActiveTab', target);
-    window.scrollTo({top: document.getElementById('adminBackBtn').offsetTop - 80, behavior: 'smooth'});
-  }
-
-  function showAdminGrid() {
-    document.getElementById('adminNavGrid').style.display = '';
-    document.getElementById('adminBackBtn').classList.remove('visible');
-    document.querySelector('.tab-content').style.display = 'none';
-    sessionStorage.removeItem('adminActiveTab');
-  }
-
-  (function() {
-    const params = new URLSearchParams(window.location.search);
-    const tabContent = document.querySelector('.tab-content');
-
-    // Initially hide tab content, show grid
-    tabContent.style.display = 'none';
-
-    // Restore active tab from URL param, hash fragment, wh_period, or session
-    let tabParam = params.get('tab');
-    // Ensure tab param has # prefix
-    if (tabParam && !tabParam.startsWith('#')) tabParam = '#' + tabParam;
-    // Also check hash fragment (e.g. /admin#tab-partners)
-    const hashTab = window.location.hash && window.location.hash.startsWith('#tab-') ? window.location.hash : null;
-    const savedTab = sessionStorage.getItem('adminActiveTab');
-    const restoreTarget = tabParam || hashTab || (params.has('wh_period') ? '#tab-worklogs' : null) || savedTab;
-
-    if (restoreTarget) {
-      openAdminTab(restoreTarget);
-    }
-
-    // Inject active_tab hidden field into all forms before submit
-    document.querySelectorAll('.tab-content form').forEach(function(form) {
-      form.addEventListener('submit', function() {
-        const activeBtn = document.querySelector('#adminTabs .nav-link.active');
-        if (activeBtn) {
-          const target = activeBtn.getAttribute('data-bs-target');
-          let input = form.querySelector('input[name="active_tab"]');
-          if (!input) {
-            input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = 'active_tab';
-            form.appendChild(input);
-          }
-          // Strip # so it doesn't become a URL fragment in redirect
-          input.value = target.replace('#', '');
-        }
-      });
-    });
-  })();
-  // activateWorklogsTab removed — tab param now handled via URL
-  </script>
-
-  {% include "admin_calculator.html" %}
-  {% include "admin_ranks.html" %}
-  {% include "admin_partners.html" %}
-  {% include "admin_reports.html" %}
-  {% include "admin_events.html" %}
-
 </div>
 {% endblock %}

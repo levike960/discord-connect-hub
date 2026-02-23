@@ -1,0 +1,74 @@
+{% extends "admin_base.html" %}
+{% set section_title = "Rangok" %}
+{% set section_icon = "bi bi-award-fill" %}
+
+{% block admin_content %}
+<h4 class="mb-3">Rang hozzáadása</h4>
+<form method="POST" class="row g-3 mb-4">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="form_type" value="add_rank">
+  <div class="col-md-5">
+    <input type="text" name="rank_name" class="form-control" placeholder="Rang neve (pl. Főnök)" required maxlength="128">
+  </div>
+  <div class="col-md-3">
+    <input type="color" name="rank_color" class="form-control form-control-color w-100" value="#7c5cfc" title="Rang színe">
+  </div>
+  <div class="col-md-4">
+    <button type="submit" class="btn btn-success w-100">Hozzáadás</button>
+  </div>
+</form>
+
+{% if ranks %}
+<div class="table-responsive">
+  <table class="table table-striped table-hover align-middle">
+    <thead class="table-dark">
+      <tr><th>#</th><th>Rang</th><th>Szín</th><th>Tagok</th><th>Sorrend</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for rank in ranks %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td>
+          <span class="badge" style="background: {{ rank.color or 'var(--csp-accent)' }}; color: #fff; font-size: 0.9rem;">
+            {{ rank.name }}
+          </span>
+        </td>
+        <td>
+          <span class="d-inline-block rounded" style="width:20px;height:20px;background:{{ rank.color or '#7c5cfc' }};vertical-align:middle;"></span>
+        </td>
+        <td>{{ rank.users|length }}</td>
+        <td>
+          <form method="POST" class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="form_type" value="move_rank">
+            <input type="hidden" name="rank_id" value="{{ rank.id }}">
+            <button name="direction" value="up" class="btn btn-sm btn-outline-secondary" {% if loop.first %}disabled{% endif %}>
+              <i class="bi bi-arrow-up"></i>
+            </button>
+          </form>
+          <form method="POST" class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="form_type" value="move_rank">
+            <input type="hidden" name="rank_id" value="{{ rank.id }}">
+            <button name="direction" value="down" class="btn btn-sm btn-outline-secondary" {% if loop.last %}disabled{% endif %}>
+              <i class="bi bi-arrow-down"></i>
+            </button>
+          </form>
+        </td>
+        <td>
+          <form method="POST" class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="form_type" value="delete_rank">
+            <input type="hidden" name="rank_id" value="{{ rank.id }}">
+            <button class="btn btn-sm btn-danger">Törlés</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="text-muted">Nincsenek rangok.</p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,315 @@
+{% extends "admin_base.html" %}
+{% set section_title = "Események & Foglalások" %}
+{% set section_icon = "bi bi-calendar-event-fill" %}
+
+{% block admin_content %}
+{# ── Visual Calendar ── #}
+<div class="card shadow-sm mb-4">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <button class="btn btn-sm btn-outline-secondary" id="calPrev"><i class="bi bi-chevron-left"></i></button>
+      <h5 class="mb-0" id="calTitle"></h5>
+      <button class="btn btn-sm btn-outline-secondary" id="calNext"><i class="bi bi-chevron-right"></i></button>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-bordered text-center mb-0" id="calTable" style="table-layout:fixed;">
+        <thead>
+          <tr>
+            <th style="width:14.28%">Hé</th><th style="width:14.28%">Ke</th><th style="width:14.28%">Sze</th>
+            <th style="width:14.28%">Cs</th><th style="width:14.28%">Pé</th><th style="width:14.28%">Szo</th>
+            <th style="width:14.28%">Va</th>
+          </tr>
+        </thead>
+        <tbody id="calBody"></tbody>
+      </table>
+    </div>
+    <div class="mt-3 d-flex gap-3 flex-wrap" style="font-size:0.8rem;">
+      <span><span class="d-inline-block rounded-circle me-1" style="width:10px;height:10px;background:var(--csp-accent);"></span> Nyilvános esemény</span>
+      <span><span class="d-inline-block rounded-circle me-1" style="width:10px;height:10px;background:var(--csp-green);"></span> Foglalható esemény</span>
+      <span><span class="d-inline-block rounded-circle me-1" style="width:10px;height:10px;background:var(--csp-gold);"></span> Függőben lévő foglalás</span>
+      <span><span class="d-inline-block rounded-circle me-1" style="width:10px;height:10px;background:#38bdf8;"></span> Megerősített foglalás</span>
+      <span><span class="d-inline-block rounded-circle me-1" style="width:10px;height:10px;background:var(--csp-red);"></span> Elutasított foglalás</span>
+    </div>
+  </div>
+</div>
+
+<style>
+  #calTable td { height: 90px; vertical-align: top; padding: 4px 6px; position: relative; cursor: default; }
+  #calTable td.cal-today { background: var(--csp-accent-subtle) !important; border-color: var(--csp-accent) !important; }
+  #calTable td.cal-empty { background: transparent !important; border-color: var(--csp-border) !important; }
+  .cal-day-num { font-weight: 600; font-size: 0.85rem; margin-bottom: 2px; }
+  .cal-item { font-size: 0.68rem; line-height: 1.2; padding: 1px 3px; border-radius: 3px; margin-bottom: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .cal-popover { position: absolute; z-index: 1050; background: var(--csp-surface); border: 1px solid var(--csp-border); border-radius: var(--csp-radius); padding: 0.75rem; box-shadow: 0 8px 30px rgba(0,0,0,0.25); min-width: 220px; max-width: 300px; font-size: 0.82rem; }
+  .cal-popover .cal-pop-item { padding: 4px 0; border-bottom: 1px solid var(--csp-border); }
+  .cal-popover .cal-pop-item:last-child { border-bottom: none; }
+</style>
+
+<script>
+(function() {
+  const eventsData = {{ events_json | safe }};
+  const bookingsData = {{ bookings_json | safe }};
+  let currentYear, currentMonth;
+  const today = new Date();
+  let activePopover = null;
+
+  function closePopover() { if (activePopover) { activePopover.remove(); activePopover = null; } }
+  document.addEventListener('click', closePopover);
+
+  function init() { currentYear = today.getFullYear(); currentMonth = today.getMonth(); render(); }
+
+  document.getElementById('calPrev').addEventListener('click', function() {
+    currentMonth--; if (currentMonth < 0) { currentMonth = 11; currentYear--; } render();
+  });
+  document.getElementById('calNext').addEventListener('click', function() {
+    currentMonth++; if (currentMonth > 11) { currentMonth = 0; currentYear++; } render();
+  });
+
+  function render() {
+    const months = ['Január','Február','Március','Április','Május','Június','Július','Augusztus','Szeptember','Október','November','December'];
+    document.getElementById('calTitle').textContent = currentYear + '. ' + months[currentMonth];
+    const firstDay = new Date(currentYear, currentMonth, 1);
+    const lastDay = new Date(currentYear, currentMonth + 1, 0);
+    const startDow = (firstDay.getDay() + 6) % 7;
+    const daysInMonth = lastDay.getDate();
+    const tbody = document.getElementById('calBody');
+    tbody.innerHTML = '';
+    closePopover();
+    let row = document.createElement('tr');
+    for (let i = 0; i < startDow; i++) { const td = document.createElement('td'); td.className = 'cal-empty'; row.appendChild(td); }
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = currentYear + '-' + String(currentMonth + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+      const td = document.createElement('td');
+      if (d === today.getDate() && currentMonth === today.getMonth() && currentYear === today.getFullYear()) td.classList.add('cal-today');
+      const dayNum = document.createElement('div'); dayNum.className = 'cal-day-num'; dayNum.textContent = d; td.appendChild(dayNum);
+      const dayEvents = eventsData.filter(e => e.date === dateStr);
+      const dayBookings = bookingsData.filter(b => b.date === dateStr);
+      dayEvents.forEach(function(ev) {
+        const item = document.createElement('div'); item.className = 'cal-item';
+        item.style.background = ev.type === 'public' ? 'rgba(124,92,252,0.2)' : 'rgba(52,211,153,0.2)';
+        item.style.color = ev.type === 'public' ? 'var(--csp-accent)' : 'var(--csp-green)';
+        item.innerHTML = '<i class="bi bi-calendar-event" style="font-size:0.6rem;"></i> ' + ev.title; td.appendChild(item);
+      });
+      dayBookings.forEach(function(bk) {
+        const item = document.createElement('div'); item.className = 'cal-item';
+        let bg, color;
+        if (bk.status === 'confirmed') { bg = 'rgba(56,189,248,0.2)'; color = '#38bdf8'; }
+        else if (bk.status === 'rejected') { bg = 'rgba(248,113,113,0.2)'; color = 'var(--csp-red)'; }
+        else { bg = 'rgba(245,166,35,0.2)'; color = 'var(--csp-gold)'; }
+        item.style.background = bg; item.style.color = color;
+        item.innerHTML = '<i class="bi bi-person" style="font-size:0.6rem;"></i> ' + bk.contact + ' (' + bk.guests + ')'; td.appendChild(item);
+      });
+      if (dayEvents.length > 0 || dayBookings.length > 0) {
+        td.style.cursor = 'pointer';
+        td.addEventListener('click', function(e) { e.stopPropagation(); showPopover(td, dateStr, dayEvents, dayBookings); });
+      }
+      row.appendChild(td);
+      if ((startDow + d) % 7 === 0) { tbody.appendChild(row); row = document.createElement('tr'); }
+    }
+    const remaining = (startDow + daysInMonth) % 7;
+    if (remaining > 0) { for (let i = remaining; i < 7; i++) { const td = document.createElement('td'); td.className = 'cal-empty'; row.appendChild(td); } tbody.appendChild(row); }
+  }
+
+  function showPopover(td, dateStr, dayEvents, dayBookings) {
+    closePopover();
+    const pop = document.createElement('div'); pop.className = 'cal-popover';
+    pop.addEventListener('click', function(e) { e.stopPropagation(); });
+    const parts = dateStr.split('-');
+    let html = '<div class="fw-bold mb-2">' + parts[0] + '. ' + parts[1] + '. ' + parts[2] + '.</div>';
+    if (dayEvents.length > 0) {
+      html += '<div class="text-muted" style="font-size:0.72rem;text-transform:uppercase;">Események</div>';
+      dayEvents.forEach(function(ev) {
+        const badge = ev.type === 'public' ? '<span class="badge bg-primary" style="font-size:0.65rem;">Nyilvános</span>' : '<span class="badge bg-success" style="font-size:0.65rem;">Foglalható</span>';
+        html += '<div class="cal-pop-item">' + badge + ' <strong>' + ev.title + '</strong>';
+        if (ev.time) html += ' <span class="text-muted">' + ev.time + '</span>';
+        if (ev.desc) html += '<br><small class="text-muted">' + ev.desc.substring(0, 80) + '</small>';
+        html += '</div>';
+      });
+    }
+    if (dayBookings.length > 0) {
+      html += '<div class="text-muted mt-2" style="font-size:0.72rem;text-transform:uppercase;">Foglalások</div>';
+      dayBookings.forEach(function(bk) {
+        let statusBadge;
+        if (bk.status === 'confirmed') statusBadge = '<span class="badge" style="background:#38bdf8;font-size:0.65rem;">OK</span>';
+        else if (bk.status === 'rejected') statusBadge = '<span class="badge bg-danger" style="font-size:0.65rem;">Elutasítva</span>';
+        else statusBadge = '<span class="badge bg-warning text-dark" style="font-size:0.65rem;">Függőben</span>';
+        html += '<div class="cal-pop-item">' + statusBadge + ' <strong>' + bk.contact + '</strong> — ' + bk.guests + ' fő';
+        if (bk.type_label) html += ' <small class="text-muted">(' + bk.type_label + ')</small>';
+        if (bk.time) html += ' <span class="text-muted">' + bk.time + '</span>';
+        html += ' <a href="' + bk.url + '" class="ms-1" style="font-size:0.7rem;"><i class="bi bi-box-arrow-up-right"></i></a></div>';
+      });
+    }
+    pop.innerHTML = html;
+    td.style.position = 'relative'; td.appendChild(pop);
+    pop.style.top = '100%'; pop.style.left = '0';
+    const rect = pop.getBoundingClientRect();
+    if (rect.right > window.innerWidth - 20) { pop.style.left = 'auto'; pop.style.right = '0'; }
+    activePopover = pop;
+  }
+
+  init();
+})();
+</script>
+
+<hr>
+
+<h4 class="mb-3"><i class="bi bi-calendar-plus"></i> Új esemény</h4>
+<form method="POST" class="row g-3 mb-4">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="form_type" value="add_event">
+  <div class="col-md-4">
+    <input type="text" name="event_title" class="form-control" placeholder="Esemény neve" required maxlength="256">
+  </div>
+  <div class="col-md-3">
+    <input type="date" name="event_date" class="form-control" required>
+  </div>
+  <div class="col-md-2">
+    <input type="time" name="event_time" class="form-control" placeholder="Időpont">
+  </div>
+  <div class="col-md-2">
+    <select name="event_type" class="form-select">
+      <option value="public">Nyilvános</option>
+      <option value="private">Foglalható</option>
+    </select>
+  </div>
+  <div class="col-md-1">
+    <button type="submit" class="btn btn-success w-100"><i class="bi bi-plus-lg"></i></button>
+  </div>
+  <div class="col-12">
+    <textarea name="event_description" class="form-control" rows="2" placeholder="Leírás (opcionális)" maxlength="1000"></textarea>
+  </div>
+</form>
+
+<hr>
+
+{% if events %}
+<h5 class="mb-3">Események</h5>
+<div class="accordion mb-4" id="eventsAccordion">
+  {% for event in events %}
+  <div class="accordion-item">
+    <h2 class="accordion-header">
+      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#event-{{ event.id }}">
+        <span class="me-2">
+          {% if event.event_type == 'public' %}<span class="badge bg-primary">Nyilvános</span>
+          {% else %}<span class="badge bg-success">Foglalható</span>{% endif %}
+          {% if not event.is_published %}<span class="badge bg-secondary">Rejtett</span>{% endif %}
+        </span>
+        <strong>{{ event.title }}</strong>
+        <span class="ms-auto me-3 text-muted">{{ event.event_date.strftime('%Y.%m.%d') }}{% if event.event_time %} {{ event.event_time }}{% endif %}</span>
+      </button>
+    </h2>
+    <div id="event-{{ event.id }}" class="accordion-collapse collapse" data-bs-parent="#eventsAccordion">
+      <div class="accordion-body">
+        <form method="POST" class="row g-2 mb-3">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="form_type" value="edit_event">
+          <input type="hidden" name="event_id" value="{{ event.id }}">
+          <div class="col-md-4"><label class="form-label">Név</label><input type="text" name="event_title" class="form-control" value="{{ event.title }}" required></div>
+          <div class="col-md-3"><label class="form-label">Dátum</label><input type="date" name="event_date" class="form-control" value="{{ event.event_date.isoformat() }}"></div>
+          <div class="col-md-2"><label class="form-label">Időpont</label><input type="time" name="event_time" class="form-control" value="{{ event.event_time or '' }}"></div>
+          <div class="col-md-2"><label class="form-label">Típus</label>
+            <select name="event_type" class="form-select">
+              <option value="public" {% if event.event_type == 'public' %}selected{% endif %}>Nyilvános</option>
+              <option value="private" {% if event.event_type == 'private' %}selected{% endif %}>Foglalható</option>
+            </select>
+          </div>
+          <div class="col-12"><label class="form-label">Leírás</label><textarea name="event_description" class="form-control" rows="2">{{ event.description or '' }}</textarea></div>
+          <div class="col-12 d-flex gap-2 align-items-center">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="is_published" id="pub{{ event.id }}" {% if event.is_published %}checked{% endif %}>
+              <label class="form-check-label" for="pub{{ event.id }}">Publikálva</label>
+            </div>
+            <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-save"></i> Mentés</button>
+          </div>
+        </form>
+        <form method="POST" class="d-inline">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="form_type" value="delete_event">
+          <input type="hidden" name="event_id" value="{{ event.id }}">
+          <button class="btn btn-sm btn-danger" onclick="return confirm('Biztosan törölni szeretnéd?')"><i class="bi bi-trash"></i> Törlés</button>
+        </form>
+        {% set event_bookings = all_bookings|selectattr('event_id', 'equalto', event.id)|list %}
+        {% if event_bookings %}
+        <hr><h6>Foglalások ({{ event_bookings|length }})</h6>
+        <div class="table-responsive">
+          <table class="table table-sm table-striped">
+            <thead><tr><th>Név</th><th>Létszám</th><th>Státusz</th><th></th></tr></thead>
+            <tbody>
+              {% for b in event_bookings %}
+              <tr>
+                <td>{{ b.contact_name }}</td>
+                <td>{{ b.guest_count }} fő</td>
+                <td>{% if b.status == 'confirmed' %}<span class="badge bg-success">OK</span>{% elif b.status == 'rejected' %}<span class="badge bg-danger">Elutasítva</span>{% else %}<span class="badge bg-warning text-dark">Függőben</span>{% endif %}</td>
+                <td><a href="{{ url_for('booking_detail', booking_id=b.id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<p class="text-muted text-center">Még nincsenek események.</p>
+{% endif %}
+
+<hr>
+
+<h4 class="mb-3"><i class="bi bi-ticket-perforated"></i> Összes foglalás
+  {% if pending_bookings_count > 0 %}<span class="badge bg-warning text-dark">{{ pending_bookings_count }} függőben</span>{% endif %}
+</h4>
+
+{% if all_bookings %}
+<div class="table-responsive">
+  <table class="table table-hover align-middle">
+    <thead class="table-dark">
+      <tr><th>#</th><th>Kapcsolattartó</th><th>Dátum</th><th>Időpont</th><th>Típus</th><th>Létszám</th><th>Státusz</th><th>Művelet</th></tr>
+    </thead>
+    <tbody>
+      {% for b in all_bookings %}
+      <tr class="{% if b.status == 'confirmed' %}table-success{% elif b.status == 'rejected' %}table-danger{% endif %}">
+        <td>{{ b.id }}</td>
+        <td>{{ b.contact_name }}<br><small class="text-muted">{{ b.user.display_name }}</small></td>
+        <td>{{ b.booking_date.strftime('%Y.%m.%d') }}</td>
+        <td>{{ b.booking_time or '—' }}</td>
+        <td>{{ b.event_type_label or '—' }}</td>
+        <td>{{ b.guest_count }} fő</td>
+        <td>
+          {% if b.status == 'confirmed' %}<span class="badge bg-success">Megerősítve</span>
+          {% elif b.status == 'rejected' %}<span class="badge bg-danger">Elutasítva</span>
+          {% else %}<span class="badge bg-warning text-dark">Függőben</span>{% endif %}
+        </td>
+        <td>
+          <div class="d-flex gap-1 flex-wrap">
+            {% if b.status != 'confirmed' %}
+            <form method="POST" class="d-inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="form_type" value="update_booking_status">
+              <input type="hidden" name="booking_id" value="{{ b.id }}">
+              <input type="hidden" name="status" value="confirmed">
+              <button class="btn btn-sm btn-success" title="Megerősítés"><i class="bi bi-check-lg"></i></button>
+            </form>
+            {% endif %}
+            {% if b.status != 'rejected' %}
+            <form method="POST" class="d-inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="form_type" value="update_booking_status">
+              <input type="hidden" name="booking_id" value="{{ b.id }}">
+              <input type="hidden" name="status" value="rejected">
+              <button class="btn btn-sm btn-danger" title="Elutasítás"><i class="bi bi-x-lg"></i></button>
+            </form>
+            {% endif %}
+            <a href="{{ url_for('booking_detail', booking_id=b.id) }}" class="btn btn-sm btn-outline-primary" title="Chat"><i class="bi bi-chat-dots"></i></a>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="text-muted text-center">Még nincsenek foglalások.</p>
+{% endif %}
+{% endblock %}

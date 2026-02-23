@@ -1,0 +1,58 @@
+{% extends "admin_base.html" %}
+{% set section_title = "Szerződések" %}
+{% set section_icon = "bi bi-file-earmark-text-fill" %}
+
+{% block admin_content %}
+<h4 class="mb-3">Szerződés hozzáadása</h4>
+<form method="POST" enctype="multipart/form-data" class="mb-4">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="form_type" value="add_contract">
+  <div class="mb-3">
+    <input type="text" name="contract_company" class="form-control" placeholder="Cég neve" required maxlength="256">
+  </div>
+  <div class="mb-3">
+    <textarea name="contract_desc" class="form-control" rows="4" placeholder="Szerződés leírása" required></textarea>
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Kép (opcionális)</label>
+    <input type="file" name="contract_image" class="form-control" accept="image/*">
+  </div>
+  <button type="submit" class="btn btn-success">Hozzáadás</button>
+</form>
+
+{% if contracts %}
+<div class="table-responsive">
+  <table class="table table-striped">
+    <thead class="table-dark">
+      <tr><th>Cég</th><th>Leírás</th><th>Kép</th><th>Dátum</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for c in contracts %}
+      <tr>
+        <td>{{ c.company_name }}</td>
+        <td>{{ c.description[:60] }}{% if c.description|length > 60 %}...{% endif %}</td>
+        <td>
+          {% if c.image_path %}
+            <img src="{{ url_for('static', filename=c.image_path) }}" width="50" class="rounded">
+          {% else %}
+            —
+          {% endif %}
+        </td>
+        <td>{{ c.created_at.strftime('%Y-%m-%d') }}</td>
+        <td>
+          <form method="POST" class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="form_type" value="delete_contract">
+            <input type="hidden" name="contract_id" value="{{ c.id }}">
+            <button class="btn btn-sm btn-danger">Törlés</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="text-muted">Nincsenek szerződések.</p>
+{% endif %}
+{% endblock %}

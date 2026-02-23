@@ -1,0 +1,83 @@
+{% extends "admin_base.html" %}
+{% set section_title = "Tagok" %}
+{% set section_icon = "bi bi-person-lines-fill" %}
+
+{% block admin_content %}
+<h4 class="mb-3">Tagok kezelése</h4>
+<p class="text-muted">Szerkessze a frakció tagjainak adatait, rangját.</p>
+
+{% if fraction_members %}
+<div class="table-responsive">
+  <table class="table table-striped table-hover align-middle">
+    <thead class="table-dark">
+      <tr>
+        <th>Avatar</th>
+        <th>Név</th>
+        <th>IC Név</th>
+        <th>Telefon</th>
+        <th>Rang</th>
+        <th>Szerkesztés</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for member in fraction_members %}
+      <tr>
+        <td><img src="{{ member.avatar_url }}" alt="avatar" class="avatar-sm"></td>
+        <td>{{ member.display_name }}</td>
+        <td>{{ member.ingame_name or '—' }}</td>
+        <td>{{ member.phone or '—' }}</td>
+        <td>
+          {% if member.rank %}
+            <span class="badge" style="background: {{ member.rank.color or 'var(--csp-accent)' }}; color: #fff;">
+              {{ member.rank.name }}
+            </span>
+          {% else %}
+            <span class="text-muted">—</span>
+          {% endif %}
+        </td>
+        <td>
+          <button class="btn btn-sm btn-outline-primary" type="button"
+                  data-bs-toggle="collapse" data-bs-target="#edit-member-{{ member.id }}">
+            <i class="bi bi-pencil"></i>
+          </button>
+        </td>
+      </tr>
+      <tr class="collapse" id="edit-member-{{ member.id }}">
+        <td colspan="6">
+          <form method="POST" class="row g-2 align-items-end p-2 bg-light rounded">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="form_type" value="edit_member">
+            <input type="hidden" name="user_id" value="{{ member.id }}">
+            <div class="col-md-3">
+              <label class="form-label small">IC Név</label>
+              <input type="text" name="ingame_name" class="form-control form-control-sm"
+                     value="{{ member.ingame_name or '' }}" placeholder="In-game név" maxlength="128">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label small">Telefon</label>
+              <input type="text" name="phone" class="form-control form-control-sm"
+                     value="{{ member.phone or '' }}" placeholder="Telefonszám" maxlength="32">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label small">Rang</label>
+              <select name="rank_id" class="form-select form-select-sm">
+                <option value="">Nincs</option>
+                {% for r in ranks %}
+                <option value="{{ r.id }}" {% if member.rank_id == r.id %}selected{% endif %}>{{ r.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-3">
+              <button type="submit" class="btn btn-sm btn-primary w-100">Mentés</button>
+            </div>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="text-muted">Nincsenek frakció tagok.</p>
+{% endif %}
+{% endblock %}
