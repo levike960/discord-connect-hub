@@ -83,7 +83,17 @@
             <i class="bi bi-list-ul"></i> Recept
           </button>
         </td>
-        <td>
+        <td class="d-flex gap-1">
+          <form method="POST" enctype="multipart/form-data" class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="form_type" value="update_menu_item_image">
+            <input type="hidden" name="mi_id" value="{{ mi.id }}">
+            <label class="btn btn-sm btn-outline-secondary mb-0" title="Kép feltöltése">
+              <i class="bi bi-camera"></i>
+              <input type="file" name="mi_image" accept="image/*" class="d-none"
+                     onchange="this.closest('form').submit()">
+            </label>
+          </form>
           <form method="POST" class="d-inline">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="form_type" value="delete_menu_item">

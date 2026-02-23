@@ -1181,6 +1181,19 @@ def _admin_post_handler():
             db.session.commit()
             flash("Menu item added.", "success")
 
+    elif form_type == "update_menu_item_image":
+        mi_id = request.form.get("mi_id", type=int)
+        mi = db.session.get(MenuItem, mi_id)
+        if mi:
+            file = request.files.get("mi_image")
+            if file and file.filename and allowed_file(file.filename):
+                fname = secure_filename(f"menu_{datetime.utcnow().timestamp()}_{file.filename}")
+                filepath = os.path.join(app.config["UPLOAD_FOLDER"], fname)
+                file.save(filepath)
+                mi.image_path = f"uploads/{fname}"
+                db.session.commit()
+                flash("Kép frissítve.", "success")
+
     elif form_type == "delete_menu_item":
         mi_id = request.form.get("mi_id", type=int)
         mi = db.session.get(MenuItem, mi_id)
