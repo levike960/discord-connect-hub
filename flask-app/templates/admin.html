@@ -148,7 +148,8 @@
     ('#tab-menuitems',   'bi-cup-straw',             'Tételek / Receptek','Étlap és receptek',       '#722f37',        'rgba(114,47,55,0.12)'),
     ('#tab-discounts',   'bi-percent',               'Kedvezmények',     'Árazás és akciók',        '--csp-accent',   'rgba(124,92,252,0.12)'),
     ('#tab-partners',    'bi-people-fill',           'Partnerek',        'Partner nyilvántartás',    '#38bdf8',        'rgba(56,189,248,0.12)'),
-    ('#tab-reports',     'bi-bar-chart-line-fill',   'Riport',           'Statisztikák és grafikonok','--csp-green',  'rgba(52,211,153,0.12)')
+    ('#tab-reports',     'bi-bar-chart-line-fill',   'Riport',           'Statisztikák és grafikonok','--csp-green',  'rgba(52,211,153,0.12)'),
+    ('#tab-events',      'bi-calendar-event-fill',   'Események & Foglalások', 'Rendezvények kezelése', '#e74c3c', 'rgba(231,76,60,0.12)')
   ] %}
   {% for target, icon, label, desc, color, bg in nav_items %}
   <div class="col-md-4 col-sm-6 admin-nav-card" onclick="openAdminTab('{{ target }}')">
@@ -183,6 +184,7 @@
   <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-discounts" type="button"></button></li>
   <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-partners" type="button"></button></li>
   <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-reports" type="button"></button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-events" type="button"></button></li>
 </ul>
 
 <div class="tab-content">
@@ -705,6 +707,7 @@
   {% include "admin_ranks.html" %}
   {% include "admin_partners.html" %}
   {% include "admin_reports.html" %}
+  {% include "admin_events.html" %}
 
 </div>
 {% endblock %}

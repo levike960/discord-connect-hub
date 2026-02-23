@@ -1,0 +1,211 @@
+{# Admin Events & Bookings Tab — included by admin.html #}
+
+{# ═══ Events Tab ═══ #}
+<div class="tab-pane fade" id="tab-events">
+  <h4 class="mb-3"><i class="bi bi-calendar-plus"></i> Új esemény</h4>
+  <form method="POST" class="row g-3 mb-4">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="form_type" value="add_event">
+    <div class="col-md-4">
+      <input type="text" name="event_title" class="form-control" placeholder="Esemény neve" required maxlength="256">
+    </div>
+    <div class="col-md-3">
+      <input type="date" name="event_date" class="form-control" required>
+    </div>
+    <div class="col-md-2">
+      <input type="time" name="event_time" class="form-control" placeholder="Időpont">
+    </div>
+    <div class="col-md-2">
+      <select name="event_type" class="form-select">
+        <option value="public">Nyilvános</option>
+        <option value="private">Foglalható</option>
+      </select>
+    </div>
+    <div class="col-md-1">
+      <button type="submit" class="btn btn-success w-100"><i class="bi bi-plus-lg"></i></button>
+    </div>
+    <div class="col-12">
+      <textarea name="event_description" class="form-control" rows="2" placeholder="Leírás (opcionális)" maxlength="1000"></textarea>
+    </div>
+  </form>
+
+  <hr>
+
+  {# Events list #}
+  {% if events %}
+  <h5 class="mb-3">Események</h5>
+  <div class="accordion mb-4" id="eventsAccordion">
+    {% for event in events %}
+    <div class="accordion-item">
+      <h2 class="accordion-header">
+        <button class="accordion-button collapsed" type="button"
+                data-bs-toggle="collapse" data-bs-target="#event-{{ event.id }}">
+          <span class="me-2">
+            {% if event.event_type == 'public' %}
+              <span class="badge bg-primary">Nyilvános</span>
+            {% else %}
+              <span class="badge bg-success">Foglalható</span>
+            {% endif %}
+            {% if not event.is_published %}
+              <span class="badge bg-secondary">Rejtett</span>
+            {% endif %}
+          </span>
+          <strong>{{ event.title }}</strong>
+          <span class="ms-auto me-3 text-muted">{{ event.event_date.strftime('%Y.%m.%d') }}
+            {% if event.event_time %} {{ event.event_time }}{% endif %}
+          </span>
+        </button>
+      </h2>
+      <div id="event-{{ event.id }}" class="accordion-collapse collapse" data-bs-parent="#eventsAccordion">
+        <div class="accordion-body">
+          <form method="POST" class="row g-2 mb-3">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="form_type" value="edit_event">
+            <input type="hidden" name="event_id" value="{{ event.id }}">
+            <div class="col-md-4">
+              <label class="form-label">Név</label>
+              <input type="text" name="event_title" class="form-control" value="{{ event.title }}" required>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Dátum</label>
+              <input type="date" name="event_date" class="form-control" value="{{ event.event_date.isoformat() }}">
+            </div>
+            <div class="col-md-2">
+              <label class="form-label">Időpont</label>
+              <input type="time" name="event_time" class="form-control" value="{{ event.event_time or '' }}">
+            </div>
+            <div class="col-md-2">
+              <label class="form-label">Típus</label>
+              <select name="event_type" class="form-select">
+                <option value="public" {% if event.event_type == 'public' %}selected{% endif %}>Nyilvános</option>
+                <option value="private" {% if event.event_type == 'private' %}selected{% endif %}>Foglalható</option>
+              </select>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Leírás</label>
+              <textarea name="event_description" class="form-control" rows="2">{{ event.description or '' }}</textarea>
+            </div>
+            <div class="col-12 d-flex gap-2 align-items-center">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="is_published" id="pub{{ event.id }}"
+                       {% if event.is_published %}checked{% endif %}>
+                <label class="form-check-label" for="pub{{ event.id }}">Publikálva</label>
+              </div>
+              <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-save"></i> Mentés</button>
+            </div>
+          </form>
+          <form method="POST" class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="form_type" value="delete_event">
+            <input type="hidden" name="event_id" value="{{ event.id }}">
+            <button class="btn btn-sm btn-danger" onclick="return confirm('Biztosan törölni szeretnéd?')">
+              <i class="bi bi-trash"></i> Törlés
+            </button>
+          </form>
+
+          {# Bookings for this event #}
+          {% set event_bookings = all_bookings|selectattr('event_id', 'equalto', event.id)|list %}
+          {% if event_bookings %}
+          <hr>
+          <h6>Foglalások ehhez az eseményhez ({{ event_bookings|length }})</h6>
+          <div class="table-responsive">
+            <table class="table table-sm table-striped">
+              <thead><tr><th>Név</th><th>Létszám</th><th>Státusz</th><th></th></tr></thead>
+              <tbody>
+                {% for b in event_bookings %}
+                <tr>
+                  <td>{{ b.contact_name }}</td>
+                  <td>{{ b.guest_count }} fő</td>
+                  <td>
+                    {% if b.status == 'confirmed' %}<span class="badge bg-success">OK</span>
+                    {% elif b.status == 'rejected' %}<span class="badge bg-danger">Elutasítva</span>
+                    {% else %}<span class="badge bg-warning text-dark">Függőben</span>{% endif %}
+                  </td>
+                  <td><a href="{{ url_for('booking_detail', booking_id=b.id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a></td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="text-muted text-center">Még nincsenek események.</p>
+  {% endif %}
+
+  <hr>
+
+  {# All bookings management #}
+  <h4 class="mb-3"><i class="bi bi-ticket-perforated"></i> Összes foglalás
+    {% if pending_bookings_count > 0 %}
+      <span class="badge bg-warning text-dark">{{ pending_bookings_count }} függőben</span>
+    {% endif %}
+  </h4>
+
+  {% if all_bookings %}
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead class="table-dark">
+        <tr>
+          <th>#</th>
+          <th>Kapcsolattartó</th>
+          <th>Dátum</th>
+          <th>Időpont</th>
+          <th>Típus</th>
+          <th>Létszám</th>
+          <th>Státusz</th>
+          <th>Művelet</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for b in all_bookings %}
+        <tr class="{% if b.status == 'confirmed' %}table-success{% elif b.status == 'rejected' %}table-danger{% endif %}">
+          <td>{{ b.id }}</td>
+          <td>{{ b.contact_name }}<br><small class="text-muted">{{ b.user.display_name }}</small></td>
+          <td>{{ b.booking_date.strftime('%Y.%m.%d') }}</td>
+          <td>{{ b.booking_time or '—' }}</td>
+          <td>{{ b.event_type_label or '—' }}</td>
+          <td>{{ b.guest_count }} fő</td>
+          <td>
+            {% if b.status == 'confirmed' %}<span class="badge bg-success">Megerősítve</span>
+            {% elif b.status == 'rejected' %}<span class="badge bg-danger">Elutasítva</span>
+            {% else %}<span class="badge bg-warning text-dark">Függőben</span>{% endif %}
+          </td>
+          <td>
+            <div class="d-flex gap-1 flex-wrap">
+              {% if b.status != 'confirmed' %}
+              <form method="POST" class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="form_type" value="update_booking_status">
+                <input type="hidden" name="booking_id" value="{{ b.id }}">
+                <input type="hidden" name="status" value="confirmed">
+                <button class="btn btn-sm btn-success" title="Megerősítés"><i class="bi bi-check-lg"></i></button>
+              </form>
+              {% endif %}
+              {% if b.status != 'rejected' %}
+              <form method="POST" class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="form_type" value="update_booking_status">
+                <input type="hidden" name="booking_id" value="{{ b.id }}">
+                <input type="hidden" name="status" value="rejected">
+                <button class="btn btn-sm btn-danger" title="Elutasítás"><i class="bi bi-x-lg"></i></button>
+              </form>
+              {% endif %}
+              <a href="{{ url_for('booking_detail', booking_id=b.id) }}" class="btn btn-sm btn-outline-primary" title="Chat">
+                <i class="bi bi-chat-dots"></i>
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="text-muted text-center">Még nincsenek foglalások.</p>
+  {% endif %}
+</div>
