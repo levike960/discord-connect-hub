@@ -496,5 +496,23 @@
     new bootstrap.Modal(document.getElementById('imageLightbox')).show();
   });
 </script>
+<script>
+  function toggleRecipeType(sel) {
+    const row = sel.closest('.row');
+    const ingDiv = row.querySelector('.ri-ingredient-select');
+    const miDiv = row.querySelector('.ri-menuitem-select');
+    if (sel.value === 'menu_item') {
+      ingDiv.style.display = 'none';
+      ingDiv.querySelector('select').removeAttribute('required');
+      miDiv.style.display = '';
+      miDiv.querySelector('select').setAttribute('required', '');
+    } else {
+      ingDiv.style.display = '';
+      ingDiv.querySelector('select').setAttribute('required', '');
+      miDiv.style.display = 'none';
+      miDiv.querySelector('select').removeAttribute('required');
+    }
+  }
+</script>
 </body>
 </html>

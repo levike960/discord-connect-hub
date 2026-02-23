@@ -99,13 +99,20 @@
             {% set recipe = mi.recipe_items.all() %}
             {% if recipe %}
             <table class="table table-sm mb-2">
-              <thead><tr><th>Alapanyag</th><th>Mennyiség</th><th>Költség</th><th></th></tr></thead>
+              <thead><tr><th>Típus</th><th>Név</th><th>Mennyiség</th><th>Költség</th><th></th></tr></thead>
               <tbody>
                 {% for ri in recipe %}
                 <tr>
-                  <td>{{ ri.ingredient.name }}</td>
-                  <td>{{ "%.1f"|format(ri.quantity) }} {{ ri.ingredient.unit }}</td>
-                  <td>{{ "%.0f"|format(ri.quantity * ri.ingredient.price_per_unit) }} Ft</td>
+                  <td>
+                    {% if ri.sub_menu_item_id %}
+                      <span class="badge bg-success">Termék</span>
+                    {% else %}
+                      <span class="badge bg-secondary">Alapanyag</span>
+                    {% endif %}
+                  </td>
+                  <td>{{ ri.display_name }}</td>
+                  <td>{{ "%.1f"|format(ri.quantity) }} {{ ri.display_unit }}</td>
+                  <td>{{ "%.0f"|format(ri.quantity * ri.unit_cost) }} Ft</td>
                   <td>
                     <form method="POST" class="d-inline">
                       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -128,18 +135,34 @@
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <input type="hidden" name="form_type" value="add_recipe_item">
               <input type="hidden" name="mi_id" value="{{ mi.id }}">
-              <div class="col-md-5">
-                <select name="ri_ingredient_id" class="form-select form-select-sm" required>
+              <div class="col-md-3">
+                <select name="ri_type" class="form-select form-select-sm" onchange="toggleRecipeType(this)" required>
+                  <option value="ingredient">Alapanyag</option>
+                  <option value="menu_item">Termék</option>
+                </select>
+              </div>
+              <div class="col-md-4 ri-ingredient-select">
+                <select name="ri_ingredient_id" class="form-select form-select-sm">
                   <option value="">Alapanyag...</option>
                   {% for ing in ingredients %}
                   <option value="{{ ing.id }}">{{ ing.name }} ({{ ing.unit }})</option>
                   {% endfor %}
                 </select>
               </div>
-              <div class="col-md-3">
-                <input type="number" name="ri_quantity" class="form-control form-control-sm" placeholder="Mennyiség" step="0.1" required>
+              <div class="col-md-4 ri-menuitem-select" style="display:none;">
+                <select name="ri_sub_menu_item_id" class="form-select form-select-sm">
+                  <option value="">Termék...</option>
+                  {% for other_mi in menu_items %}
+                  {% if other_mi.id != mi.id %}
+                  <option value="{{ other_mi.id }}">{{ other_mi.name }}</option>
+                  {% endif %}
+                  {% endfor %}
+                </select>
               </div>
-              <div class="col-md-4">
+              <div class="col-md-2">
+                <input type="number" name="ri_quantity" class="form-control form-control-sm" placeholder="Menny." step="0.1" required>
+              </div>
+              <div class="col-md-3">
                 <button type="submit" class="btn btn-sm btn-success w-100">Hozzáadás</button>
               </div>
             </form>

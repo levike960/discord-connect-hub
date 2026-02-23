@@ -771,17 +771,25 @@ def fraction_calculator_confirm():
                     reason="POS gyártás",
                     user_id=current_user.id
                 ))
-                # Deduct ingredients based on recipe
+                # Deduct ingredients/sub-items based on recipe
                 for ri in mi.recipe_items.all():
-                    ing = ri.ingredient
                     used = ri.quantity * c["qty"]
-                    ing.stock = max(0, ing.stock - used)
-                    db.session.add(StockMovement(
-                        item_type="ingredient", item_id=ing.id,
-                        quantity=-used,
-                        reason=f"POS gyártás: {mi.name}",
-                        user_id=current_user.id
-                    ))
+                    if ri.sub_menu_item_id and ri.sub_menu_item:
+                        ri.sub_menu_item.stock = max(0, ri.sub_menu_item.stock - used)
+                        db.session.add(StockMovement(
+                            item_type="menu_item", item_id=ri.sub_menu_item_id,
+                            quantity=-used,
+                            reason=f"POS gyártás (altétel): {mi.name}",
+                            user_id=current_user.id
+                        ))
+                    elif ri.ingredient:
+                        ri.ingredient.stock = max(0, ri.ingredient.stock - used)
+                        db.session.add(StockMovement(
+                            item_type="ingredient", item_id=ri.ingredient.id,
+                            quantity=-used,
+                            reason=f"POS gyártás: {mi.name}",
+                            user_id=current_user.id
+                        ))
         db.session.commit()
         session["pos_cart"] = []
         flash("Gyártás rögzítve, raktár frissítve.", "success")
@@ -1183,17 +1191,28 @@ def _admin_post_handler():
 
     elif form_type == "add_recipe_item":
         mi_id = request.form.get("mi_id", type=int)
+        ri_type = request.form.get("ri_type", "ingredient")
         ing_id = request.form.get("ri_ingredient_id", type=int)
+        sub_mi_id = request.form.get("ri_sub_menu_item_id", type=int)
         qty = request.form.get("ri_quantity", type=float, default=1)
-        if mi_id and ing_id:
-            db.session.add(MenuItemIngredient(
-                menu_item_id=mi_id, ingredient_id=ing_id, quantity=qty))
+        if mi_id and (ing_id or sub_mi_id):
+            new_ri = MenuItemIngredient(menu_item_id=mi_id, quantity=qty)
+            if ri_type == "menu_item" and sub_mi_id:
+                if sub_mi_id == mi_id:
+                    flash("Egy tétel nem lehet saját maga hozzávalója!", "danger")
+                    return redirect(request.referrer or url_for("admin_page"))
+                new_ri.sub_menu_item_id = sub_mi_id
+                new_ri.ingredient_id = None
+            else:
+                new_ri.ingredient_id = ing_id
+                new_ri.sub_menu_item_id = None
+            db.session.add(new_ri)
             db.session.commit()
             mi = db.session.get(MenuItem, mi_id)
             if mi:
                 mi.production_cost = mi.calculated_cost
                 db.session.commit()
-            flash("Recipe ingredient added, cost recalculated.", "success")
+            flash("Recept hozzávaló hozzáadva, költség újraszámolva.", "success")
 
     elif form_type == "remove_recipe_item":
         ri_id = request.form.get("ri_id", type=int)
@@ -1724,6 +1743,30 @@ def _auto_migrate_db():
     from sqlalchemy import inspect, text
 
     db.create_all()  # Creates any brand-new tables
+
+    # --- Special migration: make ingredient_id nullable in menu_item_ingredients ---
+    try:
+        cols_info = inspector.get_columns("menu_item_ingredients") if "menu_item_ingredients" in inspector.get_table_names() else []
+        for ci in cols_info:
+            if ci["name"] == "ingredient_id" and ci.get("nullable") is False:
+                # SQLite requires table rebuild to change nullable
+                db.session.execute(text("""
+                    CREATE TABLE IF NOT EXISTS _mii_backup AS SELECT * FROM menu_item_ingredients
+                """))
+                db.session.execute(text("DROP TABLE menu_item_ingredients"))
+                db.session.commit()
+                db.create_all()
+                db.session.execute(text("""
+                    INSERT INTO menu_item_ingredients (id, menu_item_id, ingredient_id, quantity)
+                    SELECT id, menu_item_id, ingredient_id, quantity FROM _mii_backup
+                """))
+                db.session.execute(text("DROP TABLE _mii_backup"))
+                db.session.commit()
+                print("  [AUTO-MIGRATE] Rebuilt menu_item_ingredients: ingredient_id now nullable")
+                break
+    except Exception as e:
+        db.session.rollback()
+        print(f"  [AUTO-MIGRATE] ingredient_id nullable migration skipped: {e}")
 
     inspector = inspect(db.engine)
     existing_tables = inspector.get_table_names()

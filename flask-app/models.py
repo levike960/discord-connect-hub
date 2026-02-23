@@ -247,7 +247,7 @@ def define_models(db, app):
         def calculated_cost(self):
             total = 0.0
             for ri in self.recipe_items.all():
-                total += ri.quantity * ri.ingredient.price_per_unit
+                total += ri.quantity * ri.unit_cost
             return round(total, 2)
 
     class MenuItemIngredient(db.Model):
@@ -255,10 +255,36 @@ def define_models(db, app):
 
         id = db.Column(db.Integer, primary_key=True)
         menu_item_id = db.Column(db.Integer, db.ForeignKey("menu_items.id"), nullable=False)
-        ingredient_id = db.Column(db.Integer, db.ForeignKey("ingredients.id"), nullable=False)
+        ingredient_id = db.Column(db.Integer, db.ForeignKey("ingredients.id"), nullable=True)
+        sub_menu_item_id = db.Column(db.Integer, db.ForeignKey("menu_items.id"), nullable=True)
         quantity = db.Column(db.Float, nullable=False, default=1.0)
 
         ingredient = db.relationship("Ingredient")
+        sub_menu_item = db.relationship("MenuItem", foreign_keys=[sub_menu_item_id])
+
+        @property
+        def display_name(self):
+            if self.sub_menu_item_id and self.sub_menu_item:
+                return self.sub_menu_item.name
+            if self.ingredient:
+                return self.ingredient.name
+            return "?"
+
+        @property
+        def display_unit(self):
+            if self.sub_menu_item_id:
+                return "db"
+            if self.ingredient:
+                return self.ingredient.unit
+            return ""
+
+        @property
+        def unit_cost(self):
+            if self.sub_menu_item_id and self.sub_menu_item:
+                return self.sub_menu_item.production_cost
+            if self.ingredient:
+                return self.ingredient.price_per_unit
+            return 0.0
 
     class CompanyDiscount(db.Model):
         __tablename__ = "company_discounts"
