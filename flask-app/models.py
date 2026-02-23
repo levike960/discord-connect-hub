@@ -304,14 +304,37 @@ def define_models(db, app):
         __tablename__ = "stock_movements"
 
         id = db.Column(db.Integer, primary_key=True)
-        item_type = db.Column(db.String(32), nullable=False)  # 'ingredient' or 'menu_item'
+        item_type = db.Column(db.String(32), nullable=False)
         item_id = db.Column(db.Integer, nullable=False)
-        quantity = db.Column(db.Float, nullable=False)  # positive=add, negative=remove
+        quantity = db.Column(db.Float, nullable=False)
         reason = db.Column(db.String(256), nullable=True)
         user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
         created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
         user = db.relationship("User")
+
+    class GuestBookEntry(db.Model):
+        __tablename__ = "guest_book_entries"
+
+        id = db.Column(db.Integer, primary_key=True)
+        user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+        message = db.Column(db.Text, nullable=False)
+        created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+        author = db.relationship("User", backref="guest_book_entries")
+
+    class RatingComment(db.Model):
+        __tablename__ = "rating_comments"
+
+        id = db.Column(db.Integer, primary_key=True)
+        reviewer_user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+        target_user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+        comment_type = db.Column(db.String(16), nullable=False)  # 'positive' or 'negative'
+        content = db.Column(db.Text, nullable=False)
+        created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+        reviewer = db.relationship("User", foreign_keys=[reviewer_user_id])
+        target = db.relationship("User", foreign_keys=[target_user_id])
 
     return {
         "User": User,
@@ -330,4 +353,6 @@ def define_models(db, app):
         "Partner": Partner,
         "PartnerImage": PartnerImage,
         "StockMovement": StockMovement,
+        "GuestBookEntry": GuestBookEntry,
+        "RatingComment": RatingComment,
     }

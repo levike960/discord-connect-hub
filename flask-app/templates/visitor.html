@@ -148,19 +148,19 @@
 </section>
 
 {# ── Worker Ratings ── #}
-<section class="mb-5">
+<section class="mb-5" id="ratings">
   <div class="row justify-content-center">
     <div class="col-lg-10">
       <div class="card shadow-sm">
         <div class="card-body">
           <h2 class="card-title mb-4"><i class="bi bi-star-fill text-warning"></i> Munkatársak Értékelése</h2>
-          <p class="text-muted mb-4">Értékelje munkatársainkat 1-5 csillaggal!</p>
+          <p class="text-muted mb-4">Értékelje munkatársainkat 1-5 csillaggal! Kattintson a kártyára a megjegyzésekhez.</p>
 
           {% if workers %}
           <div class="row">
             {% for worker in workers %}
             <div class="col-md-6 col-lg-4 mb-4">
-              <div class="card h-100 border {% if loop.first %}border-warning{% endif %}">
+              <div class="card h-100 border {% if loop.first %}border-warning{% endif %}" style="cursor:pointer;" data-bs-toggle="modal" data-bs-target="#workerModal{{ worker.id }}">
                 {% if loop.first %}
                 <div class="card-header bg-warning bg-opacity-10 text-center">
                   <small class="fw-bold text-warning"><i class="bi bi-trophy-fill"></i> Legjobban értékelt</small>
@@ -187,9 +187,9 @@
                     <span class="ms-2 text-muted">({{ avg }}/5 — {{ worker.rating_count }} értékelés)</span>
                   </div>
 
-                  {# Rating form (only for logged-in users, not rating themselves) #}
+                  {# Rating form (stop propagation so clicking form doesn't open modal) #}
                   {% if current_user.is_authenticated and current_user.id != worker.id %}
-                  <form method="POST" action="{{ url_for('rate_worker', target_id=worker.id) }}" class="mt-3">
+                  <form method="POST" action="{{ url_for('rate_worker', target_id=worker.id) }}" class="mt-3" onclick="event.stopPropagation();">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="d-flex align-items-center justify-content-center gap-2">
                       <select name="stars" class="form-select form-select-sm" style="width: auto;">
@@ -209,10 +209,127 @@
                 </div>
               </div>
             </div>
+
+            {# Worker Comment Modal #}
+            <div class="modal fade" id="workerModal{{ worker.id }}" tabindex="-1" aria-hidden="true">
+              <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <div class="d-flex align-items-center gap-3">
+                      <img src="{{ worker.avatar_url }}" alt="avatar" class="rounded-circle" width="50" height="50" style="object-fit:cover;">
+                      <div>
+                        <h5 class="modal-title mb-0">{{ worker.ingame_name or worker.display_name }}</h5>
+                        <small class="text-muted">{{ worker.average_rating }}/5 ⭐ — {{ worker.rating_count }} értékelés</small>
+                      </div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body">
+                    {# Existing comments #}
+                    {% set comments = worker_comments.get(worker.id, []) %}
+                    {% if comments %}
+                    <div class="mb-4" style="max-height:300px;overflow-y:auto;">
+                      {% for c in comments %}
+                      <div class="d-flex align-items-start gap-2 mb-3 p-2 rounded {% if c.comment_type == 'positive' %}bg-success bg-opacity-10{% else %}bg-danger bg-opacity-10{% endif %}">
+                        <div>
+                          {% if c.comment_type == 'positive' %}
+                            <i class="bi bi-hand-thumbs-up-fill text-success"></i>
+                          {% else %}
+                            <i class="bi bi-hand-thumbs-down-fill text-danger"></i>
+                          {% endif %}
+                        </div>
+                        <div class="flex-grow-1">
+                          <small class="fw-bold">{{ c.reviewer.ingame_name or c.reviewer.display_name }}</small>
+                          <small class="text-muted ms-2">{{ c.created_at.strftime('%Y.%m.%d %H:%M') }}</small>
+                          <p class="mb-0 mt-1">{{ c.content }}</p>
+                        </div>
+                      </div>
+                      {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center mb-4">Még nincsenek megjegyzések.</p>
+                    {% endif %}
+
+                    {# Add comment form #}
+                    {% if current_user.is_authenticated and current_user.id != worker.id %}
+                    <hr>
+                    <h6><i class="bi bi-chat-dots"></i> Megjegyzés írása</h6>
+                    <form method="POST" action="{{ url_for('add_worker_comment', worker_id=worker.id) }}">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <div class="mb-2">
+                        <div class="btn-group" role="group">
+                          <input type="radio" class="btn-check" name="comment_type" value="positive" id="pos{{ worker.id }}" checked>
+                          <label class="btn btn-outline-success btn-sm" for="pos{{ worker.id }}"><i class="bi bi-hand-thumbs-up"></i> Pozitív</label>
+                          <input type="radio" class="btn-check" name="comment_type" value="negative" id="neg{{ worker.id }}">
+                          <label class="btn btn-outline-danger btn-sm" for="neg{{ worker.id }}"><i class="bi bi-hand-thumbs-down"></i> Negatív</label>
+                        </div>
+                      </div>
+                      <div class="mb-2">
+                        <textarea name="content" class="form-control form-control-sm" rows="2" maxlength="300" placeholder="Írd le a véleményed..." required></textarea>
+                      </div>
+                      <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-send"></i> Küldés</button>
+                    </form>
+                    {% elif not current_user.is_authenticated %}
+                    <p class="text-muted text-center"><small>Jelentkezz be a megjegyzés írásához.</small></p>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            </div>
             {% endfor %}
           </div>
           {% else %}
           <p class="text-muted text-center">Jelenleg nincsenek értékelhető munkatársak.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# ── Vásárlók Könyve ── #}
+<section class="mb-5" id="guestbook">
+  <div class="row justify-content-center">
+    <div class="col-lg-10">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h2 class="card-title mb-4"><i class="bi bi-journal-text"></i> Vásárlók Könyve</h2>
+
+          {% if current_user.is_authenticated %}
+          <form method="POST" action="{{ url_for('add_guestbook_entry') }}" class="mb-4">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="mb-2">
+              <textarea name="message" class="form-control" rows="3" maxlength="500" placeholder="Írd le a véleményed, élményed..." required></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary"><i class="bi bi-pencil-square"></i> Bejegyzés hozzáadása</button>
+          </form>
+          {% else %}
+          <p class="text-muted mb-4">Jelentkezz be, hogy bejegyzést írhass a vendégkönyvbe.</p>
+          {% endif %}
+
+          {% if guest_book %}
+          <div style="max-height:400px;overflow-y:auto;">
+            {% for entry in guest_book %}
+            <div class="d-flex align-items-start gap-3 mb-3 p-3 border rounded">
+              <img src="{{ entry.author.avatar_url }}" alt="avatar" class="rounded-circle" width="40" height="40" style="object-fit:cover;">
+              <div class="flex-grow-1">
+                <div class="d-flex justify-content-between align-items-center">
+                  <strong>{{ entry.author.ingame_name or entry.author.display_name }}</strong>
+                  <small class="text-muted">{{ entry.created_at.strftime('%Y.%m.%d %H:%M') }}</small>
+                </div>
+                <p class="mb-0 mt-1">{{ entry.message }}</p>
+              </div>
+              {% if current_user.is_authenticated and (current_user.id == entry.user_id or current_user.is_admin) %}
+              <form method="POST" action="{{ url_for('delete_guestbook_entry', entry_id=entry.id) }}" class="ms-2">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-sm btn-outline-danger" title="Törlés"><i class="bi bi-trash"></i></button>
+              </form>
+              {% endif %}
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p class="text-muted text-center">Még nincsenek bejegyzések. Légy te az első!</p>
           {% endif %}
         </div>
       </div>
