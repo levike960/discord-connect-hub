@@ -329,12 +329,59 @@ def define_models(db, app):
         id = db.Column(db.Integer, primary_key=True)
         reviewer_user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
         target_user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
-        comment_type = db.Column(db.String(16), nullable=False)  # 'positive' or 'negative'
+        comment_type = db.Column(db.String(16), nullable=False)
         content = db.Column(db.Text, nullable=False)
         created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
         reviewer = db.relationship("User", foreign_keys=[reviewer_user_id])
         target = db.relationship("User", foreign_keys=[target_user_id])
+
+    class Event(db.Model):
+        __tablename__ = "events"
+
+        id = db.Column(db.Integer, primary_key=True)
+        title = db.Column(db.String(256), nullable=False)
+        description = db.Column(db.Text, nullable=True)
+        event_date = db.Column(db.Date, nullable=False)
+        event_time = db.Column(db.String(16), nullable=True)  # e.g. "18:00"
+        event_type = db.Column(db.String(32), nullable=False, default="public")  # 'public' or 'private'
+        is_published = db.Column(db.Boolean, default=True)
+        created_at = db.Column(db.DateTime, default=datetime.utcnow)
+        created_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+
+        creator = db.relationship("User", backref="created_events")
+
+    class Booking(db.Model):
+        __tablename__ = "bookings"
+
+        id = db.Column(db.Integer, primary_key=True)
+        user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+        event_id = db.Column(db.Integer, db.ForeignKey("events.id"), nullable=True)  # null = standalone booking
+        booking_date = db.Column(db.Date, nullable=False)
+        booking_time = db.Column(db.String(16), nullable=True)
+        guest_count = db.Column(db.Integer, nullable=False, default=1)
+        event_type_label = db.Column(db.String(64), nullable=True)  # 'Születésnap', 'Céges', etc.
+        contact_name = db.Column(db.String(128), nullable=False)
+        note = db.Column(db.Text, nullable=True)
+        status = db.Column(db.String(32), nullable=False, default="pending")  # pending, confirmed, rejected
+        created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+        user = db.relationship("User", backref="bookings")
+        event = db.relationship("Event", backref="bookings")
+        messages = db.relationship("BookingMessage", backref="booking",
+                                    cascade="all, delete-orphan", lazy="dynamic",
+                                    order_by="BookingMessage.created_at.asc()")
+
+    class BookingMessage(db.Model):
+        __tablename__ = "booking_messages"
+
+        id = db.Column(db.Integer, primary_key=True)
+        booking_id = db.Column(db.Integer, db.ForeignKey("bookings.id"), nullable=False)
+        user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+        content = db.Column(db.Text, nullable=False)
+        created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+        author = db.relationship("User")
 
     return {
         "User": User,
@@ -355,4 +402,7 @@ def define_models(db, app):
         "StockMovement": StockMovement,
         "GuestBookEntry": GuestBookEntry,
         "RatingComment": RatingComment,
+        "Event": Event,
+        "Booking": Booking,
+        "BookingMessage": BookingMessage,
     }

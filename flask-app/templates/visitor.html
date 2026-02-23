@@ -147,6 +147,145 @@
   </div>
 </section>
 
+{# ── Rendezvény Naptár ── #}
+<section class="mb-5" id="events">
+  <div class="row justify-content-center">
+    <div class="col-lg-10">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h2 class="card-title mb-4"><i class="bi bi-calendar-event-fill text-primary"></i> Rendezvény Naptár</h2>
+
+          {% if upcoming_events %}
+          <div class="row g-3 mb-4">
+            {% for event in upcoming_events %}
+            <div class="col-md-6 col-lg-4">
+              <div class="card h-100 border-start border-4 {% if event.event_type == 'public' %}border-primary{% else %}border-success{% endif %}">
+                <div class="card-body">
+                  <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h6 class="card-title mb-0">{{ event.title }}</h6>
+                    <span class="badge {% if event.event_type == 'public' %}bg-primary{% else %}bg-success{% endif %}">
+                      {% if event.event_type == 'public' %}Nyilvános{% else %}Foglalható{% endif %}
+                    </span>
+                  </div>
+                  <p class="text-muted mb-1"><i class="bi bi-calendar3"></i> {{ event.event_date.strftime('%Y. %m. %d.') }}
+                    {% if event.event_time %}<i class="bi bi-clock ms-2"></i> {{ event.event_time }}{% endif %}
+                  </p>
+                  {% if event.description %}
+                  <p class="small mb-0">{{ event.description[:150] }}{% if event.description|length > 150 %}...{% endif %}</p>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p class="text-muted text-center mb-4">Jelenleg nincsenek közelgő események.</p>
+          {% endif %}
+
+          {# Booking form #}
+          <hr>
+          <h4 class="mb-3"><i class="bi bi-bookmark-plus"></i> Foglalás leadása</h4>
+          {% if current_user.is_authenticated %}
+          <form method="POST" action="{{ url_for('create_booking') }}" class="row g-3">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="col-md-6">
+              <label class="form-label">Kapcsolattartó neve *</label>
+              <input type="text" name="contact_name" class="form-control" required maxlength="128"
+                     value="{{ current_user.ingame_name or current_user.display_name }}">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Dátum *</label>
+              <input type="date" name="booking_date" class="form-control" required min="{{ today if today else '' }}">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Időpont</label>
+              <input type="time" name="booking_time" class="form-control">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Létszám *</label>
+              <input type="number" name="guest_count" class="form-control" min="1" max="500" value="1" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Esemény típusa</label>
+              <select name="event_type_label" class="form-select">
+                <option value="">— Válassz —</option>
+                <option value="Születésnap">Születésnap</option>
+                <option value="Céges rendezvény">Céges rendezvény</option>
+                <option value="Esküvő">Esküvő</option>
+                <option value="Borkóstoló">Borkóstoló</option>
+                <option value="Egyéb">Egyéb</option>
+              </select>
+            </div>
+            <div class="col-md-5">
+              <label class="form-label">Megjegyzés</label>
+              <textarea name="note" class="form-control" rows="1" maxlength="500" placeholder="Különleges kérések..."></textarea>
+            </div>
+            {% if upcoming_events %}
+            <div class="col-md-6">
+              <label class="form-label">Eseményhez csatlakozás (opcionális)</label>
+              <select name="event_id" class="form-select">
+                <option value="">— Nem csatlakozik eseményhez —</option>
+                {% for event in upcoming_events %}
+                <option value="{{ event.id }}">{{ event.title }} ({{ event.event_date.strftime('%m.%d.') }})</option>
+                {% endfor %}
+              </select>
+            </div>
+            {% endif %}
+            <div class="col-12">
+              <button type="submit" class="btn btn-primary"><i class="bi bi-send"></i> Foglalás leadása</button>
+            </div>
+          </form>
+          {% else %}
+          <p class="text-muted">Jelentkezz be a foglalás leadásához.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# ── Saját foglalásaim ── #}
+{% if current_user.is_authenticated and user_bookings %}
+<section class="mb-5" id="mybookings">
+  <div class="row justify-content-center">
+    <div class="col-lg-10">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h2 class="card-title mb-4"><i class="bi bi-ticket-perforated"></i> Foglalásaim</h2>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead class="table-light">
+                <tr><th>Dátum</th><th>Időpont</th><th>Típus</th><th>Létszám</th><th>Státusz</th><th></th></tr>
+              </thead>
+              <tbody>
+                {% for b in user_bookings %}
+                <tr>
+                  <td>{{ b.booking_date.strftime('%Y.%m.%d') }}</td>
+                  <td>{{ b.booking_time or '—' }}</td>
+                  <td>{{ b.event_type_label or '—' }}</td>
+                  <td>{{ b.guest_count }} fő</td>
+                  <td>
+                    {% if b.status == 'confirmed' %}
+                      <span class="badge bg-success">Megerősítve</span>
+                    {% elif b.status == 'rejected' %}
+                      <span class="badge bg-danger">Elutasítva</span>
+                    {% else %}
+                      <span class="badge bg-warning text-dark">Függőben</span>
+                    {% endif %}
+                  </td>
+                  <td><a href="{{ url_for('booking_detail', booking_id=b.id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-chat-dots"></i> Részletek</a></td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endif %}
+
 {# ── Worker Ratings ── #}
 <section class="mb-5" id="ratings">
   <div class="row justify-content-center">

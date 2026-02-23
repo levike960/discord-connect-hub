@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Foglalás #{{ booking.id }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <a href="{{ url_for('visitor') }}#mybookings" class="btn btn-outline-secondary btn-sm mb-3">
+      <i class="bi bi-arrow-left"></i> Vissza
+    </a>
+
+    <div class="card shadow-sm mb-4">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h4 class="mb-0"><i class="bi bi-ticket-perforated"></i> Foglalás #{{ booking.id }}</h4>
+        {% if booking.status == 'confirmed' %}
+          <span class="badge bg-success fs-6">Megerősítve</span>
+        {% elif booking.status == 'rejected' %}
+          <span class="badge bg-danger fs-6">Elutasítva</span>
+        {% else %}
+          <span class="badge bg-warning text-dark fs-6">Függőben</span>
+        {% endif %}
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <strong>Kapcsolattartó:</strong> {{ booking.contact_name }}
+          </div>
+          <div class="col-md-3">
+            <strong>Dátum:</strong> {{ booking.booking_date.strftime('%Y.%m.%d') }}
+          </div>
+          <div class="col-md-3">
+            <strong>Időpont:</strong> {{ booking.booking_time or '—' }}
+          </div>
+          <div class="col-md-4">
+            <strong>Létszám:</strong> {{ booking.guest_count }} fő
+          </div>
+          <div class="col-md-4">
+            <strong>Típus:</strong> {{ booking.event_type_label or '—' }}
+          </div>
+          <div class="col-md-4">
+            <strong>Leadva:</strong> {{ booking.created_at.strftime('%Y.%m.%d %H:%M') }}
+          </div>
+          {% if booking.note %}
+          <div class="col-12">
+            <strong>Megjegyzés:</strong> {{ booking.note }}
+          </div>
+          {% endif %}
+          {% if booking.event %}
+          <div class="col-12">
+            <strong>Esemény:</strong> {{ booking.event.title }} ({{ booking.event.event_date.strftime('%Y.%m.%d') }})
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    {# Chat / Messages #}
+    <div class="card shadow-sm">
+      <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-chat-left-text"></i> Üzenetek</h5>
+      </div>
+      <div class="card-body" style="max-height:400px;overflow-y:auto;" id="chatArea">
+        {% if messages %}
+        {% for msg in messages %}
+        <div class="d-flex gap-2 mb-3 {% if msg.user_id == booking.user_id %}{% else %}flex-row-reverse text-end{% endif %}">
+          <img src="{{ msg.author.avatar_url }}" alt="" class="rounded-circle" width="36" height="36" style="object-fit:cover;">
+          <div class="p-2 rounded {% if msg.user_id == booking.user_id %}bg-light{% else %}bg-primary bg-opacity-10{% endif %}" style="max-width:75%;">
+            <div class="d-flex justify-content-between align-items-center gap-2">
+              <small class="fw-bold">{{ msg.author.ingame_name or msg.author.display_name }}
+                {% if msg.author.is_admin %}<span class="badge bg-danger" style="font-size:0.65rem;">Admin</span>{% endif %}
+              </small>
+              <small class="text-muted">{{ msg.created_at.strftime('%m.%d %H:%M') }}</small>
+            </div>
+            <p class="mb-0 mt-1">{{ msg.content }}</p>
+          </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p class="text-muted text-center">Még nincsenek üzenetek. Írj az adminnak!</p>
+        {% endif %}
+      </div>
+
+      {% if can_message %}
+      <div class="card-footer">
+        <form method="POST" action="{{ url_for('booking_message', booking_id=booking.id) }}" class="d-flex gap-2">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="text" name="content" class="form-control" placeholder="Írd ide az üzeneted..." maxlength="500" required>
+          <button type="submit" class="btn btn-primary"><i class="bi bi-send"></i></button>
+        </form>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+  // Auto-scroll chat to bottom
+  const chatArea = document.getElementById('chatArea');
+  if (chatArea) chatArea.scrollTop = chatArea.scrollHeight;
+</script>
+{% endblock %}

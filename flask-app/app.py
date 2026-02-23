@@ -79,6 +79,9 @@ PartnerImage = models["PartnerImage"]
 StockMovement = models["StockMovement"]
 GuestBookEntry = models["GuestBookEntry"]
 RatingComment = models["RatingComment"]
+Event = models["Event"]
+Booking = models["Booking"]
+BookingMessage = models["BookingMessage"]
 
 
 @login_manager.user_loader
@@ -220,8 +223,19 @@ def visitor():
     for w in workers:
         worker_comments[w.id] = RatingComment.query.filter_by(target_user_id=w.id)\
             .order_by(RatingComment.created_at.desc()).limit(20).all()
+    # Events for calendar
+    upcoming_events = Event.query.filter(
+        Event.is_published == True,
+        Event.event_date >= date.today()
+    ).order_by(Event.event_date.asc()).all()
+    # User's own bookings
+    user_bookings = []
+    if hasattr(current_user, 'id') and current_user.is_authenticated:
+        user_bookings = Booking.query.filter_by(user_id=current_user.id)\
+            .order_by(Booking.created_at.desc()).all()
     return render_template("visitor.html", workers=workers, partners=partners,
-                           guest_book=guest_book, worker_comments=worker_comments)
+                           guest_book=guest_book, worker_comments=worker_comments,
+                           upcoming_events=upcoming_events, user_bookings=user_bookings)
 
 
 @app.route("/partner/<slug>")
@@ -350,6 +364,96 @@ def add_worker_comment(worker_id):
     db.session.commit()
     flash("Megjegyzés hozzáadva!", "success")
     return redirect(url_for("visitor") + "#ratings")
+
+
+# ---------------------------------------------------------------------------
+# Routes — Bookings & Events
+# ---------------------------------------------------------------------------
+
+@app.route("/booking/create", methods=["POST"])
+@login_required
+def create_booking():
+    contact_name = request.form.get("contact_name", "").strip()
+    booking_date_str = request.form.get("booking_date", "")
+    booking_time = request.form.get("booking_time", "").strip()
+    guest_count = request.form.get("guest_count", type=int, default=1)
+    event_type_label = request.form.get("event_type_label", "").strip()
+    note = request.form.get("note", "").strip()
+    event_id = request.form.get("event_id", type=int)
+
+    if not contact_name or len(contact_name) > 128:
+        flash("A kapcsolattartó neve kötelező (max 128 karakter).", "warning")
+        return redirect(url_for("visitor") + "#events")
+    if not booking_date_str:
+        flash("A dátum megadása kötelező.", "warning")
+        return redirect(url_for("visitor") + "#events")
+    try:
+        booking_date = date.fromisoformat(booking_date_str)
+    except ValueError:
+        flash("Érvénytelen dátum.", "danger")
+        return redirect(url_for("visitor") + "#events")
+    if guest_count < 1 or guest_count > 500:
+        flash("A létszám 1-500 között legyen.", "warning")
+        return redirect(url_for("visitor") + "#events")
+
+    booking = Booking(
+        user_id=current_user.id,
+        event_id=event_id if event_id else None,
+        booking_date=booking_date,
+        booking_time=booking_time or None,
+        guest_count=guest_count,
+        event_type_label=event_type_label or None,
+        contact_name=contact_name,
+        note=note[:500] if note else None,
+        status="pending",
+    )
+    db.session.add(booking)
+    db.session.commit()
+    flash("Foglalás leadva! Az adminisztrátor hamarosan megerősíti.", "success")
+    return redirect(url_for("visitor") + "#mybookings")
+
+
+@app.route("/booking/<int:booking_id>/message", methods=["POST"])
+@login_required
+def booking_message(booking_id):
+    booking = db.session.get(Booking, booking_id)
+    if not booking:
+        flash("Foglalás nem található.", "danger")
+        return redirect(url_for("visitor"))
+    # Only booking owner or admin can message
+    if booking.user_id != current_user.id and not current_user.is_admin:
+        flash("Nincs jogosultságod.", "danger")
+        return redirect(url_for("visitor"))
+    content = request.form.get("content", "").strip()
+    if not content or len(content) > 500:
+        flash("Az üzenet nem lehet üres (max 500 karakter).", "warning")
+        return redirect(url_for("booking_detail", booking_id=booking_id))
+    msg = BookingMessage(booking_id=booking_id, user_id=current_user.id, content=content)
+    db.session.add(msg)
+    db.session.commit()
+    flash("Üzenet elküldve!", "success")
+    return redirect(url_for("booking_detail", booking_id=booking_id))
+
+
+@app.route("/booking/<int:booking_id>")
+@login_required
+def booking_detail(booking_id):
+    booking = db.session.get(Booking, booking_id)
+    if not booking:
+        abort(404)
+    # Only booking owner, admin, or fraction can view
+    if booking.user_id != current_user.id and not current_user.is_admin and not current_user.has_fraction_permission:
+        abort(403)
+    messages = booking.messages.all()
+    can_message = (booking.user_id == current_user.id or current_user.is_admin)
+    return render_template("booking_detail.html", booking=booking, messages=messages, can_message=can_message)
+
+
+@app.route("/fraction/bookings")
+@fraction_required
+def fraction_bookings():
+    bookings = Booking.query.order_by(Booking.booking_date.desc()).all()
+    return render_template("fraction_bookings.html", bookings=bookings)
 
 
 # ---------------------------------------------------------------------------
@@ -1233,6 +1337,63 @@ def admin():
                 db.session.delete(img)
                 db.session.commit()
                 flash("Image deleted.", "success")
+        # --- Add Event ---
+        elif form_type == "add_event":
+            title = request.form.get("event_title", "").strip()
+            desc = request.form.get("event_description", "").strip()
+            event_date_str = request.form.get("event_date", "")
+            event_time = request.form.get("event_time", "").strip()
+            event_type = request.form.get("event_type", "public")
+            if title and event_date_str:
+                try:
+                    event_date = date.fromisoformat(event_date_str)
+                    db.session.add(Event(
+                        title=title, description=desc or None,
+                        event_date=event_date, event_time=event_time or None,
+                        event_type=event_type, created_by=current_user.id
+                    ))
+                    db.session.commit()
+                    flash("Esemény hozzáadva.", "success")
+                except ValueError:
+                    flash("Érvénytelen dátum.", "danger")
+
+        # --- Edit Event ---
+        elif form_type == "edit_event":
+            eid = request.form.get("event_id", type=int)
+            event = db.session.get(Event, eid)
+            if event:
+                event.title = request.form.get("event_title", event.title).strip()
+                event.description = request.form.get("event_description", "").strip() or None
+                ed = request.form.get("event_date", "")
+                if ed:
+                    try:
+                        event.event_date = date.fromisoformat(ed)
+                    except ValueError:
+                        pass
+                event.event_time = request.form.get("event_time", "").strip() or None
+                event.event_type = request.form.get("event_type", event.event_type)
+                event.is_published = "is_published" in request.form
+                db.session.commit()
+                flash("Esemény frissítve.", "success")
+
+        # --- Delete Event ---
+        elif form_type == "delete_event":
+            eid = request.form.get("event_id", type=int)
+            event = db.session.get(Event, eid)
+            if event:
+                db.session.delete(event)
+                db.session.commit()
+                flash("Esemény törölve.", "success")
+
+        # --- Update Booking Status ---
+        elif form_type == "update_booking_status":
+            bid = request.form.get("booking_id", type=int)
+            new_status = request.form.get("status", "")
+            booking = db.session.get(Booking, bid)
+            if booking and new_status in ("confirmed", "rejected", "pending"):
+                booking.status = new_status
+                db.session.commit()
+                flash(f"Foglalás státusza frissítve: {new_status}.", "success")
 
         active_tab = request.form.get("active_tab", "")
         return redirect(url_for("admin", tab=active_tab))
@@ -1305,6 +1466,9 @@ def admin():
     workhour_stats.sort(key=lambda x: x["total_seconds"], reverse=True)
 
     partners = Partner.query.order_by(Partner.sort_order).all()
+    events = Event.query.order_by(Event.event_date.desc()).all()
+    all_bookings = Booking.query.order_by(Booking.created_at.desc()).all()
+    pending_bookings_count = sum(1 for b in all_bookings if b.status == "pending")
 
     # Dashboard stats
     total_unpaid = sum(d.amount for d in all_dues if not d.is_paid)
@@ -1394,11 +1558,12 @@ def admin():
                             report_total_hours=report_total_hours,
                             report_worklogs_count=report_worklogs_count,
                             report_worker_stats=report_worker_stats,
-                            report_chart_labels=chart_labels,
+                             report_chart_labels=chart_labels,
                             report_chart_revenue=chart_revenue,
-                            report_chart_workhours=chart_workhours)
-
-
+                            report_chart_workhours=chart_workhours,
+                            events=events,
+                            all_bookings=all_bookings,
+                            pending_bookings_count=pending_bookings_count)
 # ---------------------------------------------------------------------------
 # Database Init & Run
 # ---------------------------------------------------------------------------
