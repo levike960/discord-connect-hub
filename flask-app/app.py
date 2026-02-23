@@ -11,6 +11,7 @@ from flask import (
     request, flash, abort, send_from_directory, jsonify
 )
 from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 from flask_login import (
     LoginManager, UserMixin, login_user, logout_user,
     login_required, current_user
@@ -48,6 +49,7 @@ ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "webp"}
 # ---------------------------------------------------------------------------
 
 db = SQLAlchemy(app)
+migrate = Migrate(app, db)
 csrf = CSRFProtect(app)
 login_manager = LoginManager(app)
 login_manager.login_view = "visitor"
@@ -1715,7 +1717,10 @@ def admin_events_page():
 # ---------------------------------------------------------------------------
 
 with app.app_context():
-    db.create_all()
+    # Only create tables if no migration directory exists yet (first run)
+    import os as _os
+    if not _os.path.isdir(_os.path.join(_os.path.dirname(__file__), "migrations")):
+        db.create_all()
 
 if __name__ == "__main__":
     app.run(debug=True)
