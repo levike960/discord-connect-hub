@@ -78,6 +78,7 @@ Partner = models["Partner"]
 PartnerImage = models["PartnerImage"]
 StockMovement = models["StockMovement"]
 GuestBookEntry = models["GuestBookEntry"]
+GuestBookLike = models["GuestBookLike"]
 RatingComment = models["RatingComment"]
 Event = models["Event"]
 Booking = models["Booking"]
@@ -125,6 +126,11 @@ def forbidden(e):
 
 def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+@app.context_processor
+def inject_now():
+    return {"now": datetime.utcnow}
 
 
 # ---------------------------------------------------------------------------
@@ -218,6 +224,12 @@ def visitor():
     workers.sort(key=lambda w: w.average_rating, reverse=True)
     partners = Partner.query.order_by(Partner.sort_order).all()
     guest_book = GuestBookEntry.query.order_by(GuestBookEntry.created_at.desc()).limit(50).all()
+    # Find top-liked entry
+    top_entry = GuestBookEntry.query.filter(GuestBookEntry.likes > 0).order_by(GuestBookEntry.likes.desc()).first()
+    # User's likes
+    user_likes = set()
+    if hasattr(current_user, 'id') and current_user.is_authenticated:
+        user_likes = {l.entry_id for l in GuestBookLike.query.filter_by(user_id=current_user.id).all()}
     # Preload comments per worker
     worker_comments = {}
     for w in workers:
@@ -235,7 +247,8 @@ def visitor():
             .order_by(Booking.created_at.desc()).all()
     return render_template("visitor.html", workers=workers, partners=partners,
                            guest_book=guest_book, worker_comments=worker_comments,
-                           upcoming_events=upcoming_events, user_bookings=user_bookings)
+                           upcoming_events=upcoming_events, user_bookings=user_bookings,
+                           top_entry=top_entry, user_likes=user_likes)
 
 
 @app.route("/partner/<slug>")
@@ -336,6 +349,33 @@ def delete_guestbook_entry(entry_id):
     return redirect(url_for("visitor") + "#guestbook")
 
 
+@app.route("/guestbook/like/<int:entry_id>", methods=["POST"])
+@login_required
+def like_guestbook_entry(entry_id):
+    entry = db.session.get(GuestBookEntry, entry_id)
+    if not entry:
+        flash("Bejegyzés nem található.", "danger")
+        return redirect(request.referrer or url_for("visitor") + "#guestbook")
+    existing = GuestBookLike.query.filter_by(entry_id=entry_id, user_id=current_user.id).first()
+    if existing:
+        db.session.delete(existing)
+        entry.likes = max(0, entry.likes - 1)
+    else:
+        db.session.add(GuestBookLike(entry_id=entry_id, user_id=current_user.id))
+        entry.likes = entry.likes + 1
+    db.session.commit()
+    return redirect(request.referrer or url_for("visitor") + "#guestbook")
+
+
+@app.route("/guestbook")
+def guestbook_page():
+    guest_book = GuestBookEntry.query.order_by(GuestBookEntry.created_at.desc()).all()
+    user_likes = set()
+    if hasattr(current_user, 'id') and current_user.is_authenticated:
+        user_likes = {l.entry_id for l in GuestBookLike.query.filter_by(user_id=current_user.id).all()}
+    return render_template("guestbook.html", guest_book=guest_book, user_likes=user_likes)
+
+
 @app.route("/worker/<int:worker_id>/comment", methods=["POST"])
 @login_required
 def add_worker_comment(worker_id):
@@ -396,6 +436,8 @@ def create_booking():
         flash("A létszám 1-500 között legyen.", "warning")
         return redirect(url_for("visitor") + "#events")
 
+    contact_phone = request.form.get("contact_phone", "").strip()
+
     booking = Booking(
         user_id=current_user.id,
         event_id=event_id if event_id else None,
@@ -404,6 +446,7 @@ def create_booking():
         guest_count=guest_count,
         event_type_label=event_type_label or None,
         contact_name=contact_name,
+        contact_phone=contact_phone or None,
         note=note[:500] if note else None,
         status="pending",
     )
@@ -842,6 +885,9 @@ def fraction_warehouse():
                 qty = abs(quantity)
             elif form_type == "stock_remove":
                 qty = -abs(quantity)
+            elif form_type == "stock_set":
+                # Set absolute value - handled below
+                pass
             else:
                 flash("Érvénytelen művelet.", "danger")
                 return redirect(url_for("fraction_warehouse"))
@@ -856,15 +902,27 @@ def fraction_warehouse():
                 return redirect(url_for("fraction_warehouse"))
 
             if item:
-                item.stock = max(0, item.stock + qty)
-                db.session.add(StockMovement(
-                    item_type=item_type, item_id=item_id,
-                    quantity=qty, reason=reason or None,
-                    user_id=current_user.id
-                ))
-                db.session.commit()
-                action_word = "hozzáadva" if qty > 0 else "elvéve"
-                flash(f"{abs(qty)} {action_word}: {item.name}", "success")
+                if form_type == "stock_set":
+                    old_stock = item.stock
+                    item.stock = max(0, quantity)
+                    qty = item.stock - old_stock
+                    db.session.add(StockMovement(
+                        item_type=item_type, item_id=item_id,
+                        quantity=qty, reason=reason or "Készlet beállítás",
+                        user_id=current_user.id
+                    ))
+                    db.session.commit()
+                    flash(f"Készlet beállítva: {item.name} → {item.stock}", "success")
+                else:
+                    item.stock = max(0, item.stock + qty)
+                    db.session.add(StockMovement(
+                        item_type=item_type, item_id=item_id,
+                        quantity=qty, reason=reason or None,
+                        user_id=current_user.id
+                    ))
+                    db.session.commit()
+                    action_word = "hozzáadva" if qty > 0 else "elvéve"
+                    flash(f"{abs(qty)} {action_word}: {item.name}", "success")
             else:
                 flash("Tétel nem található.", "danger")
 
