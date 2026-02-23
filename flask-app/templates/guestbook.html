@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Vásárlók Könyve{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-10">
+
+    <div class="d-flex align-items-center justify-content-between mb-4">
+      <h2><i class="bi bi-journal-text text-primary"></i> Vásárlók Könyve</h2>
+      <a href="{{ url_for('visitor') }}#guestbook" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i> Vissza
+      </a>
+    </div>
+
+    {% if current_user.is_authenticated %}
+    <div class="card shadow-sm mb-4">
+      <div class="card-body">
+        <form method="POST" action="{{ url_for('add_guestbook_entry') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="mb-2">
+            <textarea name="message" class="form-control" rows="3" maxlength="500" placeholder="Írd le a véleményed, élményed..." required></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary"><i class="bi bi-pencil-square"></i> Bejegyzés hozzáadása</button>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if guest_book %}
+    {% for entry in guest_book %}
+    <div class="card shadow-sm mb-3">
+      <div class="card-body">
+        <div class="d-flex align-items-start gap-3">
+          <img src="{{ entry.author.avatar_url }}" alt="avatar" class="rounded-circle" width="44" height="44" style="object-fit:cover;">
+          <div class="flex-grow-1">
+            <div class="d-flex justify-content-between align-items-center">
+              <strong>{{ entry.author.ingame_name or entry.author.display_name }}</strong>
+              <small class="text-muted">{{ entry.created_at.strftime('%Y.%m.%d %H:%M') }}</small>
+            </div>
+            <p class="mb-2 mt-1">{{ entry.message }}</p>
+            <div class="d-flex align-items-center gap-2">
+              {% if current_user.is_authenticated %}
+              <form method="POST" action="{{ url_for('like_guestbook_entry', entry_id=entry.id) }}" class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-sm {% if entry.id in user_likes %}btn-danger{% else %}btn-outline-danger{% endif %}">
+                  <i class="bi {% if entry.id in user_likes %}bi-heart-fill{% else %}bi-heart{% endif %}"></i>
+                  {{ entry.likes }}
+                </button>
+              </form>
+              {% else %}
+              <span class="btn btn-sm btn-outline-secondary disabled"><i class="bi bi-heart"></i> {{ entry.likes }}</span>
+              {% endif %}
+
+              {% if current_user.is_authenticated and (current_user.id == entry.user_id or current_user.is_admin) %}
+              <form method="POST" action="{{ url_for('delete_guestbook_entry', entry_id=entry.id) }}" class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-sm btn-outline-danger" title="Törlés"><i class="bi bi-trash"></i></button>
+              </form>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <p class="text-muted text-center">Még nincsenek bejegyzések. Légy te az első!</p>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}

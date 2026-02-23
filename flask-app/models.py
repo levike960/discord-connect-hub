@@ -321,7 +321,21 @@ def define_models(db, app):
         message = db.Column(db.Text, nullable=False)
         created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+        likes = db.Column(db.Integer, nullable=False, default=0)
+
         author = db.relationship("User", backref="guest_book_entries")
+
+    class GuestBookLike(db.Model):
+        __tablename__ = "guest_book_likes"
+
+        id = db.Column(db.Integer, primary_key=True)
+        entry_id = db.Column(db.Integer, db.ForeignKey("guest_book_entries.id"), nullable=False)
+        user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+        created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+        __table_args__ = (
+            db.UniqueConstraint("entry_id", "user_id", name="uq_guestbook_like"),
+        )
 
     class RatingComment(db.Model):
         __tablename__ = "rating_comments"
@@ -362,6 +376,7 @@ def define_models(db, app):
         guest_count = db.Column(db.Integer, nullable=False, default=1)
         event_type_label = db.Column(db.String(64), nullable=True)  # 'Születésnap', 'Céges', etc.
         contact_name = db.Column(db.String(128), nullable=False)
+        contact_phone = db.Column(db.String(32), nullable=True)
         note = db.Column(db.Text, nullable=True)
         status = db.Column(db.String(32), nullable=False, default="pending")  # pending, confirmed, rejected
         created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -401,6 +416,7 @@ def define_models(db, app):
         "PartnerImage": PartnerImage,
         "StockMovement": StockMovement,
         "GuestBookEntry": GuestBookEntry,
+        "GuestBookLike": GuestBookLike,
         "RatingComment": RatingComment,
         "Event": Event,
         "Booking": Booking,

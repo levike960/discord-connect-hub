@@ -117,12 +117,12 @@
                   </span>
                 </td>
                 <td>
-                  <div class="d-flex gap-1 align-items-center">
+                  <div class="d-flex gap-1 align-items-center flex-wrap">
                     <form method="POST" class="d-flex gap-1 align-items-center">
                       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                       <input type="hidden" name="item_type" value="ingredient">
                       <input type="hidden" name="item_id" value="{{ ing.id }}">
-                      <input type="number" name="quantity" step="0.1" min="0.1" class="form-control form-control-sm" 
+                      <input type="number" name="quantity" step="0.1" min="0" class="form-control form-control-sm" 
                              style="width:80px;" placeholder="Menny." required>
                       <input type="text" name="reason" class="form-control form-control-sm" 
                              style="width:120px;" placeholder="Ok (opt.)">
@@ -131,6 +131,9 @@
                       </button>
                       <button name="form_type" value="stock_remove" class="btn btn-sm btn-danger" title="Elvétel">
                         <i class="bi bi-dash-lg"></i>
+                      </button>
+                      <button name="form_type" value="stock_set" class="btn btn-sm btn-warning" title="Beállítás erre az értékre">
+                        <i class="bi bi-pencil-fill"></i>
                       </button>
                     </form>
                   </div>
@@ -186,12 +189,12 @@
                   </span>
                 </td>
                 <td>
-                  <div class="d-flex gap-1 align-items-center">
+                  <div class="d-flex gap-1 align-items-center flex-wrap">
                     <form method="POST" class="d-flex gap-1 align-items-center">
                       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                       <input type="hidden" name="item_type" value="menu_item">
                       <input type="hidden" name="item_id" value="{{ mi.id }}">
-                      <input type="number" name="quantity" step="1" min="1" class="form-control form-control-sm" 
+                      <input type="number" name="quantity" step="1" min="0" class="form-control form-control-sm" 
                              style="width:80px;" placeholder="Menny." required>
                       <input type="text" name="reason" class="form-control form-control-sm" 
                              style="width:120px;" placeholder="Ok (opt.)">
@@ -200,6 +203,9 @@
                       </button>
                       <button name="form_type" value="stock_remove" class="btn btn-sm btn-danger" title="Elvétel">
                         <i class="bi bi-dash-lg"></i>
+                      </button>
+                      <button name="form_type" value="stock_set" class="btn btn-sm btn-warning" title="Beállítás erre az értékre">
+                        <i class="bi bi-pencil-fill"></i>
                       </button>
                     </form>
                   </div>
