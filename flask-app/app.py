@@ -11,7 +11,6 @@ from flask import (
     request, flash, abort, send_from_directory, jsonify
 )
 from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
 from flask_login import (
     LoginManager, UserMixin, login_user, logout_user,
     login_required, current_user
@@ -49,7 +48,6 @@ ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "webp"}
 # ---------------------------------------------------------------------------
 
 db = SQLAlchemy(app)
-migrate = Migrate(app, db)
 csrf = CSRFProtect(app)
 login_manager = LoginManager(app)
 login_manager.login_view = "visitor"
@@ -1716,11 +1714,58 @@ def admin_events_page():
 # Database Init & Run
 # ---------------------------------------------------------------------------
 
+def _auto_migrate_db():
+    """Automatically add missing tables and columns on startup.
+    
+    This inspects the SQLAlchemy models vs the actual DB schema and applies
+    ALTER TABLE ADD COLUMN for any new columns. New tables are created by
+    db.create_all(). Existing data is preserved — nothing is dropped.
+    """
+    from sqlalchemy import inspect, text
+
+    db.create_all()  # Creates any brand-new tables
+
+    inspector = inspect(db.engine)
+    existing_tables = inspector.get_table_names()
+
+    for table_name, table in db.metadata.tables.items():
+        if table_name not in existing_tables:
+            continue  # Already created by create_all above
+
+        existing_columns = {col["name"] for col in inspector.get_columns(table_name)}
+        for column in table.columns:
+            if column.name not in existing_columns:
+                # Build ALTER TABLE statement
+                col_type = column.type.compile(db.engine.dialect)
+                nullable = "" if column.nullable else " NOT NULL"
+                default = ""
+                if column.default is not None:
+                    val = column.default.arg
+                    if callable(val):
+                        val = val(None)
+                    if isinstance(val, bool):
+                        default = f" DEFAULT {1 if val else 0}"
+                    elif isinstance(val, (int, float)):
+                        default = f" DEFAULT {val}"
+                    elif isinstance(val, str):
+                        default = f" DEFAULT '{val}'"
+                # SQLite doesn't support NOT NULL without DEFAULT on existing tables
+                if nullable == " NOT NULL" and not default:
+                    nullable = ""  # Make it nullable to avoid SQLite error
+                sql = f'ALTER TABLE "{table_name}" ADD COLUMN "{column.name}" {col_type}{nullable}{default}'
+                try:
+                    db.session.execute(text(sql))
+                    db.session.commit()
+                    print(f"  [AUTO-MIGRATE] Added column: {table_name}.{column.name}")
+                except Exception as e:
+                    db.session.rollback()
+                    # Column might already exist or other benign error
+                    print(f"  [AUTO-MIGRATE] Skipped {table_name}.{column.name}: {e}")
+
+
 with app.app_context():
-    # Only create tables if no migration directory exists yet (first run)
-    import os as _os
-    if not _os.path.isdir(_os.path.join(_os.path.dirname(__file__), "migrations")):
-        db.create_all()
+    _auto_migrate_db()
+    print("[AUTO-MIGRATE] Database check complete.")
 
 if __name__ == "__main__":
     app.run(debug=True)
