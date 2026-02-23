@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Admin — {{ section_title|default('Panel') }}{% endblock %}
+
+{% block content %}
+<style>
+  .admin-hero-mini {
+    background: linear-gradient(135deg, var(--csp-surface) 0%, var(--csp-accent-subtle) 100%);
+    border: 1px solid var(--csp-border);
+    border-radius: 1rem;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .admin-hero-mini h4 {
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin: 0;
+  }
+  .admin-hero-mini h4 i { color: var(--csp-accent); }
+  .admin-loading {
+    display: none;
+    text-align: center;
+    padding: 3rem 1rem;
+  }
+  .admin-loading.active { display: block; }
+  .admin-error {
+    display: none;
+    text-align: center;
+    padding: 2rem 1rem;
+  }
+  .admin-error.active { display: block; }
+  .spinner-border-accent {
+    color: var(--csp-accent);
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+</style>
+
+<div class="admin-hero-mini">
+  <a href="{{ url_for('admin') }}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left me-1"></i> Vissza
+  </a>
+  <h4><i class="{{ section_icon|default('bi bi-gear-fill') }}"></i> {{ section_title|default('Admin') }}</h4>
+  {% block section_actions %}{% endblock %}
+</div>
+
+{% block admin_content %}{% endblock %}
+{% endblock %}

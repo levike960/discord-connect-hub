@@ -1,0 +1,165 @@
+{% extends "admin_base.html" %}
+{% set section_title = "Tételek / Receptek" %}
+{% set section_icon = "bi bi-cup-straw" %}
+
+{% block admin_content %}
+<h4 class="mb-3">Tétel (recept) hozzáadása</h4>
+<form method="POST" enctype="multipart/form-data" class="mb-4">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="form_type" value="add_menu_item">
+  <div class="row g-3">
+    <div class="col-md-4">
+      <input type="text" name="mi_name" class="form-control" placeholder="Tétel neve" required maxlength="128">
+    </div>
+    <div class="col-md-3">
+      <select name="mi_category" class="form-select" required>
+        <option value="alc">Alkoholos ital</option>
+        <option value="non_alc">Alkoholmentes ital</option>
+        <option value="food">Étel</option>
+      </select>
+    </div>
+    <div class="col-md-2">
+      <input type="number" name="mi_price" class="form-control" placeholder="Ár (Ft)" step="1" required>
+    </div>
+    <div class="col-md-3">
+      <input type="number" name="mi_time" class="form-control" placeholder="Idő (mp)" step="1" value="0">
+    </div>
+    <div class="col-md-4">
+      <label class="form-label small">Kép (opcionális)</label>
+      <input type="file" name="mi_image" class="form-control" accept="image/*">
+    </div>
+    <div class="col-md-4">
+      <label class="form-label small">Gyártási költség felülírás (opcionális)</label>
+      <input type="number" name="mi_cost_override" class="form-control" placeholder="Auto" step="1">
+    </div>
+    <div class="col-md-4 d-flex align-items-end">
+      <button type="submit" class="btn btn-success w-100">Hozzáadás</button>
+    </div>
+  </div>
+</form>
+
+{% if menu_items %}
+<div class="table-responsive">
+  <table class="table table-striped table-hover align-middle">
+    <thead class="table-dark">
+      <tr><th>Név</th><th>Kategória</th><th>Ár</th><th>Költség</th><th>Idő</th><th>Készlet</th><th>Min.</th><th>Recept</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for mi in menu_items %}
+      <tr>
+        <td>
+          {% if mi.image_path %}
+            <img src="{{ url_for('static', filename=mi.image_path) }}" width="30" class="rounded me-1">
+          {% endif %}
+          {{ mi.name }}
+        </td>
+        <td>
+          {% if mi.category == 'alc' %}<span class="badge bg-primary">Alkoholos</span>
+          {% elif mi.category == 'non_alc' %}<span class="badge bg-info text-dark">Alkoholmentes</span>
+          {% else %}<span class="badge" style="background:var(--csp-gold);color:#000;">Étel</span>{% endif %}
+        </td>
+        <td>{{ "%.0f"|format(mi.price) }} Ft</td>
+        <td>{{ "%.0f"|format(mi.production_cost) }} Ft</td>
+        <td>{{ mi.production_time_seconds }} mp</td>
+        <td>
+          <span class="{% if mi.stock <= 0 %}text-danger fw-bold{% elif mi.stock < mi.min_stock %}text-warning fw-bold{% else %}text-success{% endif %}">
+            {{ "%.0f"|format(mi.stock) }} db
+          </span>
+        </td>
+        <td>
+          <form method="POST" class="d-flex gap-1 align-items-center">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="form_type" value="update_min_stock">
+            <input type="hidden" name="item_type" value="menu_item">
+            <input type="hidden" name="item_id" value="{{ mi.id }}">
+            <input type="number" name="min_stock" class="form-control form-control-sm" style="width:60px;"
+                   value="{{ '%.0f'|format(mi.min_stock) }}" step="1" min="0">
+            <button class="btn btn-sm btn-outline-primary p-0 px-1"><i class="bi bi-check"></i></button>
+          </form>
+        </td>
+        <td>
+          <button class="btn btn-sm btn-outline-primary" type="button"
+                  data-bs-toggle="collapse" data-bs-target="#recipe-{{ mi.id }}">
+            <i class="bi bi-list-ul"></i> Recept
+          </button>
+        </td>
+        <td>
+          <form method="POST" class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="form_type" value="delete_menu_item">
+            <input type="hidden" name="mi_id" value="{{ mi.id }}">
+            <button class="btn btn-sm btn-danger">Törlés</button>
+          </form>
+        </td>
+      </tr>
+      <tr class="collapse" id="recipe-{{ mi.id }}">
+        <td colspan="9">
+          <div class="p-2 bg-light rounded">
+            <h6 class="mb-2">Hozzávalók:</h6>
+            {% set recipe = mi.recipe_items.all() %}
+            {% if recipe %}
+            <table class="table table-sm mb-2">
+              <thead><tr><th>Alapanyag</th><th>Mennyiség</th><th>Költség</th><th></th></tr></thead>
+              <tbody>
+                {% for ri in recipe %}
+                <tr>
+                  <td>{{ ri.ingredient.name }}</td>
+                  <td>{{ "%.1f"|format(ri.quantity) }} {{ ri.ingredient.unit }}</td>
+                  <td>{{ "%.0f"|format(ri.quantity * ri.ingredient.price_per_unit) }} Ft</td>
+                  <td>
+                    <form method="POST" class="d-inline">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <input type="hidden" name="form_type" value="remove_recipe_item">
+                      <input type="hidden" name="ri_id" value="{{ ri.id }}">
+                      <input type="hidden" name="mi_id" value="{{ mi.id }}">
+                      <button class="btn btn-sm btn-outline-danger"><i class="bi bi-x"></i></button>
+                    </form>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            <p class="small text-muted">Kalkulált költség: <strong>{{ "%.0f"|format(mi.calculated_cost) }} Ft</strong></p>
+            {% else %}
+            <p class="text-muted small">Nincs hozzávaló.</p>
+            {% endif %}
+
+            <form method="POST" class="row g-2 align-items-end mt-2">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="form_type" value="add_recipe_item">
+              <input type="hidden" name="mi_id" value="{{ mi.id }}">
+              <div class="col-md-5">
+                <select name="ri_ingredient_id" class="form-select form-select-sm" required>
+                  <option value="">Alapanyag...</option>
+                  {% for ing in ingredients %}
+                  <option value="{{ ing.id }}">{{ ing.name }} ({{ ing.unit }})</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-md-3">
+                <input type="number" name="ri_quantity" class="form-control form-control-sm" placeholder="Mennyiség" step="0.1" required>
+              </div>
+              <div class="col-md-4">
+                <button type="submit" class="btn btn-sm btn-success w-100">Hozzáadás</button>
+              </div>
+            </form>
+
+            <form method="POST" class="mt-2">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="form_type" value="recalc_cost">
+              <input type="hidden" name="mi_id" value="{{ mi.id }}">
+              <button type="submit" class="btn btn-sm btn-outline-warning">
+                <i class="bi bi-arrow-repeat"></i> Költség újraszámítás
+              </button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="text-muted">Nincsenek tételek.</p>
+{% endif %}
+{% endblock %}

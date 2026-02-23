@@ -1,0 +1,45 @@
+{% extends "admin_base.html" %}
+{% set section_title = "Cégek" %}
+{% set section_icon = "bi bi-truck" %}
+
+{% block admin_content %}
+<h4 class="mb-3">Szállítási cég hozzáadása</h4>
+<form method="POST" class="row g-3 mb-4">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="form_type" value="add_company">
+  <div class="col-md-8">
+    <input type="text" name="company_name" class="form-control" placeholder="Cég neve" required maxlength="128">
+  </div>
+  <div class="col-md-4">
+    <button type="submit" class="btn btn-success w-100">Hozzáadás</button>
+  </div>
+</form>
+
+{% if companies %}
+<div class="table-responsive">
+  <table class="table table-striped">
+    <thead class="table-dark">
+      <tr><th>Név</th><th>Üzenetek</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for company in companies %}
+      <tr>
+        <td>{{ company.name }}</td>
+        <td>{{ company.messages.count() }}</td>
+        <td>
+          <form method="POST" class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="form_type" value="delete_company">
+            <input type="hidden" name="company_id" value="{{ company.id }}">
+            <button class="btn btn-sm btn-danger">Törlés</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="text-muted">Nincsenek cégek.</p>
+{% endif %}
+{% endblock %}

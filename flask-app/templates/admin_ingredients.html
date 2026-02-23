@@ -1,0 +1,74 @@
+{% extends "admin_base.html" %}
+{% set section_title = "Alapanyagok" %}
+{% set section_icon = "bi bi-box-seam-fill" %}
+
+{% block admin_content %}
+<h4 class="mb-3">Alapanyag hozzáadása</h4>
+<form method="POST" class="row g-3 mb-4">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="form_type" value="add_ingredient">
+  <div class="col-md-4">
+    <input type="text" name="ing_name" class="form-control" placeholder="Alapanyag neve" required maxlength="128">
+  </div>
+  <div class="col-md-2">
+    <select name="ing_unit" class="form-select" required>
+      <option value="db">db</option>
+      <option value="ml">ml</option>
+      <option value="g">g</option>
+      <option value="kg">kg</option>
+      <option value="l">l</option>
+    </select>
+  </div>
+  <div class="col-md-3">
+    <input type="number" name="ing_price" class="form-control" placeholder="Egységár (Ft)" step="1" required>
+  </div>
+  <div class="col-md-3">
+    <button type="submit" class="btn btn-success w-100">Hozzáadás</button>
+  </div>
+</form>
+
+{% if ingredients %}
+<div class="table-responsive">
+  <table class="table table-striped">
+    <thead class="table-dark">
+      <tr><th>Név</th><th>Egység</th><th>Egységár</th><th>Készlet</th><th>Min. készlet</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for ing in ingredients %}
+      <tr>
+        <td>{{ ing.name }}</td>
+        <td>{{ ing.unit }}</td>
+        <td>{{ "%.0f"|format(ing.price_per_unit) }} Ft</td>
+        <td>
+          <span class="{% if ing.stock <= 0 %}text-danger fw-bold{% elif ing.stock < ing.min_stock %}text-warning fw-bold{% else %}text-success{% endif %}">
+            {{ "%.1f"|format(ing.stock) }} {{ ing.unit }}
+          </span>
+        </td>
+        <td>
+          <form method="POST" class="d-flex gap-1 align-items-center">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="form_type" value="update_min_stock">
+            <input type="hidden" name="item_type" value="ingredient">
+            <input type="hidden" name="item_id" value="{{ ing.id }}">
+            <input type="number" name="min_stock" class="form-control form-control-sm" style="width:70px;"
+                   value="{{ '%.1f'|format(ing.min_stock) }}" step="0.1" min="0">
+            <button class="btn btn-sm btn-outline-primary p-0 px-1"><i class="bi bi-check"></i></button>
+          </form>
+        </td>
+        <td>
+          <form method="POST" class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="form_type" value="delete_ingredient">
+            <input type="hidden" name="ing_id" value="{{ ing.id }}">
+            <button class="btn btn-sm btn-danger">Törlés</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="text-muted">Nincsenek alapanyagok.</p>
+{% endif %}
+{% endblock %}

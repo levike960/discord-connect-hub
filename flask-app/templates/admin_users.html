@@ -1,0 +1,55 @@
+{% extends "admin_base.html" %}
+{% set section_title = "Felhasználók" %}
+{% set section_icon = "bi bi-people-fill" %}
+
+{% block admin_content %}
+<div class="table-responsive">
+  <table class="table table-striped table-hover align-middle">
+    <thead class="table-dark">
+      <tr>
+        <th>Avatar</th>
+        <th>Username</th>
+        <th>Discord ID</th>
+        <th>Admin</th>
+        <th>Fraction</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for user in users %}
+      <tr>
+        <td><img src="{{ user.avatar_url }}" alt="avatar" class="avatar-sm"></td>
+        <td>{{ user.display_name }}</td>
+        <td><code>{{ user.discord_id }}</code></td>
+        <td>
+          {% if user.is_admin %}
+            <span class="badge bg-success">Yes</span>
+          {% else %}
+            <span class="badge bg-secondary">No</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if user.has_fraction_permission %}
+            <span class="badge bg-primary">Yes</span>
+          {% else %}
+            <span class="badge bg-secondary">No</span>
+          {% endif %}
+        </td>
+        <td>
+          <form method="POST" class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="form_type" value="user_perm">
+            <input type="hidden" name="user_id" value="{{ user.id }}">
+            {% if user.has_fraction_permission %}
+              <button name="action" value="revoke" class="btn btn-sm btn-warning">Revoke</button>
+            {% else %}
+              <button name="action" value="grant" class="btn btn-sm btn-success">Grant</button>
+            {% endif %}
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

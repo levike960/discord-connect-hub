@@ -1,0 +1,139 @@
+{% extends "admin_base.html" %}
+{% set section_title = "Partnerek" %}
+{% set section_icon = "bi bi-people-fill" %}
+
+{% block admin_content %}
+<h4 class="mb-3">Partner hozzáadása</h4>
+<form method="POST" enctype="multipart/form-data" class="mb-4">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="form_type" value="add_partner">
+  <div class="row g-3">
+    <div class="col-md-6">
+      <input type="text" name="partner_name" class="form-control" placeholder="Partner neve" required maxlength="256">
+    </div>
+    <div class="col-md-6">
+      <input type="text" name="partner_slug" class="form-control" placeholder="URL slug (pl. uwu)" required maxlength="256">
+    </div>
+    <div class="col-12">
+      <input type="text" name="partner_short_desc" class="form-control" placeholder="Rövid leírás" maxlength="512">
+    </div>
+    <div class="col-12">
+      <textarea name="partner_description" class="form-control" rows="4" placeholder="Részletes leírás"></textarea>
+    </div>
+    <div class="col-12">
+      <textarea name="partner_price_list" class="form-control" rows="3" placeholder="Árlista (soronként: tétel - ár)"></textarea>
+    </div>
+    <div class="col-md-8">
+      <label class="form-label">Logó (opcionális)</label>
+      <input type="file" name="partner_logo" class="form-control" accept="image/*">
+    </div>
+    <div class="col-md-4 d-flex align-items-end">
+      <button type="submit" class="btn btn-success w-100">Hozzáadás</button>
+    </div>
+  </div>
+</form>
+
+{% if partners %}
+<div class="accordion" id="partnersAccordion">
+  {% for p in partners %}
+  <div class="accordion-item">
+    <h2 class="accordion-header">
+      <button class="accordion-button collapsed d-flex align-items-center gap-2" type="button"
+              data-bs-toggle="collapse" data-bs-target="#partner-{{ p.id }}">
+        {% if p.logo_path %}
+          <img src="{{ url_for('static', filename=p.logo_path) }}" width="28" height="28" class="rounded" style="object-fit:cover;">
+        {% endif %}
+        <strong>{{ p.name }}</strong>
+        <span class="badge bg-secondary ms-2">{{ p.slug }}</span>
+        <span class="badge bg-primary ms-1">{{ p.images.count() }} kép</span>
+      </button>
+    </h2>
+    <div id="partner-{{ p.id }}" class="accordion-collapse collapse" data-bs-parent="#partnersAccordion">
+      <div class="accordion-body">
+        <form method="POST" enctype="multipart/form-data" class="mb-4">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="form_type" value="edit_partner">
+          <input type="hidden" name="partner_id" value="{{ p.id }}">
+          <div class="row g-2">
+            <div class="col-md-6">
+              <label class="form-label small">Név</label>
+              <input type="text" name="partner_name" class="form-control form-control-sm" value="{{ p.name }}" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small">Slug</label>
+              <input type="text" name="partner_slug" class="form-control form-control-sm" value="{{ p.slug }}" required>
+            </div>
+            <div class="col-12">
+              <label class="form-label small">Rövid leírás</label>
+              <input type="text" name="partner_short_desc" class="form-control form-control-sm" value="{{ p.short_description or '' }}">
+            </div>
+            <div class="col-12">
+              <label class="form-label small">Részletes leírás</label>
+              <textarea name="partner_description" class="form-control form-control-sm" rows="3">{{ p.description or '' }}</textarea>
+            </div>
+            <div class="col-12">
+              <label class="form-label small">Árlista</label>
+              <textarea name="partner_price_list" class="form-control form-control-sm" rows="3">{{ p.price_list or '' }}</textarea>
+            </div>
+            <div class="col-md-8">
+              <label class="form-label small">Új logó</label>
+              <input type="file" name="partner_logo" class="form-control form-control-sm" accept="image/*">
+            </div>
+            <div class="col-md-4 d-flex align-items-end gap-2">
+              <button type="submit" class="btn btn-sm btn-primary flex-fill">Mentés</button>
+            </div>
+          </div>
+        </form>
+        <form method="POST" class="mb-4">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="form_type" value="delete_partner">
+          <input type="hidden" name="partner_id" value="{{ p.id }}">
+          <button class="btn btn-sm btn-danger"><i class="bi bi-trash"></i> Partner törlése</button>
+        </form>
+        <hr>
+        <h6><i class="bi bi-images"></i> Képek</h6>
+        <form method="POST" enctype="multipart/form-data" class="row g-2 mb-3">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="form_type" value="add_partner_image">
+          <input type="hidden" name="partner_id" value="{{ p.id }}">
+          <div class="col-md-5">
+            <input type="file" name="partner_image" class="form-control form-control-sm" accept="image/*" required>
+          </div>
+          <div class="col-md-5">
+            <input type="text" name="image_caption" class="form-control form-control-sm" placeholder="Felirat (opcionális)">
+          </div>
+          <div class="col-md-2">
+            <button type="submit" class="btn btn-sm btn-success w-100">Feltöltés</button>
+          </div>
+        </form>
+        {% if p.images.count() > 0 %}
+        <div class="row g-2">
+          {% for img in p.images.all() %}
+          <div class="col-6 col-md-3">
+            <div class="position-relative">
+              <img src="{{ url_for('static', filename=img.image_path) }}" class="img-fluid rounded" style="aspect-ratio:1;object-fit:cover;width:100%;">
+              {% if img.caption %}
+                <small class="d-block text-muted mt-1">{{ img.caption }}</small>
+              {% endif %}
+              <form method="POST" class="position-absolute top-0 end-0 m-1">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="form_type" value="delete_partner_image">
+                <input type="hidden" name="image_id" value="{{ img.id }}">
+                <button class="btn btn-sm btn-danger p-0 px-1" style="font-size:0.7rem;"><i class="bi bi-x"></i></button>
+              </form>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-muted small">Nincsenek képek.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<p class="text-muted">Nincsenek partnerek.</p>
+{% endif %}
+{% endblock %}
