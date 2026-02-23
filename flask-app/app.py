@@ -77,6 +77,8 @@ CompanyDiscount = models["CompanyDiscount"]
 Partner = models["Partner"]
 PartnerImage = models["PartnerImage"]
 StockMovement = models["StockMovement"]
+GuestBookEntry = models["GuestBookEntry"]
+RatingComment = models["RatingComment"]
 
 
 @login_manager.user_loader
@@ -212,7 +214,14 @@ def visitor():
     workers = User.query.filter_by(has_fraction_permission=True).all()
     workers.sort(key=lambda w: w.average_rating, reverse=True)
     partners = Partner.query.order_by(Partner.sort_order).all()
-    return render_template("visitor.html", workers=workers, partners=partners)
+    guest_book = GuestBookEntry.query.order_by(GuestBookEntry.created_at.desc()).limit(50).all()
+    # Preload comments per worker
+    worker_comments = {}
+    for w in workers:
+        worker_comments[w.id] = RatingComment.query.filter_by(target_user_id=w.id)\
+            .order_by(RatingComment.created_at.desc()).limit(20).all()
+    return render_template("visitor.html", workers=workers, partners=partners,
+                           guest_book=guest_book, worker_comments=worker_comments)
 
 
 @app.route("/partner/<slug>")
@@ -283,6 +292,64 @@ def rate_worker(target_id):
     db.session.commit()
     flash(f"Rated {target.display_name} {stars} star(s).", "success")
     return redirect(url_for("visitor"))
+
+@app.route("/guestbook", methods=["POST"])
+@login_required
+def add_guestbook_entry():
+    message = request.form.get("message", "").strip()
+    if not message or len(message) > 500:
+        flash("Az üzenet nem lehet üres és max 500 karakter.", "warning")
+        return redirect(url_for("visitor") + "#guestbook")
+    entry = GuestBookEntry(user_id=current_user.id, message=message)
+    db.session.add(entry)
+    db.session.commit()
+    flash("Bejegyzés hozzáadva a vendégkönyvhöz!", "success")
+    return redirect(url_for("visitor") + "#guestbook")
+
+
+@app.route("/guestbook/delete/<int:entry_id>", methods=["POST"])
+@login_required
+def delete_guestbook_entry(entry_id):
+    entry = db.session.get(GuestBookEntry, entry_id)
+    if not entry:
+        flash("Bejegyzés nem található.", "danger")
+    elif entry.user_id != current_user.id and not current_user.is_admin:
+        flash("Nincs jogosultságod törölni ezt a bejegyzést.", "danger")
+    else:
+        db.session.delete(entry)
+        db.session.commit()
+        flash("Bejegyzés törölve.", "success")
+    return redirect(url_for("visitor") + "#guestbook")
+
+
+@app.route("/worker/<int:worker_id>/comment", methods=["POST"])
+@login_required
+def add_worker_comment(worker_id):
+    target = db.session.get(User, worker_id)
+    if not target or not target.has_fraction_permission:
+        flash("Érvénytelen munkatárs.", "danger")
+        return redirect(url_for("visitor"))
+    if target.id == current_user.id:
+        flash("Saját magadat nem kommentelheted.", "warning")
+        return redirect(url_for("visitor"))
+    comment_type = request.form.get("comment_type", "")
+    content = request.form.get("content", "").strip()
+    if comment_type not in ("positive", "negative"):
+        flash("Érvénytelen megjegyzés típus.", "warning")
+        return redirect(url_for("visitor"))
+    if not content or len(content) > 300:
+        flash("A megjegyzés nem lehet üres és max 300 karakter.", "warning")
+        return redirect(url_for("visitor"))
+    comment = RatingComment(
+        reviewer_user_id=current_user.id,
+        target_user_id=worker_id,
+        comment_type=comment_type,
+        content=content,
+    )
+    db.session.add(comment)
+    db.session.commit()
+    flash("Megjegyzés hozzáadva!", "success")
+    return redirect(url_for("visitor") + "#ratings")
 
 
 # ---------------------------------------------------------------------------
