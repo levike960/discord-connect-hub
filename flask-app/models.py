@@ -240,7 +240,9 @@ def define_models(db, app):
         created_at = db.Column(db.DateTime, default=datetime.utcnow)
         created_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
 
-        recipe_items = db.relationship("MenuItemIngredient", backref="menu_item",
+        recipe_items = db.relationship("MenuItemIngredient",
+                                        foreign_keys="MenuItemIngredient.menu_item_id",
+                                        backref="menu_item",
                                         cascade="all, delete-orphan", lazy="dynamic")
 
         @property
