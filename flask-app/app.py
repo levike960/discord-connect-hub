@@ -1757,29 +1757,38 @@ def _auto_migrate_db():
 
     db.create_all()  # Creates any brand-new tables
 
-    # --- Special migration: make ingredient_id nullable in menu_item_ingredients ---
+    # --- Special migration: make ingredient_id nullable & add sub_menu_item_id ---
     try:
-        cols_info = inspector.get_columns("menu_item_ingredients") if "menu_item_ingredients" in inspector.get_table_names() else []
-        for ci in cols_info:
-            if ci["name"] == "ingredient_id" and ci.get("nullable") is False:
-                # SQLite requires table rebuild to change nullable
-                db.session.execute(text("""
-                    CREATE TABLE IF NOT EXISTS _mii_backup AS SELECT * FROM menu_item_ingredients
-                """))
+        if "menu_item_ingredients" in inspector.get_table_names():
+            cols_info = inspector.get_columns("menu_item_ingredients")
+            col_names = [c["name"] for c in cols_info]
+            needs_rebuild = False
+            # Check if ingredient_id is NOT NULL (needs to become nullable)
+            for ci in cols_info:
+                if ci["name"] == "ingredient_id" and not ci.get("nullable", True):
+                    needs_rebuild = True
+                    break
+            # Check if sub_menu_item_id column is missing
+            if "sub_menu_item_id" not in col_names:
+                needs_rebuild = True
+            if needs_rebuild:
+                db.session.execute(text(
+                    "CREATE TABLE _mii_backup AS SELECT * FROM menu_item_ingredients"
+                ))
                 db.session.execute(text("DROP TABLE menu_item_ingredients"))
                 db.session.commit()
                 db.create_all()
-                db.session.execute(text("""
-                    INSERT INTO menu_item_ingredients (id, menu_item_id, ingredient_id, quantity)
-                    SELECT id, menu_item_id, ingredient_id, quantity FROM _mii_backup
-                """))
+                # Restore data — sub_menu_item_id defaults to NULL
+                existing_cols = ", ".join(c for c in col_names if c in ("id", "menu_item_id", "ingredient_id", "quantity"))
+                db.session.execute(text(
+                    f"INSERT INTO menu_item_ingredients ({existing_cols}) SELECT {existing_cols} FROM _mii_backup"
+                ))
                 db.session.execute(text("DROP TABLE _mii_backup"))
                 db.session.commit()
-                print("  [AUTO-MIGRATE] Rebuilt menu_item_ingredients: ingredient_id now nullable")
-                break
+                print("  [AUTO-MIGRATE] Rebuilt menu_item_ingredients: ingredient_id nullable, sub_menu_item_id added")
     except Exception as e:
         db.session.rollback()
-        print(f"  [AUTO-MIGRATE] ingredient_id nullable migration skipped: {e}")
+        print(f"  [AUTO-MIGRATE] menu_item_ingredients migration error: {e}")
 
     inspector = inspect(db.engine)
     existing_tables = inspector.get_table_names()
