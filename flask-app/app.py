@@ -1447,6 +1447,14 @@ def _admin_post_handler():
             db.session.commit()
             flash(f"Foglalás státusza frissítve: {new_status}.", "success")
 
+    elif form_type == "delete_booking":
+        bid = request.form.get("booking_id", type=int)
+        booking = db.session.get(Booking, bid)
+        if booking:
+            db.session.delete(booking)
+            db.session.commit()
+            flash("Foglalás törölve.", "success")
+
 
 # ---------------------------------------------------------------------------
 # Admin Dashboard (lightweight — only loads stats)

@@ -302,6 +302,12 @@
             </form>
             {% endif %}
             <a href="{{ url_for('booking_detail', booking_id=b.id) }}" class="btn btn-sm btn-outline-primary" title="Chat"><i class="bi bi-chat-dots"></i></a>
+            <form method="POST" class="d-inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="form_type" value="delete_booking">
+              <input type="hidden" name="booking_id" value="{{ b.id }}">
+              <button class="btn btn-sm btn-outline-danger" title="Törlés" onclick="return confirm('Biztosan törölni szeretnéd ezt a foglalást?')"><i class="bi bi-trash"></i></button>
+            </form>
           </div>
         </td>
       </tr>

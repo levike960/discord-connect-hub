@@ -297,13 +297,13 @@
       <div class="card shadow-sm">
         <div class="card-body">
           <h2 class="card-title mb-4"><i class="bi bi-star-fill text-warning"></i> Munkatársak Értékelése</h2>
-          <p class="text-muted mb-4">Értékelje munkatársainkat 1-5 csillaggal! Kattintson a kártyára a megjegyzésekhez.</p>
+          <p class="text-muted mb-4">Értékelje munkatársainkat 1-5 csillaggal! A <i class="bi bi-chat-dots"></i> ikonra kattintva megtekintheti a véleményeket.</p>
 
           {% if workers %}
           <div class="row">
             {% for worker in workers %}
             <div class="col-md-6 col-lg-4 mb-4">
-              <div class="card h-100 border {% if loop.first %}border-warning{% endif %}" style="cursor:pointer;" data-bs-toggle="modal" data-bs-target="#workerModal{{ worker.id }}">
+              <div class="card h-100 border {% if loop.first %}border-warning{% endif %}">
                 {% if loop.first %}
                 <div class="card-header bg-warning bg-opacity-10 text-center">
                   <small class="fw-bold text-warning"><i class="bi bi-trophy-fill"></i> Legjobban értékelt</small>
@@ -330,9 +330,9 @@
                     <span class="ms-2 text-muted">({{ avg }}/5 — {{ worker.rating_count }} értékelés)</span>
                   </div>
 
-                  {# Rating form (stop propagation so clicking form doesn't open modal) #}
+                  {# Rating form #}
                   {% if current_user.is_authenticated and current_user.id != worker.id %}
-                  <form method="POST" action="{{ url_for('rate_worker', target_id=worker.id) }}" class="mt-3" onclick="event.stopPropagation();">
+                  <form method="POST" action="{{ url_for('rate_worker', target_id=worker.id) }}" class="mt-3">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="d-flex align-items-center justify-content-center gap-2">
                       <select name="stars" class="form-select form-select-sm" style="width: auto;">
@@ -344,10 +344,18 @@
                         <option value="5">⭐ 5</option>
                       </select>
                       <button type="submit" class="btn btn-sm btn-outline-warning">Értékel</button>
+                      <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#workerModal{{ worker.id }}" title="Vélemények"><i class="bi bi-chat-dots"></i></button>
                     </div>
                   </form>
                   {% elif not current_user.is_authenticated %}
-                  <small class="text-muted d-block mt-2">Jelentkezzen be az értékeléshez</small>
+                  <div class="mt-2 d-flex align-items-center justify-content-center gap-2">
+                    <small class="text-muted">Jelentkezzen be az értékeléshez</small>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#workerModal{{ worker.id }}" title="Vélemények"><i class="bi bi-chat-dots"></i></button>
+                  </div>
+                  {% else %}
+                  <div class="mt-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#workerModal{{ worker.id }}" title="Vélemények"><i class="bi bi-chat-dots"></i></button>
+                  </div>
                   {% endif %}
                 </div>
               </div>
