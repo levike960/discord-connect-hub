@@ -43,10 +43,8 @@
 <script>
 document.querySelectorAll('.copy-ad-btn').forEach(btn => {
   btn.addEventListener('click', function() {
-    const title = this.dataset.title;
     const content = this.dataset.content;
-    const text = title + '\n\n' + content;
-    navigator.clipboard.writeText(text).then(() => {
+    navigator.clipboard.writeText(content).then(() => {
       const icon = this.querySelector('i');
       icon.className = 'bi bi-clipboard-check';
       this.classList.remove('btn-outline-secondary');
