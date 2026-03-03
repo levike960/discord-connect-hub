@@ -289,6 +289,75 @@
     }
     main { animation: fadeInUp 0.4s ease-out; }
 
+    /* ── Hero Section ── */
+    .hero-section {
+      position: relative;
+      min-height: 70vh;
+      background: linear-gradient(135deg, #1a0a2e 0%, #16213e 50%, #0f3460 100%);
+      border-radius: 0 0 2rem 2rem;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .hero-overlay {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      padding: 4rem 1rem;
+    }
+    .hero-section::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 30% 50%, rgba(124,92,252,0.15) 0%, transparent 60%),
+                  radial-gradient(circle at 70% 80%, rgba(167,139,250,0.1) 0%, transparent 50%);
+      z-index: 1;
+    }
+
+    /* ── Scroll reveal ── */
+    .scroll-reveal {
+      opacity: 0;
+      transform: translateY(40px);
+      transition: opacity 0.7s cubic-bezier(.4,0,.2,1), transform 0.7s cubic-bezier(.4,0,.2,1);
+    }
+    .scroll-reveal.revealed {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ── Product cards hover ── */
+    .product-card {
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+    .product-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 25px rgba(124,92,252,0.15);
+    }
+
+    /* ── Navbar hide/show on scroll ── */
+    .csp-navbar {
+      transition: transform 0.35s cubic-bezier(.4,0,.2,1), background var(--csp-transition);
+    }
+    .csp-navbar.nav-hidden {
+      transform: translateY(-100%);
+    }
+
+    /* ── Section nav links ── */
+    .section-nav-link {
+      color: var(--csp-text-muted) !important;
+      font-size: 0.8rem;
+      font-weight: 500;
+      padding: 0.35rem 0.6rem !important;
+      border-radius: 0.4rem !important;
+      transition: all var(--csp-transition);
+      white-space: nowrap;
+    }
+    .section-nav-link:hover, .section-nav-link.active {
+      color: var(--csp-accent) !important;
+      background: var(--csp-accent-subtle);
+    }
+
     /* ── Faction menu cards ── */
     .faction-card {
       transition: transform 0.25s cubic-bezier(.4,0,.2,1), box-shadow 0.25s ease, border-color 0.25s ease;
@@ -356,13 +425,35 @@
     </div>
 
     <div class="collapse navbar-collapse" id="mainNav">
-      <ul class="navbar-nav mx-auto align-items-center gap-1">
+      <ul class="navbar-nav mx-auto align-items-center gap-0 flex-wrap" id="sectionNavLinks">
+        <li class="nav-item">
+          <a class="nav-link section-nav-link" href="{{ url_for('visitor') }}#fooldal">Főoldal</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link section-nav-link" href="{{ url_for('visitor') }}#tortenetunk">Történetünk</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link section-nav-link" href="{{ url_for('visitor') }}#termekeink">Termékeink</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link section-nav-link" href="{{ url_for('visitor') }}#arlista">Árlista</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link section-nav-link" href="{{ url_for('visitor') }}#ertekeld">Értékelj minket</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link section-nav-link" href="{{ url_for('visitor') }}#elerhetosegek">Elérhetőségek</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link section-nav-link" href="{{ url_for('visitor') }}#rendezvenyek">Foglalás</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link section-nav-link" href="{{ url_for('visitor') }}#vendegkonyv">Vendégkönyv</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link section-nav-link" href="{{ url_for('visitor') }}#partnereink">Partnereink</a>
+        </li>
         {% if current_user.is_authenticated %}
-          <li class="nav-item">
-            <a class="nav-link nav-pill" href="{{ url_for('visitor') }}">
-              <i class="bi bi-house-door me-1"></i> Főoldal
-            </a>
-          </li>
           {% if current_user.has_fraction_permission or current_user.is_admin %}
           <li class="nav-item">
             <a class="nav-link nav-pill" href="{{ url_for('fraction') }}">
@@ -474,6 +565,58 @@
       applyTheme(current === 'dark' ? 'light' : 'dark');
     });
   })();
+
+  // ── Scroll Reveal ──
+  (function() {
+    const observer = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('revealed');
+        }
+      });
+    }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+
+    document.querySelectorAll('.scroll-reveal').forEach(function(el) {
+      observer.observe(el);
+    });
+  })();
+
+  // ── Navbar hide on scroll down, show on scroll up ──
+  (function() {
+    const navbar = document.querySelector('.csp-navbar');
+    let lastScrollY = window.scrollY;
+    let ticking = false;
+
+    window.addEventListener('scroll', function() {
+      if (!ticking) {
+        window.requestAnimationFrame(function() {
+          const currentScrollY = window.scrollY;
+          if (currentScrollY > lastScrollY && currentScrollY > 80) {
+            navbar.classList.add('nav-hidden');
+          } else {
+            navbar.classList.remove('nav-hidden');
+          }
+          lastScrollY = currentScrollY;
+          ticking = false;
+        });
+        ticking = true;
+      }
+    });
+  })();
+
+  // ── Smooth scroll for section links ──
+  document.querySelectorAll('a[href*="#"]').forEach(function(link) {
+    link.addEventListener('click', function(e) {
+      const hash = this.getAttribute('href').split('#')[1];
+      if (!hash) return;
+      const target = document.getElementById(hash);
+      if (target) {
+        e.preventDefault();
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        history.replaceState(null, '', '#' + hash);
+      }
+    });
+  });
 </script>
 
 <!-- Lightbox Modal -->
