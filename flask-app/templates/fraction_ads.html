@@ -14,8 +14,14 @@
           <div class="col-md-6">
             <div class="card border-start border-warning border-4">
               <div class="card-body">
-                <h5 class="card-title">{{ ad.title }}</h5>
-                <p class="card-text">{{ ad.content }}</p>
+                <div class="d-flex justify-content-between align-items-start">
+                  <h5 class="card-title mb-1">{{ ad.title }}</h5>
+                  <button class="btn btn-sm btn-outline-secondary copy-ad-btn" title="Másolás vágólapra"
+                          data-title="{{ ad.title }}" data-content="{{ ad.content }}">
+                    <i class="bi bi-clipboard"></i>
+                  </button>
+                </div>
+                <p class="card-text mt-2">{{ ad.content }}</p>
                 <small class="text-muted">{{ ad.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
               </div>
             </div>
@@ -33,4 +39,25 @@
     </div>
   </div>
 </div>
+
+<script>
+document.querySelectorAll('.copy-ad-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    const title = this.dataset.title;
+    const content = this.dataset.content;
+    const text = title + '\n\n' + content;
+    navigator.clipboard.writeText(text).then(() => {
+      const icon = this.querySelector('i');
+      icon.className = 'bi bi-clipboard-check';
+      this.classList.remove('btn-outline-secondary');
+      this.classList.add('btn-success');
+      setTimeout(() => {
+        icon.className = 'bi bi-clipboard';
+        this.classList.remove('btn-success');
+        this.classList.add('btn-outline-secondary');
+      }, 2000);
+    });
+  });
+});
+</script>
 {% endblock %}
