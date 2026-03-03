@@ -1,0 +1,118 @@
+{% extends "admin_base.html" %}
+{% set section_title = "Vélemények & Vendégkönyv" %}
+{% set section_icon = "bi bi-chat-square-text-fill" %}
+
+{% block admin_content %}
+
+{# ── Vendégkönyv bejegyzések ── #}
+<div class="card shadow-sm mb-4">
+  <div class="card-header d-flex align-items-center justify-content-between">
+    <h5 class="mb-0"><i class="bi bi-journal-text text-primary"></i> Vendégkönyv bejegyzések</h5>
+    <span class="badge bg-secondary">{{ guestbook_entries|length }} bejegyzés</span>
+  </div>
+  <div class="card-body p-0">
+    {% if guestbook_entries %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Szerző</th>
+            <th>Üzenet</th>
+            <th class="text-center">❤️</th>
+            <th>Dátum</th>
+            <th class="text-end">Művelet</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for entry in guestbook_entries %}
+          <tr>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <img src="{{ entry.author.avatar_url }}" alt="avatar" class="rounded-circle" width="32" height="32" style="object-fit:cover;">
+                <small class="fw-bold">{{ entry.author.ingame_name or entry.author.display_name }}</small>
+              </div>
+            </td>
+            <td style="max-width:300px;"><small>{{ entry.message[:100] }}{% if entry.message|length > 100 %}...{% endif %}</small></td>
+            <td class="text-center">{{ entry.likes }}</td>
+            <td><small class="text-muted">{{ entry.created_at.strftime('%Y.%m.%d %H:%M') }}</small></td>
+            <td class="text-end">
+              <form method="POST" action="{{ url_for('admin_delete_guestbook', entry_id=entry.id) }}" class="d-inline"
+                    onsubmit="return confirm('Biztosan törlöd ezt a bejegyzést?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-muted text-center py-4 mb-0">Nincsenek vendégkönyv bejegyzések.</p>
+    {% endif %}
+  </div>
+</div>
+
+{# ── Munkatárs vélemények ── #}
+<div class="card shadow-sm mb-4">
+  <div class="card-header d-flex align-items-center justify-content-between">
+    <h5 class="mb-0"><i class="bi bi-chat-dots text-warning"></i> Munkatárs vélemények</h5>
+    <span class="badge bg-secondary">{{ rating_comments|length }} vélemény</span>
+  </div>
+  <div class="card-body p-0">
+    {% if rating_comments %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Írta</th>
+            <th>Kinek</th>
+            <th>Típus</th>
+            <th>Tartalom</th>
+            <th>Dátum</th>
+            <th class="text-end">Művelet</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in rating_comments %}
+          <tr>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <img src="{{ c.reviewer.avatar_url }}" alt="avatar" class="rounded-circle" width="28" height="28" style="object-fit:cover;">
+                <small>{{ c.reviewer.ingame_name or c.reviewer.display_name }}</small>
+              </div>
+            </td>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <img src="{{ c.target.avatar_url }}" alt="avatar" class="rounded-circle" width="28" height="28" style="object-fit:cover;">
+                <small>{{ c.target.ingame_name or c.target.display_name }}</small>
+              </div>
+            </td>
+            <td>
+              {% if c.comment_type == 'positive' %}
+                <span class="badge bg-success"><i class="bi bi-hand-thumbs-up-fill"></i> Pozitív</span>
+              {% else %}
+                <span class="badge bg-danger"><i class="bi bi-hand-thumbs-down-fill"></i> Negatív</span>
+              {% endif %}
+            </td>
+            <td style="max-width:250px;"><small>{{ c.content[:80] }}{% if c.content|length > 80 %}...{% endif %}</small></td>
+            <td><small class="text-muted">{{ c.created_at.strftime('%Y.%m.%d %H:%M') }}</small></td>
+            <td class="text-end">
+              <form method="POST" action="{{ url_for('admin_delete_comment', comment_id=c.id) }}" class="d-inline"
+                    onsubmit="return confirm('Biztosan törlöd ezt a véleményt?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-muted text-center py-4 mb-0">Nincsenek munkatárs vélemények.</p>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}
