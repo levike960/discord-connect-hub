@@ -1505,6 +1505,42 @@ def admin():
                            dash_low_stock_products=low_stock_products,
                            dash_total_low_stock=total_low_stock)
 
+@app.route("/admin/reviews")
+@admin_required
+def admin_reviews():
+    guestbook_entries = GuestBookEntry.query.order_by(GuestBookEntry.created_at.desc()).all()
+    rating_comments = RatingComment.query.order_by(RatingComment.created_at.desc()).all()
+    return render_template("admin_reviews.html",
+                           guestbook_entries=guestbook_entries,
+                           rating_comments=rating_comments)
+
+
+@app.route("/admin/reviews/guestbook/<int:entry_id>/delete", methods=["POST"])
+@admin_required
+def admin_delete_guestbook(entry_id):
+    entry = db.session.get(GuestBookEntry, entry_id)
+    if entry:
+        GuestBookLike.query.filter_by(entry_id=entry.id).delete()
+        db.session.delete(entry)
+        db.session.commit()
+        flash("Vendégkönyv bejegyzés törölve.", "success")
+    else:
+        flash("Bejegyzés nem található.", "danger")
+    return redirect(url_for("admin_reviews"))
+
+
+@app.route("/admin/reviews/comment/<int:comment_id>/delete", methods=["POST"])
+@admin_required
+def admin_delete_comment(comment_id):
+    comment = db.session.get(RatingComment, comment_id)
+    if comment:
+        db.session.delete(comment)
+        db.session.commit()
+        flash("Vélemény törölve.", "success")
+    else:
+        flash("Vélemény nem található.", "danger")
+    return redirect(url_for("admin_reviews"))
+
 
 # ---------------------------------------------------------------------------
 # Admin Sub-Routes (each loads only its own data)

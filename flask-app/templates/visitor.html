@@ -235,70 +235,6 @@
               </div>
             </div>
 
-            {# Worker Comment Modal #}
-            <div class="modal fade" id="workerModal{{ worker.id }}" tabindex="-1" aria-hidden="true">
-              <div class="modal-dialog modal-dialog-centered modal-lg">
-                <div class="modal-content">
-                  <div class="modal-header">
-                    <div class="d-flex align-items-center gap-3">
-                      <img src="{{ worker.avatar_url }}" alt="avatar" class="rounded-circle" width="50" height="50" style="object-fit:cover;">
-                      <div>
-                        <h5 class="modal-title mb-0">{{ worker.ingame_name or worker.display_name }}</h5>
-                        <small class="text-muted">{{ worker.average_rating }}/5 ⭐ — {{ worker.rating_count }} értékelés</small>
-                      </div>
-                    </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                  </div>
-                  <div class="modal-body">
-                    {% set comments = worker_comments.get(worker.id, []) %}
-                    {% if comments %}
-                    <div class="mb-4" style="max-height:300px;overflow-y:auto;">
-                      {% for c in comments %}
-                      <div class="d-flex align-items-start gap-2 mb-3 p-2 rounded {% if c.comment_type == 'positive' %}bg-success bg-opacity-10{% else %}bg-danger bg-opacity-10{% endif %}">
-                        <div>
-                          {% if c.comment_type == 'positive' %}
-                            <i class="bi bi-hand-thumbs-up-fill text-success"></i>
-                          {% else %}
-                            <i class="bi bi-hand-thumbs-down-fill text-danger"></i>
-                          {% endif %}
-                        </div>
-                        <div class="flex-grow-1">
-                          <small class="fw-bold">{{ c.reviewer.ingame_name or c.reviewer.display_name }}</small>
-                          <small class="text-muted ms-2">{{ c.created_at.strftime('%Y.%m.%d %H:%M') }}</small>
-                          <p class="mb-0 mt-1">{{ c.content }}</p>
-                        </div>
-                      </div>
-                      {% endfor %}
-                    </div>
-                    {% else %}
-                    <p class="text-muted text-center mb-4">Még nincsenek megjegyzések.</p>
-                    {% endif %}
-
-                    {% if current_user.is_authenticated and current_user.id != worker.id %}
-                    <hr>
-                    <h6><i class="bi bi-chat-dots"></i> Megjegyzés írása</h6>
-                    <form method="POST" action="{{ url_for('add_worker_comment', worker_id=worker.id) }}">
-                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                      <div class="mb-2">
-                        <div class="btn-group" role="group">
-                          <input type="radio" class="btn-check" name="comment_type" value="positive" id="pos{{ worker.id }}" checked>
-                          <label class="btn btn-outline-success btn-sm" for="pos{{ worker.id }}"><i class="bi bi-hand-thumbs-up"></i> Pozitív</label>
-                          <input type="radio" class="btn-check" name="comment_type" value="negative" id="neg{{ worker.id }}">
-                          <label class="btn btn-outline-danger btn-sm" for="neg{{ worker.id }}"><i class="bi bi-hand-thumbs-down"></i> Negatív</label>
-                        </div>
-                      </div>
-                      <div class="mb-2">
-                        <textarea name="content" class="form-control form-control-sm" rows="2" maxlength="300" placeholder="Írd le a véleményed..." required></textarea>
-                      </div>
-                      <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-send"></i> Küldés</button>
-                    </form>
-                    {% elif not current_user.is_authenticated %}
-                    <p class="text-muted text-center"><small>Jelentkezz be a megjegyzés írásához.</small></p>
-                    {% endif %}
-                  </div>
-                </div>
-              </div>
-            </div>
             {% endfor %}
           </div>
           {% else %}
@@ -309,6 +245,75 @@
     </div>
   </div>
 </section>
+
+{# Worker Comment Modals — outside scroll-reveal to fix stacking context #}
+{% if workers %}
+{% for worker in workers %}
+<div class="modal fade" id="workerModal{{ worker.id }}" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="d-flex align-items-center gap-3">
+          <img src="{{ worker.avatar_url }}" alt="avatar" class="rounded-circle" width="50" height="50" style="object-fit:cover;">
+          <div>
+            <h5 class="modal-title mb-0">{{ worker.ingame_name or worker.display_name }}</h5>
+            <small class="text-muted">{{ worker.average_rating }}/5 ⭐ — {{ worker.rating_count }} értékelés</small>
+          </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        {% set comments = worker_comments.get(worker.id, []) %}
+        {% if comments %}
+        <div class="mb-4" style="max-height:300px;overflow-y:auto;">
+          {% for c in comments %}
+          <div class="d-flex align-items-start gap-2 mb-3 p-2 rounded {% if c.comment_type == 'positive' %}bg-success bg-opacity-10{% else %}bg-danger bg-opacity-10{% endif %}">
+            <div>
+              {% if c.comment_type == 'positive' %}
+                <i class="bi bi-hand-thumbs-up-fill text-success"></i>
+              {% else %}
+                <i class="bi bi-hand-thumbs-down-fill text-danger"></i>
+              {% endif %}
+            </div>
+            <div class="flex-grow-1">
+              <small class="fw-bold">{{ c.reviewer.ingame_name or c.reviewer.display_name }}</small>
+              <small class="text-muted ms-2">{{ c.created_at.strftime('%Y.%m.%d %H:%M') }}</small>
+              <p class="mb-0 mt-1">{{ c.content }}</p>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-muted text-center mb-4">Még nincsenek megjegyzések.</p>
+        {% endif %}
+
+        {% if current_user.is_authenticated and current_user.id != worker.id %}
+        <hr>
+        <h6><i class="bi bi-chat-dots"></i> Megjegyzés írása</h6>
+        <form method="POST" action="{{ url_for('add_worker_comment', worker_id=worker.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="mb-2">
+            <div class="btn-group" role="group">
+              <input type="radio" class="btn-check" name="comment_type" value="positive" id="pos{{ worker.id }}" checked>
+              <label class="btn btn-outline-success btn-sm" for="pos{{ worker.id }}"><i class="bi bi-hand-thumbs-up"></i> Pozitív</label>
+              <input type="radio" class="btn-check" name="comment_type" value="negative" id="neg{{ worker.id }}">
+              <label class="btn btn-outline-danger btn-sm" for="neg{{ worker.id }}"><i class="bi bi-hand-thumbs-down"></i> Negatív</label>
+            </div>
+          </div>
+          <div class="mb-2">
+            <textarea name="content" class="form-control form-control-sm" rows="2" maxlength="300" placeholder="Írd le a véleményed..." required></textarea>
+          </div>
+          <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-send"></i> Küldés</button>
+        </form>
+        {% elif not current_user.is_authenticated %}
+        <p class="text-muted text-center"><small>Jelentkezz be a megjegyzés írásához.</small></p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endfor %}
+{% endif %}
 
 {# ── Elérhetőségek ── #}
 <section id="elerhetosegek" class="mb-5 scroll-reveal">
