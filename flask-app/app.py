@@ -575,11 +575,33 @@ def fraction_workhours():
                            logs=logs, period=period, total_formatted=total_formatted)
 
 
-@app.route("/fraction/dues")
+@app.route("/fraction/dues", methods=["GET", "POST"])
 @fraction_required
 def fraction_dues():
-    dues = Due.query.order_by(Due.due_date.asc()).all()
-    return render_template("fraction_dues.html", dues=dues, today=date.today())
+    if request.method == "POST":
+        _admin_post_handler()
+        return redirect(url_for("fraction_dues"))
+    from collections import defaultdict
+    all_dues = Due.query.order_by(Due.due_date.asc()).all()
+    dues_by_company = defaultdict(list)
+    dues_no_company = []
+    for d in all_dues:
+        if d.company_id and d.company:
+            dues_by_company[d.company_id].append(d)
+        else:
+            dues_no_company.append(d)
+    grouped_dues = []
+    for company_id, company_dues in dues_by_company.items():
+        company = company_dues[0].company
+        total = sum(d.amount for d in company_dues)
+        unpaid = sum(d.amount for d in company_dues if not d.is_paid)
+        grouped_dues.append({
+            "company": company, "dues": company_dues,
+            "total": total, "unpaid": unpaid,
+            "all_paid": all(d.is_paid for d in company_dues),
+        })
+    grouped_dues.sort(key=lambda x: x["company"].name)
+    return render_template("fraction_dues.html", grouped_dues=grouped_dues, dues_no_company=dues_no_company)
 
 
 @app.route("/fraction/calculator")
