@@ -625,7 +625,8 @@ def fraction_dues():
             "all_paid": all(d.is_paid for d in company_dues),
         })
     grouped_dues.sort(key=lambda x: x["company"].name)
-    return render_template("fraction_dues.html", grouped_dues=grouped_dues, dues_no_company=dues_no_company)
+    all_companies = DeliveryCompany.query.order_by(DeliveryCompany.name).all()
+    return render_template("fraction_dues.html", grouped_dues=grouped_dues, dues_no_company=dues_no_company, all_companies=all_companies)
 
 
 @app.route("/fraction/calculator")
@@ -1083,6 +1084,14 @@ def _admin_post_handler():
                 try:
                     due.due_date = date.fromisoformat(new_date_str)
                 except ValueError:
+                    pass
+            new_company_id = request.form.get("due_company_id", "")
+            if new_company_id == "":
+                due.company_id = None
+            else:
+                try:
+                    due.company_id = int(new_company_id)
+                except (ValueError, TypeError):
                     pass
             db.session.commit()
             flash("Tartozás módosítva.", "success")
@@ -1750,7 +1759,8 @@ def admin_dues():
             "all_paid": all(d.is_paid for d in company_dues),
         })
     grouped_dues.sort(key=lambda x: x["company"].name)
-    return render_template("admin_dues.html", grouped_dues=grouped_dues, dues_no_company=dues_no_company)
+    all_companies = DeliveryCompany.query.order_by(DeliveryCompany.name).all()
+    return render_template("admin_dues.html", grouped_dues=grouped_dues, dues_no_company=dues_no_company, all_companies=all_companies)
 
 
 @app.route("/admin/ads", methods=["GET", "POST"])
