@@ -1068,6 +1068,25 @@ def _admin_post_handler():
             except ValueError:
                 flash("Invalid date format.", "danger")
 
+    elif form_type == "edit_due":
+        due_id = request.form.get("due_id", type=int)
+        due = db.session.get(Due, due_id)
+        if due:
+            new_name = request.form.get("due_name", "").strip()
+            new_amount = request.form.get("due_amount", type=float)
+            new_date_str = request.form.get("due_date", "")
+            if new_name:
+                due.name = new_name
+            if new_amount is not None:
+                due.amount = new_amount
+            if new_date_str:
+                try:
+                    due.due_date = date.fromisoformat(new_date_str)
+                except ValueError:
+                    pass
+            db.session.commit()
+            flash("Tartozás módosítva.", "success")
+
     elif form_type == "delete_due":
         due_id = request.form.get("due_id", type=int)
         due = db.session.get(Due, due_id)

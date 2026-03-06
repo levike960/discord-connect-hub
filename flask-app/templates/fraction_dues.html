@@ -13,6 +13,22 @@
           </a>
         </div>
 
+        <ul class="nav nav-tabs mb-4" role="tablist">
+          <li class="nav-item">
+            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-overview" type="button">
+              <i class="bi bi-list-ul"></i> Áttekintés
+            </button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-edit" type="button">
+              <i class="bi bi-pencil-square"></i> Szerkesztés
+            </button>
+          </li>
+        </ul>
+
+        <div class="tab-content">
+        <!-- ==================== ÁTTEKINTÉS TAB ==================== -->
+        <div class="tab-pane fade show active" id="tab-overview">
         <h4 class="mb-3">Tartozás hozzáadása</h4>
         <form method="POST" class="row g-3 mb-4">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -72,7 +88,7 @@
                 {% endif %}
                 <table class="table table-striped mb-0">
                   <thead class="table-light">
-                    <tr><th>Név</th><th>Összeg</th><th>Határidő</th><th>Státusz</th><th></th></tr>
+                    <tr><th>Név</th><th>Összeg</th><th>Határidő</th><th>Könyvelte</th><th>Státusz</th><th></th></tr>
                   </thead>
                   <tbody>
                     {% for due in group.dues %}
@@ -80,6 +96,7 @@
                       <td>{{ due.name }}</td>
                       <td>{{ "%.0f"|format(due.amount) }} Ft</td>
                       <td>{{ due.due_date.strftime('%Y-%m-%d') }}</td>
+                      <td>{{ due.creator.display_name if due.creator else '—' }}</td>
                       <td>
                         {% if due.is_paid %}
                           <span class="badge bg-success"><i class="bi bi-check-circle"></i> Rendezve</span>
@@ -119,7 +136,7 @@
         <div class="table-responsive">
           <table class="table table-striped">
             <thead class="table-dark">
-              <tr><th>Név</th><th>Összeg</th><th>Határidő</th><th>Státusz</th><th></th></tr>
+              <tr><th>Név</th><th>Összeg</th><th>Határidő</th><th>Könyvelte</th><th>Státusz</th><th></th></tr>
             </thead>
             <tbody>
               {% for due in dues_no_company %}
@@ -127,6 +144,7 @@
                 <td>{{ due.name }}</td>
                 <td>{{ "%.0f"|format(due.amount) }} Ft</td>
                 <td>{{ due.due_date.strftime('%Y-%m-%d') }}</td>
+                <td>{{ due.creator.display_name if due.creator else '—' }}</td>
                 <td>
                   {% if due.is_paid %}
                     <span class="badge bg-success"><i class="bi bi-check-circle"></i> Rendezve</span>
@@ -160,6 +178,77 @@
         {% if not grouped_dues and not dues_no_company %}
         <p class="text-muted">Nincsenek tartozások.</p>
         {% endif %}
+        </div>
+
+        <!-- ==================== SZERKESZTÉS TAB ==================== -->
+        <div class="tab-pane fade" id="tab-edit">
+        <h4 class="mb-3">Tartozások szerkesztése</h4>
+
+        {% set all_dues_list = [] %}
+        {% for group in grouped_dues %}
+          {% for due in group.dues %}
+            {% if all_dues_list.append(due) %}{% endif %}
+          {% endfor %}
+        {% endfor %}
+        {% for due in dues_no_company %}
+          {% if all_dues_list.append(due) %}{% endif %}
+        {% endfor %}
+
+        {% if all_dues_list %}
+        <div class="table-responsive">
+          <table class="table table-bordered align-middle">
+            <thead class="table-dark">
+              <tr><th>#</th><th>Név</th><th>Összeg</th><th>Határidő</th><th>Cég</th><th>Könyvelte</th><th>Létrehozva</th><th>Státusz</th><th>Műveletek</th></tr>
+            </thead>
+            <tbody>
+              {% for due in all_dues_list %}
+              <tr>
+                <td>{{ due.id }}</td>
+                <td colspan="7" class="p-0">
+                  <form method="POST" class="d-flex align-items-center" id="edit-form-{{ due.id }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="form_type" value="edit_due">
+                    <input type="hidden" name="due_id" value="{{ due.id }}">
+                    <table class="table table-borderless mb-0">
+                      <tr>
+                        <td style="width:20%"><input type="text" name="due_name" class="form-control form-control-sm" value="{{ due.name }}"></td>
+                        <td style="width:14%"><input type="number" name="due_amount" class="form-control form-control-sm" value="{{ '%.0f'|format(due.amount) }}" step="1"></td>
+                        <td style="width:14%"><input type="date" name="due_date" class="form-control form-control-sm" value="{{ due.due_date.strftime('%Y-%m-%d') }}"></td>
+                        <td style="width:14%">{{ due.company.name if due.company else '—' }}</td>
+                        <td style="width:14%">{{ due.creator.display_name if due.creator else '—' }}</td>
+                        <td style="width:10%">{{ due.created_at.strftime('%m.%d %H:%M') if due.created_at else '—' }}</td>
+                        <td style="width:10%">
+                          {% if due.is_paid %}
+                            <span class="badge bg-success">Rendezve</span>
+                          {% else %}
+                            <span class="badge bg-warning text-dark">Nyitott</span>
+                          {% endif %}
+                        </td>
+                      </tr>
+                    </table>
+                  </form>
+                </td>
+                <td>
+                  <div class="d-flex gap-1">
+                    <button type="submit" form="edit-form-{{ due.id }}" class="btn btn-sm btn-primary" title="Mentés"><i class="bi bi-save"></i></button>
+                    <form method="POST" class="d-inline">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <input type="hidden" name="form_type" value="delete_due">
+                      <input type="hidden" name="due_id" value="{{ due.id }}">
+                      <button class="btn btn-sm btn-danger" title="Törlés" onclick="return confirm('Biztosan törlöd?')"><i class="bi bi-trash"></i></button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <p class="text-muted">Nincsenek tartozások.</p>
+        {% endif %}
+        </div>
+        </div>
 
       </div>
     </div>

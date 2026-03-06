@@ -166,6 +166,7 @@ def define_models(db, app):
         created_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
 
         company = db.relationship("DeliveryCompany", backref="dues")
+        creator = db.relationship("User", foreign_keys=[created_by], backref="created_dues")
 
     class Advertisement(db.Model):
         __tablename__ = "advertisements"
