@@ -135,14 +135,15 @@ def define_models(db, app):
 
         id = db.Column(db.Integer, primary_key=True)
         user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
-        clock_in = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+        clock_in = db.Column(db.DateTime, nullable=False, default=lambda: datetime.utcnow() + timedelta(hours=1))
         clock_out = db.Column(db.DateTime, nullable=True)
 
         @property
         def duration_seconds(self):
+            now_cet = datetime.utcnow() + timedelta(hours=1)
             if self.clock_out:
                 return (self.clock_out - self.clock_in).total_seconds()
-            return (datetime.utcnow() - self.clock_in).total_seconds()
+            return (now_cet - self.clock_in).total_seconds()
 
         @property
         def duration_formatted(self):

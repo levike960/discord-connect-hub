@@ -142,10 +142,56 @@
     .table-striped > tbody > tr:nth-of-type(odd) > * {
       background-color: var(--csp-accent-subtle) !important;
       --bs-table-bg-type: transparent;
+      color: var(--csp-text) !important;
     }
     .table-hover > tbody > tr:hover > * {
       background-color: rgba(124,92,252,0.08) !important;
       --bs-table-bg-type: transparent;
+      color: var(--csp-text) !important;
+    }
+    .table-success > * {
+      background-color: rgba(52, 211, 153, 0.15) !important;
+      color: var(--csp-text) !important;
+      --bs-table-bg-type: transparent;
+    }
+    .table-danger > * {
+      background-color: rgba(248, 113, 113, 0.15) !important;
+      color: var(--csp-text) !important;
+      --bs-table-bg-type: transparent;
+    }
+    .table-warning > * {
+      background-color: rgba(245, 166, 35, 0.15) !important;
+      color: var(--csp-text) !important;
+      --bs-table-bg-type: transparent;
+    }
+    .table-light, .table thead.table-light th {
+      background: var(--csp-surface-hover) !important;
+      color: var(--csp-text) !important;
+      border-color: var(--csp-border) !important;
+    }
+    .table td, .table th {
+      color: var(--csp-text) !important;
+      border-color: var(--csp-border) !important;
+    }
+    .accordion-item {
+      background: var(--csp-surface) !important;
+      border-color: var(--csp-border) !important;
+      color: var(--csp-text) !important;
+    }
+    .accordion-button {
+      background: var(--csp-surface) !important;
+      color: var(--csp-text) !important;
+    }
+    .accordion-button:not(.collapsed) {
+      background: var(--csp-accent-subtle) !important;
+      color: var(--csp-accent) !important;
+    }
+    .accordion-body {
+      background: var(--csp-surface) !important;
+      color: var(--csp-text) !important;
+    }
+    .bg-light {
+      background: var(--csp-surface-hover) !important;
     }
 
     /* ── Forms ── */

@@ -536,7 +536,7 @@ def fraction_clock():
         elif action == "clock_out":
             log = current_user.active_work_log
             if log:
-                log.clock_out = datetime.utcnow()
+                log.clock_out = datetime.utcnow() + timedelta(hours=1)
                 db.session.commit()
                 flash(f"Clocked out. Duration: {log.duration_formatted}", "success")
             else:
