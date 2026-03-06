@@ -35,6 +35,25 @@
         <a href="{{ url_for('fraction') }}" class="btn btn-outline-secondary mt-4">
           <i class="bi bi-arrow-left"></i> Vissza
         </a>
+
+        <hr class="my-4">
+        <h5><i class="bi bi-people-fill"></i> Jelenleg szolgálatban</h5>
+        {% if clocked_in_users %}
+          <ul class="list-group mt-2">
+            {% for u in clocked_in_users %}
+              <li class="list-group-item d-flex align-items-center gap-2">
+                <img src="{{ u.avatar_url }}" alt="" width="28" height="28" class="rounded-circle">
+                <strong>{{ u.display_name }}</strong>
+                <small class="text-muted ms-auto">
+                  <i class="bi bi-clock-history"></i>
+                  {{ u.active_work_log.clock_in.strftime('%H:%M') }} óta
+                </small>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="text-muted mt-2">Jelenleg senki nincs szolgálatban.</p>
+        {% endif %}
       </div>
     </div>
   </div>
