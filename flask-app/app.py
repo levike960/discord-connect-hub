@@ -83,6 +83,8 @@ RatingComment = models["RatingComment"]
 Event = models["Event"]
 Booking = models["Booking"]
 BookingMessage = models["BookingMessage"]
+BonusConfig = models["BonusConfig"]
+BonusEntry = models["BonusEntry"]
 
 
 @login_manager.user_loader
