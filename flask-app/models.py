@@ -100,7 +100,8 @@ def define_models(db, app):
                 app.config["UPLOAD_FOLDER"], f"avatar_{self.discord_id}.png"
             )
             if os.path.isfile(custom):
-                return url_for("static", filename=f"uploads/avatar_{self.discord_id}.png")
+                mtime = int(os.path.getmtime(custom))
+                return url_for("static", filename=f"uploads/avatar_{self.discord_id}.png") + f"?v={mtime}"
             if self.avatar:
                 return (
                     f"https://cdn.discordapp.com/avatars/"
