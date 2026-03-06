@@ -83,6 +83,8 @@ RatingComment = models["RatingComment"]
 Event = models["Event"]
 Booking = models["Booking"]
 BookingMessage = models["BookingMessage"]
+BonusConfig = models["BonusConfig"]
+BonusEntry = models["BonusEntry"]
 
 
 @login_manager.user_loader
@@ -571,8 +573,30 @@ def fraction_workhours():
     m, s = divmod(remainder, 60)
     total_formatted = f"{h}h {m}m"
 
+    # Bonus calculations
+    bonus_cfg = BonusConfig.query.first()
+    time_bonus = 0.0
+    if bonus_cfg and bonus_cfg.per_minute_bonus > 0:
+        total_minutes = total_seconds / 60
+        time_bonus = round(total_minutes * bonus_cfg.per_minute_bonus, 2)
+
+    # Felírás bonuses in this period
+    feliras_bonuses = BonusEntry.query.filter(
+        BonusEntry.user_id == current_user.id,
+        BonusEntry.bonus_type == "feliras",
+        BonusEntry.created_at >= start
+    ).all()
+    feliras_bonus_total = sum(b.amount for b in feliras_bonuses)
+
+    # Total balance (all time)
+    all_bonuses = BonusEntry.query.filter_by(user_id=current_user.id).all()
+    total_balance = sum(b.amount for b in all_bonuses)
+
     return render_template("fraction_workhours.html",
-                           logs=logs, period=period, total_formatted=total_formatted)
+                           logs=logs, period=period, total_formatted=total_formatted,
+                           time_bonus=time_bonus, feliras_bonus_total=feliras_bonus_total,
+                           total_balance=total_balance, bonus_cfg=bonus_cfg,
+                           feliras_bonuses=feliras_bonuses)
 
 
 @app.route("/fraction/dues", methods=["GET", "POST"])
@@ -822,7 +846,7 @@ def fraction_calculator_confirm():
 @app.route("/fraction/calculator/record_due", methods=["POST"])
 @fraction_required
 def fraction_calculator_record_due():
-    """Record discounted total as a Due for the selected company + deduct stock."""
+    """Record discounted total as a Due for the selected company + deduct stock + bonus."""
     company_id = request.form.get("company_id", type=int)
     discount_total = request.form.get("discount_total", type=float)
     if company_id and discount_total is not None:
@@ -836,8 +860,10 @@ def fraction_calculator_record_due():
                 created_by=current_user.id,
             )
             db.session.add(due)
-            # Also deduct products from stock
+            # Also deduct products from stock + calculate bonus
             cart = session.get("pos_cart", [])
+            bonus_cfg = BonusConfig.query.first()
+            bonus_amount = 0.0
             for c in cart:
                 mi = db.session.get(MenuItem, c["id"])
                 if mi:
@@ -848,9 +874,27 @@ def fraction_calculator_record_due():
                         reason=f"POS felírás: {company.name}",
                         user_id=current_user.id
                     ))
+                    # Calculate felírás bonus
+                    if bonus_cfg:
+                        line_total = mi.price * c["qty"]
+                        if mi.category == "alc":
+                            bonus_amount += line_total * (bonus_cfg.alc_percent / 100)
+                        else:  # non_alc or food
+                            pct = bonus_cfg.food_percent if mi.category == "food" else bonus_cfg.non_alc_percent
+                            bonus_amount += line_total * (pct / 100)
+            # Record bonus if any
+            if bonus_amount > 0:
+                db.session.add(BonusEntry(
+                    user_id=current_user.id,
+                    amount=round(bonus_amount, 2),
+                    reason=f"Felírás bónusz — {company.name}",
+                    bonus_type="feliras",
+                    created_by=current_user.id
+                ))
             db.session.commit()
             session["pos_cart"] = []
-            flash(f"Tartozás felírva + raktár frissítve: {company.name} — {'%.0f' % discount_total} Ft", "success")
+            bonus_msg = f" (+{'%.0f' % bonus_amount} Ft bónusz)" if bonus_amount > 0 else ""
+            flash(f"Tartozás felírva + raktár frissítve: {company.name} — {'%.0f' % discount_total} Ft{bonus_msg}", "success")
         else:
             flash("Cég nem található.", "danger")
     return redirect(url_for("fraction_calculator"))
@@ -1504,6 +1548,89 @@ def admin():
                            dash_low_stock_ingredients=low_stock_ingredients,
                            dash_low_stock_products=low_stock_products,
                            dash_total_low_stock=total_low_stock)
+
+@app.route("/admin/bonuses", methods=["GET", "POST"])
+@admin_required
+def admin_bonuses():
+    if request.method == "POST":
+        form_type = request.form.get("form_type", "")
+
+        if form_type == "update_config":
+            cfg = BonusConfig.query.first()
+            if not cfg:
+                cfg = BonusConfig()
+                db.session.add(cfg)
+            cfg.alc_percent = request.form.get("alc_percent", type=float, default=10.0)
+            cfg.non_alc_percent = request.form.get("non_alc_percent", type=float, default=5.0)
+            cfg.food_percent = request.form.get("food_percent", type=float, default=5.0)
+            cfg.per_minute_bonus = request.form.get("per_minute_bonus", type=float, default=0.0)
+            db.session.commit()
+            flash("Bónusz beállítások frissítve.", "success")
+
+        elif form_type == "add_bonus":
+            uid = request.form.get("bonus_user_id", type=int)
+            amount = request.form.get("amount", type=float)
+            reason = request.form.get("reason", "Manuális bónusz").strip()
+            if uid and amount:
+                db.session.add(BonusEntry(
+                    user_id=uid, amount=abs(amount), reason=reason,
+                    bonus_type="manual", created_by=current_user.id
+                ))
+                db.session.commit()
+                flash(f"Bónusz hozzáadva: {'%.0f' % abs(amount)} Ft", "success")
+
+        elif form_type == "withdraw":
+            uid = request.form.get("bonus_user_id", type=int)
+            amount = request.form.get("amount", type=float)
+            reason = request.form.get("reason", "Bónusz kifizetés").strip()
+            if uid and amount:
+                db.session.add(BonusEntry(
+                    user_id=uid, amount=-abs(amount), reason=reason,
+                    bonus_type="withdrawal", created_by=current_user.id
+                ))
+                db.session.commit()
+                flash(f"Kivétel rögzítve: {'%.0f' % abs(amount)} Ft", "success")
+
+        elif form_type == "delete_entry":
+            eid = request.form.get("entry_id", type=int)
+            entry = db.session.get(BonusEntry, eid)
+            if entry:
+                db.session.delete(entry)
+                db.session.commit()
+                flash("Bónusz bejegyzés törölve.", "success")
+
+        return redirect(url_for("admin_bonuses", user_id=request.form.get("user_id", "")))
+
+    # GET
+    bonus_cfg = BonusConfig.query.first()
+    fraction_members = User.query.filter_by(has_fraction_permission=True).order_by(User.username).all()
+
+    user_balances = []
+    for u in fraction_members:
+        entries = BonusEntry.query.filter_by(user_id=u.id).all()
+        feliras_total = sum(e.amount for e in entries if e.bonus_type == "feliras")
+        withdrawal_total = sum(e.amount for e in entries if e.bonus_type == "withdrawal")
+        manual_total = sum(e.amount for e in entries if e.bonus_type == "manual")
+        balance = sum(e.amount for e in entries)
+        user_balances.append(type('obj', (object,), {
+            'id': u.id, 'display_name': u.display_name,
+            'feliras_total': feliras_total, 'withdrawal_total': withdrawal_total,
+            'manual_total': manual_total, 'balance': balance
+        })())
+
+    # Optional: show detail for selected user
+    selected_user = None
+    user_entries = []
+    sel_id = request.args.get("user_id", type=int)
+    if sel_id:
+        selected_user = db.session.get(User, sel_id)
+        if selected_user:
+            user_entries = BonusEntry.query.filter_by(user_id=sel_id).order_by(BonusEntry.created_at.desc()).all()
+
+    return render_template("admin_bonuses.html",
+                           bonus_cfg=bonus_cfg, user_balances=user_balances,
+                           selected_user=selected_user, user_entries=user_entries)
+
 
 @app.route("/admin/reviews")
 @admin_required

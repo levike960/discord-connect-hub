@@ -20,7 +20,40 @@
           <strong>Összesen:</strong> {{ total_formatted }}
         </div>
 
+        {# ── Bonus Summary ── #}
+        <div class="row g-3 mb-4">
+          <div class="col-md-4">
+            <div class="card border-success h-100">
+              <div class="card-body text-center">
+                <div class="text-muted small">Felírás bónusz (időszak)</div>
+                <div class="fs-4 fw-bold text-success">{{ "%.0f"|format(feliras_bonus_total) }} Ft</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card border-primary h-100">
+              <div class="card-body text-center">
+                <div class="text-muted small">Idő bónusz (időszak)</div>
+                <div class="fs-4 fw-bold text-primary">{{ "%.0f"|format(time_bonus) }} Ft</div>
+                {% if bonus_cfg and bonus_cfg.per_minute_bonus > 0 %}
+                <div class="text-muted" style="font-size:0.7rem;">{{ "%.1f"|format(bonus_cfg.per_minute_bonus) }} Ft/perc</div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card border-warning h-100">
+              <div class="card-body text-center">
+                <div class="text-muted small">Összes egyenleg</div>
+                <div class="fs-4 fw-bold" style="color:var(--csp-gold, #f5a623);">{{ "%.0f"|format(total_balance) }} Ft</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {# ── Work Logs Table ── #}
         {% if logs %}
+        <h5 class="mb-3"><i class="bi bi-clock-history"></i> Munkaidő bejegyzések</h5>
         <div class="table-responsive">
           <table class="table table-striped table-hover">
             <thead class="table-dark">
@@ -49,6 +82,31 @@
         </div>
         {% else %}
         <p class="text-muted">Nincs munkaóra ebben az időszakban.</p>
+        {% endif %}
+
+        {# ── Felírás Bonus Details ── #}
+        {% if feliras_bonuses %}
+        <h5 class="mt-4 mb-3"><i class="bi bi-gift-fill text-success"></i> Felírás bónuszok (időszak)</h5>
+        <div class="table-responsive">
+          <table class="table table-sm table-striped">
+            <thead class="table-dark">
+              <tr>
+                <th>Dátum</th>
+                <th>Ok</th>
+                <th>Összeg</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for b in feliras_bonuses %}
+              <tr>
+                <td>{{ b.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td>{{ b.reason }}</td>
+                <td class="text-success fw-bold">+{{ "%.0f"|format(b.amount) }} Ft</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
         {% endif %}
 
         <a href="{{ url_for('fraction') }}" class="btn btn-outline-secondary mt-3">
