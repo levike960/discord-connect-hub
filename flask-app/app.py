@@ -573,8 +573,30 @@ def fraction_workhours():
     m, s = divmod(remainder, 60)
     total_formatted = f"{h}h {m}m"
 
+    # Bonus calculations
+    bonus_cfg = BonusConfig.query.first()
+    time_bonus = 0.0
+    if bonus_cfg and bonus_cfg.per_minute_bonus > 0:
+        total_minutes = total_seconds / 60
+        time_bonus = round(total_minutes * bonus_cfg.per_minute_bonus, 2)
+
+    # Felírás bonuses in this period
+    feliras_bonuses = BonusEntry.query.filter(
+        BonusEntry.user_id == current_user.id,
+        BonusEntry.bonus_type == "feliras",
+        BonusEntry.created_at >= start
+    ).all()
+    feliras_bonus_total = sum(b.amount for b in feliras_bonuses)
+
+    # Total balance (all time)
+    all_bonuses = BonusEntry.query.filter_by(user_id=current_user.id).all()
+    total_balance = sum(b.amount for b in all_bonuses)
+
     return render_template("fraction_workhours.html",
-                           logs=logs, period=period, total_formatted=total_formatted)
+                           logs=logs, period=period, total_formatted=total_formatted,
+                           time_bonus=time_bonus, feliras_bonus_total=feliras_bonus_total,
+                           total_balance=total_balance, bonus_cfg=bonus_cfg,
+                           feliras_bonuses=feliras_bonuses)
 
 
 @app.route("/fraction/dues", methods=["GET", "POST"])
