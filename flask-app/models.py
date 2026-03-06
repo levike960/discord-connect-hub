@@ -81,7 +81,7 @@ def define_models(db, app):
 
         @property
         def display_name(self):
-            return self.nickname or self.username
+            return self.ingame_name or self.nickname or self.username
 
         @property
         def average_rating(self):
