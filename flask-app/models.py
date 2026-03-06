@@ -426,6 +426,30 @@ def define_models(db, app):
 
         author = db.relationship("User")
 
+    class BonusConfig(db.Model):
+        """Singleton-style config for bonus rates."""
+        __tablename__ = "bonus_config"
+
+        id = db.Column(db.Integer, primary_key=True)
+        alc_percent = db.Column(db.Float, nullable=False, default=10.0)       # % bonus on alcoholic felírás
+        non_alc_percent = db.Column(db.Float, nullable=False, default=5.0)    # % bonus on non-alc felírás
+        food_percent = db.Column(db.Float, nullable=False, default=5.0)       # % bonus on food felírás
+        per_minute_bonus = db.Column(db.Float, nullable=False, default=0.0)   # fixed amount per worked minute
+
+    class BonusEntry(db.Model):
+        """Individual bonus record for a user."""
+        __tablename__ = "bonus_entries"
+
+        id = db.Column(db.Integer, primary_key=True)
+        user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+        amount = db.Column(db.Float, nullable=False, default=0.0)
+        reason = db.Column(db.String(256), nullable=False)
+        bonus_type = db.Column(db.String(32), nullable=False, default="feliras")  # 'feliras', 'time', 'manual', 'withdrawal'
+        created_at = db.Column(db.DateTime, default=datetime.utcnow)
+        created_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+
+        user = db.relationship("User", foreign_keys=[user_id], backref="bonus_entries")
+
     return {
         "User": User,
         "Rating": Rating,
@@ -449,4 +473,6 @@ def define_models(db, app):
         "Event": Event,
         "Booking": Booking,
         "BookingMessage": BookingMessage,
+        "BonusConfig": BonusConfig,
+        "BonusEntry": BonusEntry,
     }
