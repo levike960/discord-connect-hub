@@ -625,7 +625,8 @@ def fraction_dues():
             "all_paid": all(d.is_paid for d in company_dues),
         })
     grouped_dues.sort(key=lambda x: x["company"].name)
-    return render_template("fraction_dues.html", grouped_dues=grouped_dues, dues_no_company=dues_no_company)
+    all_companies = DeliveryCompany.query.order_by(DeliveryCompany.name).all()
+    return render_template("fraction_dues.html", grouped_dues=grouped_dues, dues_no_company=dues_no_company, all_companies=all_companies)
 
 
 @app.route("/fraction/calculator")
