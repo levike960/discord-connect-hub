@@ -1085,6 +1085,14 @@ def _admin_post_handler():
                     due.due_date = date.fromisoformat(new_date_str)
                 except ValueError:
                     pass
+            new_company_id = request.form.get("due_company_id", "")
+            if new_company_id == "":
+                due.company_id = None
+            else:
+                try:
+                    due.company_id = int(new_company_id)
+                except (ValueError, TypeError):
+                    pass
             db.session.commit()
             flash("Tartozás módosítva.", "success")
 

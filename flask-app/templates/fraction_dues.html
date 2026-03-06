@@ -214,7 +214,14 @@
                         <td style="width:20%"><input type="text" name="due_name" class="form-control form-control-sm" value="{{ due.name }}"></td>
                         <td style="width:14%"><input type="number" name="due_amount" class="form-control form-control-sm" value="{{ '%.0f'|format(due.amount) }}" step="1"></td>
                         <td style="width:14%"><input type="date" name="due_date" class="form-control form-control-sm" value="{{ due.due_date.strftime('%Y-%m-%d') }}"></td>
-                        <td style="width:14%">{{ due.company.name if due.company else '—' }}</td>
+                        <td style="width:14%">
+                          <select name="due_company_id" class="form-select form-select-sm">
+                            <option value="">— Nincs —</option>
+                            {% for c in all_companies %}
+                            <option value="{{ c.id }}" {{ 'selected' if due.company_id == c.id else '' }}>{{ c.name }}</option>
+                            {% endfor %}
+                          </select>
+                        </td>
                         <td style="width:14%">{{ due.creator.display_name if due.creator else '—' }}</td>
                         <td style="width:10%">{{ due.created_at.strftime('%m.%d %H:%M') if due.created_at else '—' }}</td>
                         <td style="width:10%">
