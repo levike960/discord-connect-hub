@@ -824,7 +824,7 @@ def fraction_calculator_confirm():
 @app.route("/fraction/calculator/record_due", methods=["POST"])
 @fraction_required
 def fraction_calculator_record_due():
-    """Record discounted total as a Due for the selected company + deduct stock."""
+    """Record discounted total as a Due for the selected company + deduct stock + bonus."""
     company_id = request.form.get("company_id", type=int)
     discount_total = request.form.get("discount_total", type=float)
     if company_id and discount_total is not None:
@@ -838,8 +838,10 @@ def fraction_calculator_record_due():
                 created_by=current_user.id,
             )
             db.session.add(due)
-            # Also deduct products from stock
+            # Also deduct products from stock + calculate bonus
             cart = session.get("pos_cart", [])
+            bonus_cfg = BonusConfig.query.first()
+            bonus_amount = 0.0
             for c in cart:
                 mi = db.session.get(MenuItem, c["id"])
                 if mi:
@@ -850,9 +852,27 @@ def fraction_calculator_record_due():
                         reason=f"POS felírás: {company.name}",
                         user_id=current_user.id
                     ))
+                    # Calculate felírás bonus
+                    if bonus_cfg:
+                        line_total = mi.price * c["qty"]
+                        if mi.category == "alc":
+                            bonus_amount += line_total * (bonus_cfg.alc_percent / 100)
+                        else:  # non_alc or food
+                            pct = bonus_cfg.food_percent if mi.category == "food" else bonus_cfg.non_alc_percent
+                            bonus_amount += line_total * (pct / 100)
+            # Record bonus if any
+            if bonus_amount > 0:
+                db.session.add(BonusEntry(
+                    user_id=current_user.id,
+                    amount=round(bonus_amount, 2),
+                    reason=f"Felírás bónusz — {company.name}",
+                    bonus_type="feliras",
+                    created_by=current_user.id
+                ))
             db.session.commit()
             session["pos_cart"] = []
-            flash(f"Tartozás felírva + raktár frissítve: {company.name} — {'%.0f' % discount_total} Ft", "success")
+            bonus_msg = f" (+{'%.0f' % bonus_amount} Ft bónusz)" if bonus_amount > 0 else ""
+            flash(f"Tartozás felírva + raktár frissítve: {company.name} — {'%.0f' % discount_total} Ft{bonus_msg}", "success")
         else:
             flash("Cég nem található.", "danger")
     return redirect(url_for("fraction_calculator"))
