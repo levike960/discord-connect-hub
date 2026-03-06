@@ -543,7 +543,9 @@ def fraction_clock():
                 flash("You are not clocked in.", "warning")
         return redirect(url_for("fraction_clock"))
 
-    return render_template("fraction_clock.html")
+    active_logs = WorkLog.query.filter_by(clock_out=None).all()
+    clocked_in_users = [log.user for log in active_logs]
+    return render_template("fraction_clock.html", clocked_in_users=clocked_in_users)
 
 
 @app.route("/fraction/workhours")
