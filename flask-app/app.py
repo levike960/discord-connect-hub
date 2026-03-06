@@ -1549,6 +1549,89 @@ def admin():
                            dash_low_stock_products=low_stock_products,
                            dash_total_low_stock=total_low_stock)
 
+@app.route("/admin/bonuses", methods=["GET", "POST"])
+@admin_required
+def admin_bonuses():
+    if request.method == "POST":
+        form_type = request.form.get("form_type", "")
+
+        if form_type == "update_config":
+            cfg = BonusConfig.query.first()
+            if not cfg:
+                cfg = BonusConfig()
+                db.session.add(cfg)
+            cfg.alc_percent = request.form.get("alc_percent", type=float, default=10.0)
+            cfg.non_alc_percent = request.form.get("non_alc_percent", type=float, default=5.0)
+            cfg.food_percent = request.form.get("food_percent", type=float, default=5.0)
+            cfg.per_minute_bonus = request.form.get("per_minute_bonus", type=float, default=0.0)
+            db.session.commit()
+            flash("Bónusz beállítások frissítve.", "success")
+
+        elif form_type == "add_bonus":
+            uid = request.form.get("bonus_user_id", type=int)
+            amount = request.form.get("amount", type=float)
+            reason = request.form.get("reason", "Manuális bónusz").strip()
+            if uid and amount:
+                db.session.add(BonusEntry(
+                    user_id=uid, amount=abs(amount), reason=reason,
+                    bonus_type="manual", created_by=current_user.id
+                ))
+                db.session.commit()
+                flash(f"Bónusz hozzáadva: {'%.0f' % abs(amount)} Ft", "success")
+
+        elif form_type == "withdraw":
+            uid = request.form.get("bonus_user_id", type=int)
+            amount = request.form.get("amount", type=float)
+            reason = request.form.get("reason", "Bónusz kifizetés").strip()
+            if uid and amount:
+                db.session.add(BonusEntry(
+                    user_id=uid, amount=-abs(amount), reason=reason,
+                    bonus_type="withdrawal", created_by=current_user.id
+                ))
+                db.session.commit()
+                flash(f"Kivétel rögzítve: {'%.0f' % abs(amount)} Ft", "success")
+
+        elif form_type == "delete_entry":
+            eid = request.form.get("entry_id", type=int)
+            entry = db.session.get(BonusEntry, eid)
+            if entry:
+                db.session.delete(entry)
+                db.session.commit()
+                flash("Bónusz bejegyzés törölve.", "success")
+
+        return redirect(url_for("admin_bonuses", user_id=request.form.get("user_id", "")))
+
+    # GET
+    bonus_cfg = BonusConfig.query.first()
+    fraction_members = User.query.filter_by(has_fraction_permission=True).order_by(User.username).all()
+
+    user_balances = []
+    for u in fraction_members:
+        entries = BonusEntry.query.filter_by(user_id=u.id).all()
+        feliras_total = sum(e.amount for e in entries if e.bonus_type == "feliras")
+        withdrawal_total = sum(e.amount for e in entries if e.bonus_type == "withdrawal")
+        manual_total = sum(e.amount for e in entries if e.bonus_type == "manual")
+        balance = sum(e.amount for e in entries)
+        user_balances.append(type('obj', (object,), {
+            'id': u.id, 'display_name': u.display_name,
+            'feliras_total': feliras_total, 'withdrawal_total': withdrawal_total,
+            'manual_total': manual_total, 'balance': balance
+        })())
+
+    # Optional: show detail for selected user
+    selected_user = None
+    user_entries = []
+    sel_id = request.args.get("user_id", type=int)
+    if sel_id:
+        selected_user = db.session.get(User, sel_id)
+        if selected_user:
+            user_entries = BonusEntry.query.filter_by(user_id=sel_id).order_by(BonusEntry.created_at.desc()).all()
+
+    return render_template("admin_bonuses.html",
+                           bonus_cfg=bonus_cfg, user_balances=user_balances,
+                           selected_user=selected_user, user_entries=user_entries)
+
+
 @app.route("/admin/reviews")
 @admin_required
 def admin_reviews():
