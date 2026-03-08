@@ -154,7 +154,7 @@ def register_visitor_routes(app, db, models):
 
     @app.route("/guestbook")
     def guestbook_page():
-        guest_book = GuestBookEntry.query.order_by(GuestBookEntry.created_at.desc()).all()
+        guest_book = GuestBookEntry.query.filter_by(is_approved=True).order_by(GuestBookEntry.created_at.desc()).all()
         user_likes = set()
         if hasattr(current_user, 'id') and current_user.is_authenticated:
             user_likes = {l.entry_id for l in GuestBookLike.query.filter_by(user_id=current_user.id).all()}
