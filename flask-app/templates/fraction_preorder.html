@@ -78,61 +78,6 @@
       Állítsd össze a bevásárlólistát, majd kattints az <strong>„Előrendelés mentése"</strong> gombra a naplózáshoz!
     </div>
 
-    {# ── Previous preorder logs ── #}
-    {% if preorder_logs %}
-    <h4 class="mb-3 mt-5"><i class="bi bi-clock-history text-muted"></i> Eddigi előrendelések</h4>
-    <div class="card shadow-sm">
-      <div class="card-body p-0">
-        <div class="table-responsive">
-          <table class="table table-striped table-hover align-middle mb-0">
-            <thead style="background: var(--csp-accent); color: #fff;">
-              <tr>
-                <th>Dátum</th>
-                <th>Felhasználó</th>
-                <th>Tételek</th>
-                <th class="text-end">Összeg</th>
-                <th class="text-end">Súly</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for log in preorder_logs %}
-              <tr>
-                <td>{{ log["created_at"].strftime('%Y-%m-%d %H:%M') }}</td>
-                <td>
-                  {% set user = log["user"] %}
-                  {% if user %}
-                    <div class="d-flex align-items-center gap-2">
-                      <img src="{{ user.avatar_url }}" class="avatar-sm" alt="{{ user.display_name }} avatar">
-                      <span>{{ user.display_name }}</span>
-                    </div>
-                  {% else %}
-                    —
-                  {% endif %}
-                </td>
-                <td>{{ log["items"] }}</td>
-                <td class="text-end">{{ "%.0f"|format(log["total_cost"]) }} Ft</td>
-                <td class="text-end">{{ "%.0f"|format(log["total_weight"]) }} g</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-    {% endif %}
-
-    {# ── Submit preorder to log ── #}
-    <form method="POST" class="mt-4 mb-5" id="preorderForm">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      {% for ing in ingredients %}
-      <input type="hidden" name="qty_{{ ing.id }}" value="0" class="preorder-hidden" data-ing-id="{{ ing.id }}">
-      {% endfor %}
-      <div class="d-flex justify-content-end">
-        <button type="submit" class="btn btn-lg btn-primary" id="submitBtn" disabled>
-          <i class="bi bi-save me-2"></i> Előrendelés mentése
-        </button>
-      </div>
-    </form>
 
   </div>
 </div>
