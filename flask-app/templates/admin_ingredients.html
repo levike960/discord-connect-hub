@@ -7,7 +7,7 @@
 <form method="POST" class="row g-3 mb-4">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <input type="hidden" name="form_type" value="add_ingredient">
-  <div class="col-md-4">
+  <div class="col-md-3">
     <input type="text" name="ing_name" class="form-control" placeholder="Alapanyag neve" required maxlength="128">
   </div>
   <div class="col-md-2">
@@ -19,8 +19,11 @@
       <option value="l">l</option>
     </select>
   </div>
-  <div class="col-md-3">
+  <div class="col-md-2">
     <input type="number" name="ing_price" class="form-control" placeholder="Egységár (Ft)" step="1" required>
+  </div>
+  <div class="col-md-2">
+    <input type="number" name="ing_weight" class="form-control" placeholder="Súly/db (g)" step="0.1" min="0" value="0">
   </div>
   <div class="col-md-3">
     <button type="submit" class="btn btn-success w-100">Hozzáadás</button>
@@ -31,7 +34,7 @@
 <div class="table-responsive">
   <table class="table table-striped">
     <thead class="table-dark">
-      <tr><th>Név</th><th>Egység</th><th>Egységár</th><th>Készlet</th><th>Min. készlet</th><th></th></tr>
+      <tr><th>Név</th><th>Egység</th><th>Egységár</th><th>Súly/db (g)</th><th>Készlet</th><th>Min. készlet</th><th></th></tr>
     </thead>
     <tbody>
       {% for ing in ingredients %}
@@ -39,6 +42,16 @@
         <td>{{ ing.name }}</td>
         <td>{{ ing.unit }}</td>
         <td>{{ "%.0f"|format(ing.price_per_unit) }} Ft</td>
+        <td>
+          <form method="POST" class="d-flex gap-1 align-items-center">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="form_type" value="update_weight">
+            <input type="hidden" name="ing_id" value="{{ ing.id }}">
+            <input type="number" name="weight_gram" class="form-control form-control-sm" style="width:80px;"
+                   value="{{ '%.1f'|format(ing.weight_per_unit_gram or 0) }}" step="0.1" min="0">
+            <button class="btn btn-sm btn-outline-primary p-0 px-1"><i class="bi bi-check"></i></button>
+          </form>
+        </td>
         <td>
           <span class="{% if ing.stock <= 0 %}text-danger fw-bold{% elif ing.stock < ing.min_stock %}text-warning fw-bold{% else %}text-success{% endif %}">
             {{ "%.1f"|format(ing.stock) }} {{ ing.unit }}

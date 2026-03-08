@@ -226,6 +226,7 @@ def define_models(db, app):
         price_per_unit = db.Column(db.Float, nullable=False, default=0.0)
         stock = db.Column(db.Float, nullable=False, default=0.0)
         min_stock = db.Column(db.Float, nullable=False, default=5.0)
+        weight_per_unit_gram = db.Column(db.Float, nullable=True, default=0.0)
         created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     class MenuItem(db.Model):
