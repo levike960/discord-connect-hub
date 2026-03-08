@@ -87,13 +87,10 @@ document.addEventListener('DOMContentLoaded', function() {
   const qtyInputs = document.querySelectorAll('.preorder-qty');
   const totalCostEl = document.getElementById('totalCost');
   const totalWeightEl = document.getElementById('totalWeight');
-  const submitBtn = document.getElementById('submitBtn');
-  const hiddenInputs = document.querySelectorAll('.preorder-hidden');
 
   function recalc() {
     let totalCost = 0, totalWeight = 0;
-    let hasAny = false;
-    qtyInputs.forEach((input, idx) => {
+    qtyInputs.forEach(input => {
       const qty = parseInt(input.value) || 0;
       const price = parseFloat(input.dataset.price) || 0;
       const weight = parseFloat(input.dataset.weight) || 0;
@@ -101,18 +98,13 @@ document.addEventListener('DOMContentLoaded', function() {
       const rowWeight = qty * weight;
       totalCost += rowCost;
       totalWeight += rowWeight;
-      if (qty > 0) hasAny = true;
 
       const row = input.closest('tr');
       row.querySelector('.row-cost').textContent = rowCost.toLocaleString('hu-HU') + ' Ft';
       row.querySelector('.row-weight').textContent = rowWeight > 0 ? rowWeight.toLocaleString('hu-HU') + ' g' : '—';
-
-      // Sync hidden inputs
-      if (hiddenInputs[idx]) hiddenInputs[idx].value = qty;
     });
     totalCostEl.textContent = totalCost.toLocaleString('hu-HU') + ' Ft';
     totalWeightEl.textContent = totalWeight > 0 ? totalWeight.toLocaleString('hu-HU') + ' g' : '0 g';
-    submitBtn.disabled = !hasAny;
   }
 
   qtyInputs.forEach(input => {
