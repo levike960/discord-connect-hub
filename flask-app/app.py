@@ -1051,7 +1051,10 @@ def fraction_preorder():
                 weight_val = float(parts[1].replace("g", "").strip())
             except (ValueError, IndexError):
                 pass
-        preorder_logs.append({
+
+        # Legacy safety: prevent broken method-text from older malformed logs
+        if str(items_part).startswith("<built-in method items of dict object"):
+            items_part = "(Régi hibás naplóbejegyzés)"
             "user": sm.user,
             "items": items_part,
             "total_cost": sm.quantity,
