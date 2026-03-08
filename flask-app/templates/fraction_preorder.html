@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+{% block title %}Előrendelés{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-11">
+
+    <div class="d-flex align-items-center justify-content-between mb-4">
+      <h2><i class="bi bi-cart-check-fill" style="color: #2980b9;"></i> Előrendelés — Bevásárlólista</h2>
+      <a href="{{ url_for('fraction') }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i> Vissza
+      </a>
+    </div>
+
+    <p class="text-muted mb-4">Add meg az alapanyagokból a kívánt darabszámot, és a rendszer kiszámolja az összes költséget és súlyt.</p>
+
+    {# ── Calculator form (no server submit needed – JS only) ── #}
+    <div class="card shadow-sm mb-4">
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0" id="preorderTable">
+            <thead class="table-dark">
+              <tr>
+                <th>Alapanyag</th>
+                <th>Egység</th>
+                <th>Egységár</th>
+                <th>Súly/db</th>
+                <th>Készlet</th>
+                <th style="width:120px;">Mennyiség</th>
+                <th class="text-end">Költség</th>
+                <th class="text-end">Súly</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for ing in ingredients %}
+              <tr>
+                <td><strong>{{ ing.name }}</strong></td>
+                <td>{{ ing.unit }}</td>
+                <td data-price="{{ ing.price_per_unit }}">{{ "%.0f"|format(ing.price_per_unit) }} Ft</td>
+                <td data-weight="{{ ing.weight_per_unit_gram or 0 }}">
+                  {% if ing.weight_per_unit_gram %}
+                    {{ "%.1f"|format(ing.weight_per_unit_gram) }} g
+                  {% else %}
+                    <span class="text-muted">—</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <span class="{% if ing.stock <= 0 %}text-danger fw-bold{% elif ing.stock < ing.min_stock %}text-warning fw-bold{% else %}text-success{% endif %}">
+                    {{ "%.1f"|format(ing.stock) }} {{ ing.unit }}
+                  </span>
+                </td>
+                <td>
+                  <input type="number" min="0" value="0" step="1"
+                         class="form-control form-control-sm text-center preorder-qty"
+                         data-price="{{ ing.price_per_unit }}"
+                         data-weight="{{ ing.weight_per_unit_gram or 0 }}"
+                         style="width:90px;">
+                </td>
+                <td class="text-end row-cost">0 Ft</td>
+                <td class="text-end row-weight">0 g</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+            <tfoot class="table-light">
+              <tr class="fw-bold fs-5">
+                <td colspan="6" class="text-end">Összesen:</td>
+                <td class="text-end" id="totalCost">0 Ft</td>
+                <td class="text-end" id="totalWeight">0 g</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="alert alert-info">
+      <i class="bi bi-info-circle me-1"></i>
+      Ez egy kalkulátor — a mennyiségek nem kerülnek mentésre. Használd bevásárlás tervezéséhez!
+    </div>
+
+    {# ── Previous preorder logs ── #}
+    {% if preorder_logs %}
+    <h4 class="mb-3 mt-5"><i class="bi bi-clock-history text-muted"></i> Eddigi előrendelések</h4>
+    <div class="card shadow-sm">
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-striped table-hover align-middle mb-0">
+            <thead class="table-dark">
+              <tr>
+                <th>Dátum</th>
+                <th>Felhasználó</th>
+                <th>Tételek</th>
+                <th class="text-end">Összeg</th>
+                <th class="text-end">Súly</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for log in preorder_logs %}
+              <tr>
+                <td>{{ log.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td>
+                  {% if log.user %}
+                    <div class="d-flex align-items-center gap-2">
+                      <img src="{{ log.user.avatar_url }}" class="avatar-sm" alt="">
+                      <span>{{ log.user.display_name }}</span>
+                    </div>
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+                <td>{{ log.items }}</td>
+                <td class="text-end">{{ "%.0f"|format(log.total_cost) }} Ft</td>
+                <td class="text-end">{{ "%.0f"|format(log.total_weight) }} g</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    {# ── Submit preorder to log ── #}
+    <form method="POST" class="mt-4 mb-5" id="preorderForm">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      {% for ing in ingredients %}
+      <input type="hidden" name="qty_{{ ing.id }}" value="0" class="preorder-hidden" data-ing-id="{{ ing.id }}">
+      {% endfor %}
+      <div class="d-flex justify-content-end">
+        <button type="submit" class="btn btn-lg btn-primary" id="submitBtn" disabled>
+          <i class="bi bi-save me-2"></i> Előrendelés mentése
+        </button>
+      </div>
+    </form>
+
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const qtyInputs = document.querySelectorAll('.preorder-qty');
+  const totalCostEl = document.getElementById('totalCost');
+  const totalWeightEl = document.getElementById('totalWeight');
+  const submitBtn = document.getElementById('submitBtn');
+  const hiddenInputs = document.querySelectorAll('.preorder-hidden');
+
+  function recalc() {
+    let totalCost = 0, totalWeight = 0;
+    let hasAny = false;
+    qtyInputs.forEach((input, idx) => {
+      const qty = parseInt(input.value) || 0;
+      const price = parseFloat(input.dataset.price) || 0;
+      const weight = parseFloat(input.dataset.weight) || 0;
+      const rowCost = qty * price;
+      const rowWeight = qty * weight;
+      totalCost += rowCost;
+      totalWeight += rowWeight;
+      if (qty > 0) hasAny = true;
+
+      const row = input.closest('tr');
+      row.querySelector('.row-cost').textContent = rowCost.toLocaleString('hu-HU') + ' Ft';
+      row.querySelector('.row-weight').textContent = rowWeight > 0 ? rowWeight.toLocaleString('hu-HU') + ' g' : '—';
+
+      // Sync hidden inputs
+      if (hiddenInputs[idx]) hiddenInputs[idx].value = qty;
+    });
+    totalCostEl.textContent = totalCost.toLocaleString('hu-HU') + ' Ft';
+    totalWeightEl.textContent = totalWeight > 0 ? totalWeight.toLocaleString('hu-HU') + ' g' : '0 g';
+    submitBtn.disabled = !hasAny;
+  }
+
+  qtyInputs.forEach(input => {
+    input.addEventListener('input', recalc);
+    input.addEventListener('change', recalc);
+  });
+});
+</script>
+{% endblock %}

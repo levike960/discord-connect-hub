@@ -1296,10 +1296,20 @@ def _admin_post_handler():
         name = request.form.get("ing_name", "").strip()
         unit = request.form.get("ing_unit", "db").strip()
         price = request.form.get("ing_price", type=float)
+        weight = request.form.get("ing_weight", type=float, default=0.0)
         if name and price is not None:
-            db.session.add(Ingredient(name=name, unit=unit, price_per_unit=price))
+            db.session.add(Ingredient(name=name, unit=unit, price_per_unit=price, weight_per_unit_gram=weight or 0.0))
             db.session.commit()
             flash("Ingredient added.", "success")
+
+    elif form_type == "update_weight":
+        ing_id = request.form.get("ing_id", type=int)
+        ing = db.session.get(Ingredient, ing_id)
+        if ing:
+            w = request.form.get("weight_gram", type=float, default=0.0)
+            ing.weight_per_unit_gram = w if w else 0.0
+            db.session.commit()
+            flash(f"Súly frissítve: {ing.name} → {ing.weight_per_unit_gram:.1f} g", "success")
 
     elif form_type == "delete_ingredient":
         ing_id = request.form.get("ing_id", type=int)
