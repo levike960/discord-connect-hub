@@ -1,0 +1,95 @@
+{% extends "admin_base.html" %}
+{% set section_title = "Munkaidő bónuszok" %}
+{% set section_icon = "bi bi-stopwatch-fill" %}
+
+{% block section_actions %}
+<div class="btn-group ms-auto" role="group">
+  <a href="?period=day" class="btn btn-sm btn-{{ 'primary' if period == 'day' else 'outline-primary' }}">Nap</a>
+  <a href="?period=week" class="btn btn-sm btn-{{ 'primary' if period == 'week' else 'outline-primary' }}">Hét</a>
+  <a href="?period=month" class="btn btn-sm btn-{{ 'primary' if period == 'month' else 'outline-primary' }}">Hónap</a>
+  <a href="?period=year" class="btn btn-sm btn-{{ 'primary' if period == 'year' else 'outline-primary' }}">Év</a>
+</div>
+{% endblock %}
+
+{% block admin_content %}
+
+{# ── Summary ── #}
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card border-primary h-100">
+      <div class="card-body text-center">
+        <div class="text-muted small">Összes munkaidő (időszak)</div>
+        <div class="fs-4 fw-bold text-primary">{{ grand_total_formatted }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card border-success h-100">
+      <div class="card-body text-center">
+        <div class="text-muted small">Összes idő bónusz (időszak)</div>
+        <div class="fs-4 fw-bold text-success">{{ "%.0f"|format(grand_total_bonus) }} Ft</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card border-warning h-100">
+      <div class="card-body text-center">
+        <div class="text-muted small">Ft / perc beállítás</div>
+        <div class="fs-4 fw-bold" style="color:var(--csp-gold, #f5a623);">
+          {{ "%.1f"|format(per_minute_rate) }} Ft/perc
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ── Per-user Table ── #}
+{% if user_stats %}
+<div class="card shadow-sm">
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-striped table-hover mb-0">
+        <thead class="table-dark">
+          <tr>
+            <th>#</th>
+            <th>Név (IC)</th>
+            <th>Rang</th>
+            <th>Munkaidő</th>
+            <th>Bónusz összeg</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in user_stats %}
+          <tr>
+            <td>
+              {% if loop.index == 1 %}<i class="bi bi-trophy-fill text-warning fs-5"></i>
+              {% elif loop.index == 2 %}<i class="bi bi-trophy-fill" style="color:#aaa;"></i>
+              {% elif loop.index == 3 %}<i class="bi bi-trophy-fill" style="color:#cd7f32;"></i>
+              {% else %}{{ loop.index }}{% endif %}
+            </td>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <img src="{{ s.user.avatar_url }}" alt="" width="28" height="28" class="rounded-circle">
+                <strong>{{ s.user.ingame_name or s.user.display_name }}</strong>
+              </div>
+            </td>
+            <td>
+              {% if s.user.rank %}
+                <span class="badge" style="background:{{ s.user.rank.color or 'var(--csp-accent)' }};">{{ s.user.rank.name }}</span>
+              {% else %}
+                <span class="text-muted">—</span>
+              {% endif %}
+            </td>
+            <td>{{ s.total_formatted }}</td>
+            <td class="fw-bold text-success">{{ "%.0f"|format(s.bonus) }} Ft</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% else %}
+<p class="text-muted">Nincsenek fraction tagok.</p>
+{% endif %}
+{% endblock %}

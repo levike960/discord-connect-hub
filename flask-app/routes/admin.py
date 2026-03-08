@@ -851,6 +851,59 @@ def register_admin_routes(app, db, models):
         workhour_stats.sort(key=lambda x: x["total_seconds"], reverse=True)
         return render_template("admin_worklogs.html", workhour_stats=workhour_stats, wh_period=wh_period)
 
+    @app.route("/admin/time-bonuses")
+    @admin_required
+    def admin_time_bonuses():
+        period = request.args.get("period", "month")
+        now = now_cet()
+        if period == "day":
+            start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        elif period == "week":
+            start = (now - timedelta(days=now.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
+        elif period == "month":
+            start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        elif period == "year":
+            start = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+        else:
+            start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+        bonus_cfg = BonusConfig.query.first()
+        per_minute_rate = bonus_cfg.per_minute_bonus if bonus_cfg else 0.0
+
+        fraction_members = User.query.filter_by(has_fraction_permission=True).all()
+        user_stats = []
+        grand_total_seconds = 0
+        grand_total_bonus = 0.0
+
+        for member in fraction_members:
+            logs = WorkLog.query.filter(
+                WorkLog.user_id == member.id,
+                WorkLog.clock_in >= start
+            ).all()
+            total_secs = sum(l.duration_seconds for l in logs)
+            total_minutes = total_secs / 60
+            bonus = round(total_minutes * per_minute_rate, 2)
+            h, rem = divmod(int(total_secs), 3600)
+            m, _ = divmod(rem, 60)
+            user_stats.append({
+                "user": member,
+                "total_formatted": f"{h}h {m}m",
+                "total_seconds": total_secs,
+                "bonus": bonus,
+            })
+            grand_total_seconds += total_secs
+            grand_total_bonus += bonus
+
+        user_stats.sort(key=lambda x: x["total_seconds"], reverse=True)
+        gh, grem = divmod(int(grand_total_seconds), 3600)
+        gm, _ = divmod(grem, 60)
+
+        return render_template("admin_time_bonuses.html",
+                               user_stats=user_stats, period=period,
+                               per_minute_rate=per_minute_rate,
+                               grand_total_formatted=f"{gh}h {gm}m",
+                               grand_total_bonus=grand_total_bonus)
+
     @app.route("/admin/ingredients", methods=["GET", "POST"])
     @admin_required
     def admin_ingredients():
