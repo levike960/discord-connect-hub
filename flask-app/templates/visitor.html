@@ -232,16 +232,14 @@
                   {% if current_user.is_authenticated and current_user.id != worker.id %}
                   <form method="POST" action="{{ url_for('rate_worker', target_id=worker.id) }}" class="mt-3">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="stars" value="" class="star-input">
                     <div class="d-flex align-items-center justify-content-center gap-2">
-                      <select name="stars" class="form-select form-select-sm" style="width: auto;">
-                        <option value="" disabled selected>Csillagok</option>
-                        <option value="1">⭐ 1</option>
-                        <option value="2">⭐ 2</option>
-                        <option value="3">⭐ 3</option>
-                        <option value="4">⭐ 4</option>
-                        <option value="5">⭐ 5</option>
-                      </select>
-                      <button type="submit" class="btn btn-sm btn-outline-warning">Értékel</button>
+                      <div class="star-rating" data-worker="{{ worker.id }}">
+                        {% for i in range(1, 6) %}
+                        <i class="bi bi-star star-btn" data-value="{{ i }}" style="font-size:1.4rem;cursor:pointer;color:var(--csp-gold);transition:all 0.15s;"></i>
+                        {% endfor %}
+                      </div>
+                      <button type="submit" class="btn btn-sm btn-outline-warning star-submit" disabled>Értékel</button>
                       <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#workerModal{{ worker.id }}" title="Vélemények"><i class="bi bi-chat-dots"></i></button>
                     </div>
                   </form>
