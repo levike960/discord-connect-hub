@@ -480,33 +480,22 @@
 
     <div class="collapse navbar-collapse" id="mainNav">
       <ul class="navbar-nav mx-auto align-items-center gap-0 flex-wrap" id="sectionNavLinks">
+        {% set section_links = [
+          ("fooldal", "Főoldal"),
+          ("tortenetunk", "Történetünk"),
+          ("termekeink", "Termékeink"),
+          ("arlista", "Árlista"),
+          ("ertekeld", "Értékelj minket"),
+          ("elerhetosegek", "Elérhetőségek"),
+          ("rendezvenyek", "Foglalás"),
+          ("vendegkonyv", "Vendégkönyv"),
+          ("partnereink", "Partnereink"),
+        ] %}
+        {% for href, label in section_links %}
         <li class="nav-item">
-          <a class="nav-link section-nav-link" href="{{ url_for('visitor') }}#fooldal">Főoldal</a>
+          <a class="nav-link section-nav-link" href="{{ url_for('visitor') }}#{{ href }}">{{ label }}</a>
         </li>
-        <li class="nav-item">
-          <a class="nav-link section-nav-link" href="{{ url_for('visitor') }}#tortenetunk">Történetünk</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link section-nav-link" href="{{ url_for('visitor') }}#termekeink">Termékeink</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link section-nav-link" href="{{ url_for('visitor') }}#arlista">Árlista</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link section-nav-link" href="{{ url_for('visitor') }}#ertekeld">Értékelj minket</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link section-nav-link" href="{{ url_for('visitor') }}#elerhetosegek">Elérhetőségek</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link section-nav-link" href="{{ url_for('visitor') }}#rendezvenyek">Foglalás</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link section-nav-link" href="{{ url_for('visitor') }}#vendegkonyv">Vendégkönyv</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link section-nav-link" href="{{ url_for('visitor') }}#partnereink">Partnereink</a>
-        </li>
+        {% endfor %}
         {% if current_user.is_authenticated %}
           {% if current_user.has_fraction_permission or current_user.is_admin %}
           <li class="nav-item">
