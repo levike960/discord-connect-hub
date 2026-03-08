@@ -947,6 +947,60 @@ def fraction_brewery():
     return render_template("fraction_brewery.html")
 
 
+@app.route("/fraction/vince", methods=["GET", "POST"])
+@fraction_required
+def fraction_vince():
+    """NPC töltése – bulk deduct stock and record as sale."""
+    menu_items = MenuItem.query.order_by(MenuItem.category, MenuItem.name).all()
+
+    if request.method == "POST":
+        sale_total = 0.0
+        items_sold = []
+        for mi in menu_items:
+            qty = request.form.get(f"qty_{mi.id}", 0, type=int)
+            if qty and qty > 0:
+                mi.stock = max(0, mi.stock - qty)
+                sale_total += mi.price * qty
+                items_sold.append(f"{qty}x {mi.name}")
+                db.session.add(StockMovement(
+                    item_type="menu_item", item_id=mi.id,
+                    quantity=-qty,
+                    reason="Vince feltöltése",
+                    user_id=current_user.id
+                ))
+        if items_sold:
+            due = Due(
+                name="Vince feltöltése",
+                amount=sale_total,
+                due_date=date.today(),
+                is_paid=True,
+                paid_at=datetime.utcnow(),
+                created_by=current_user.id,
+            )
+            db.session.add(due)
+            db.session.commit()
+            flash(f"Vince feltöltve: {', '.join(items_sold)} — {sale_total:.0f} Ft", "success")
+        else:
+            flash("Nem adtál meg mennyiséget.", "warning")
+        return redirect(url_for("fraction_vince"))
+
+    # Log: previous Vince submissions (StockMovements with reason 'Vince feltöltése')
+    vince_logs_raw = StockMovement.query.filter_by(reason="Vince feltöltése") \
+        .order_by(StockMovement.created_at.desc()).limit(200).all()
+    # Group by user + timestamp (same second = same batch)
+    vince_log_entries = []
+    for sm in vince_logs_raw:
+        mi = db.session.get(MenuItem, sm.item_id)
+        vince_log_entries.append({
+            "user": sm.user,
+            "item_name": mi.name if mi else "?",
+            "quantity": abs(sm.quantity),
+            "created_at": sm.created_at,
+        })
+
+    return render_template("fraction_vince.html", menu_items=menu_items, vince_logs=vince_log_entries)
+
+
 @app.route("/fraction/warehouse", methods=["GET", "POST"])
 @fraction_required
 def fraction_warehouse():
