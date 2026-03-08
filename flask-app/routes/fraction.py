@@ -482,10 +482,10 @@ def register_fraction_routes(app, db, models):
             })
         return render_template("fraction_vince.html", menu_items=menu_items, vince_logs=vince_log_entries)
 
-    @app.route("/fraction/preorder", methods=["GET", "POST"])
+    @app.route("/fraction/preorder")
     @fraction_required
     def fraction_preorder():
-        """Előrendelés – shopping list calculator with structured JSON logging."""
+        """Előrendelés – kalkulátor (csak kliens oldali számolás)."""
         ingredients = Ingredient.query.order_by(Ingredient.name).all()
 
         return render_template("fraction_preorder.html", ingredients=ingredients)
