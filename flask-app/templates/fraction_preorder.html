@@ -97,20 +97,21 @@
             <tbody>
               {% for log in preorder_logs %}
               <tr>
-                <td>{{ log.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td>{{ log["created_at"].strftime('%Y-%m-%d %H:%M') }}</td>
                 <td>
-                  {% if log.user %}
+                  {% set user = log["user"] %}
+                  {% if user %}
                     <div class="d-flex align-items-center gap-2">
-                      <img src="{{ log.user.avatar_url }}" class="avatar-sm" alt="">
-                      <span>{{ log.user.display_name }}</span>
+                      <img src="{{ user.avatar_url }}" class="avatar-sm" alt="{{ user.display_name }} avatar">
+                      <span>{{ user.display_name }}</span>
                     </div>
                   {% else %}
                     —
                   {% endif %}
                 </td>
                 <td>{{ log["items"] }}</td>
-                <td class="text-end">{{ "%.0f"|format(log.total_cost) }} Ft</td>
-                <td class="text-end">{{ "%.0f"|format(log.total_weight) }} g</td>
+                <td class="text-end">{{ "%.0f"|format(log["total_cost"]) }} Ft</td>
+                <td class="text-end">{{ "%.0f"|format(log["total_weight"]) }} g</td>
               </tr>
               {% endfor %}
             </tbody>
