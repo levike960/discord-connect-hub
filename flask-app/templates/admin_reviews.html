@@ -35,13 +35,28 @@
             </td>
             <td style="max-width:300px;"><small>{{ entry.message[:100] }}{% if entry.message|length > 100 %}...{% endif %}</small></td>
             <td class="text-center">{{ entry.likes }}</td>
+            <td class="text-center">
+              {% if entry.is_approved %}
+                <span class="badge bg-success"><i class="bi bi-check-circle"></i> Jóváhagyva</span>
+              {% else %}
+                <span class="badge bg-warning text-dark"><i class="bi bi-clock"></i> Elrejtve</span>
+              {% endif %}
+            </td>
             <td><small class="text-muted">{{ entry.created_at.strftime('%Y.%m.%d %H:%M') }}</small></td>
             <td class="text-end">
-              <form method="POST" action="{{ url_for('admin_delete_guestbook', entry_id=entry.id) }}" class="d-inline"
-                    onsubmit="return confirm('Biztosan törlöd ezt a bejegyzést?');">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
-              </form>
+              <div class="d-flex justify-content-end gap-1">
+                <form method="POST" action="{{ url_for('admin_approve_guestbook', entry_id=entry.id) }}" class="d-inline">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn btn-sm {% if entry.is_approved %}btn-outline-warning{% else %}btn-outline-success{% endif %}" title="{% if entry.is_approved %}Elrejtés{% else %}Jóváhagyás{% endif %}">
+                    <i class="bi {% if entry.is_approved %}bi-eye-slash{% else %}bi-check-lg{% endif %}"></i>
+                  </button>
+                </form>
+                <form method="POST" action="{{ url_for('admin_delete_guestbook', entry_id=entry.id) }}" class="d-inline"
+                      onsubmit="return confirm('Biztosan törlöd ezt a bejegyzést?');">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                </form>
+              </div>
             </td>
           </tr>
           {% endfor %}
