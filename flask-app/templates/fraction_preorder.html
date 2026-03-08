@@ -19,7 +19,7 @@
       <div class="card-body p-0">
         <div class="table-responsive">
           <table class="table table-hover align-middle mb-0" id="preorderTable">
-            <thead class="table-dark">
+            <thead style="background: var(--csp-accent); color: #fff;">
               <tr>
                 <th>Alapanyag</th>
                 <th>Egység</th>
@@ -61,11 +61,11 @@
               </tr>
               {% endfor %}
             </tbody>
-            <tfoot class="table-light">
+            <tfoot style="background: rgba(124, 92, 252, 0.15);">
               <tr class="fw-bold fs-5">
                 <td colspan="6" class="text-end">Összesen:</td>
-                <td class="text-end" id="totalCost">0 Ft</td>
-                <td class="text-end" id="totalWeight">0 g</td>
+                <td class="text-end" id="totalCost" style="color: var(--csp-accent);">0 Ft</td>
+                <td class="text-end" id="totalWeight" style="color: var(--csp-accent);">0 g</td>
               </tr>
             </tfoot>
           </table>
