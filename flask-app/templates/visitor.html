@@ -632,4 +632,42 @@
   </div>
 </section>
 
+
+<script>
+// Interactive star rating
+document.querySelectorAll('.star-rating').forEach(function(container) {
+  const stars = container.querySelectorAll('.star-btn');
+  const form = container.closest('form');
+  const hiddenInput = form.querySelector('.star-input');
+  const submitBtn = form.querySelector('.star-submit');
+  let selected = 0;
+
+  stars.forEach(function(star) {
+    star.addEventListener('mouseenter', function() {
+      const val = parseInt(this.dataset.value);
+      stars.forEach(function(s) {
+        const sv = parseInt(s.dataset.value);
+        s.className = sv <= val ? 'bi bi-star-fill star-btn' : 'bi bi-star star-btn';
+      });
+    });
+
+    star.addEventListener('mouseleave', function() {
+      stars.forEach(function(s) {
+        const sv = parseInt(s.dataset.value);
+        s.className = sv <= selected ? 'bi bi-star-fill star-btn' : 'bi bi-star star-btn';
+      });
+    });
+
+    star.addEventListener('click', function() {
+      selected = parseInt(this.dataset.value);
+      hiddenInput.value = selected;
+      submitBtn.disabled = false;
+      stars.forEach(function(s) {
+        const sv = parseInt(s.dataset.value);
+        s.className = sv <= selected ? 'bi bi-star-fill star-btn' : 'bi bi-star star-btn';
+      });
+    });
+  });
+});
+</script>
 {% endblock %}
