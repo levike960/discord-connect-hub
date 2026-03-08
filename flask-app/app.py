@@ -1063,6 +1063,8 @@ def fraction_preorder():
 
 
 
+@app.route("/fraction/warehouse", methods=["GET", "POST"])
+@login_required
 @fraction_required
 def fraction_warehouse():
     if request.method == "POST":
