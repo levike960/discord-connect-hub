@@ -1,7 +1,31 @@
 {% extends "base.html" %}
-{% block title %}Casa di Vino — Főoldal{% endblock %}
+{% block title %}Casa di Vino — Olasz Borászat & Borbár{% endblock %}
+{% block meta_description %}Casa di Vino borászat — Prémium olasz borok, koktélok, ételek és rendezvények Csudapesten. Foglaljon asztalt, értékelje munkatársainkat.{% endblock %}
+{% block og_tags %}
+<meta property="og:title" content="Casa di Vino — Olasz Borászat & Borbár">
+<meta property="og:description" content="Ahol az olasz hagyomány és a borászat művészete találkozik. Prémium borok, koktélok és gasztronómia.">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="hu_HU">
+<meta property="og:site_name" content="Casa di Vino">
+{% endblock %}
 
 {% block content %}
+
+{# JSON-LD LocalBusiness Schema #}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "LocalBusiness",
+  "name": "Casa di Vino",
+  "description": "Olasz borászat és borbár — prémium borok, koktélok és gasztronómia.",
+  "url": "{{ request.url_root }}",
+  "email": "casadivino@cspreborn.com",
+  "servesCuisine": "Olasz",
+  "priceRange": "$$",
+  "image": "{{ url_for('static', filename='uploads/logo_dark.png', _external=True) }}",
+  "@id": "{{ request.url_root }}#localbusiness"
+}
+</script>
 
 {# ── Hero Section ── #}
 <section id="fooldal" class="hero-section mb-5" style="margin-top:-1.5rem;">
