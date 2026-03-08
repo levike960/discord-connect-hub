@@ -1001,7 +1001,68 @@ def fraction_vince():
     return render_template("fraction_vince.html", menu_items=menu_items, vince_logs=vince_log_entries)
 
 
-@app.route("/fraction/warehouse", methods=["GET", "POST"])
+@app.route("/fraction/preorder", methods=["GET", "POST"])
+@fraction_required
+def fraction_preorder():
+    """Előrendelés – shopping list calculator with cost & weight."""
+    ingredients = Ingredient.query.order_by(Ingredient.name).all()
+
+    if request.method == "POST":
+        items_list = []
+        total_cost = 0.0
+        total_weight = 0.0
+        for ing in ingredients:
+            qty = request.form.get(f"qty_{ing.id}", 0, type=int)
+            if qty and qty > 0:
+                cost = qty * ing.price_per_unit
+                weight = qty * (ing.weight_per_unit_gram or 0)
+                total_cost += cost
+                total_weight += weight
+                items_list.append(f"{qty} {ing.unit} {ing.name}")
+        if items_list:
+            # Log as a StockMovement with special reason for history
+            db.session.add(StockMovement(
+                item_type="preorder", item_id=0,
+                quantity=total_cost,
+                reason="Előrendelés: " + ", ".join(items_list) + f" | súly:{total_weight:.0f}g",
+                user_id=current_user.id
+            ))
+            db.session.commit()
+            flash(f"Előrendelés mentve: {len(items_list)} tétel — {total_cost:.0f} Ft, {total_weight:.0f} g", "success")
+        else:
+            flash("Nem adtál meg mennyiséget.", "warning")
+        return redirect(url_for("fraction_preorder"))
+
+    # Previous preorder logs
+    preorder_logs_raw = StockMovement.query.filter(
+        StockMovement.reason.like("Előrendelés:%")
+    ).order_by(StockMovement.created_at.desc()).limit(100).all()
+
+    preorder_logs = []
+    for sm in preorder_logs_raw:
+        # Parse reason: "Előrendelés: items | súly:Xg"
+        reason = sm.reason or ""
+        items_part = reason.replace("Előrendelés: ", "")
+        weight_val = 0.0
+        if "| súly:" in items_part:
+            parts = items_part.split("| súly:")
+            items_part = parts[0].strip().rstrip(",")
+            try:
+                weight_val = float(parts[1].replace("g", "").strip())
+            except (ValueError, IndexError):
+                pass
+        preorder_logs.append({
+            "user": sm.user,
+            "items": items_part,
+            "total_cost": sm.quantity,
+            "total_weight": weight_val,
+            "created_at": sm.created_at,
+        })
+
+    return render_template("fraction_preorder.html", ingredients=ingredients, preorder_logs=preorder_logs)
+
+
+
 @fraction_required
 def fraction_warehouse():
     if request.method == "POST":
