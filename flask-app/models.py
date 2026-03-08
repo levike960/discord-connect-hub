@@ -1,11 +1,20 @@
 """
 Database models for the Flask application.
+Uses proper CET timezone via zoneinfo instead of manual timedelta(hours=1).
 """
 
 import os
-from datetime import datetime, timedelta
+from datetime import datetime
+from zoneinfo import ZoneInfo
 from flask_login import UserMixin
 from flask import url_for
+
+CET = ZoneInfo("Europe/Budapest")
+
+
+def now_cet():
+    """Return current CET/CEST time as naive datetime (SQLite compatible)."""
+    return datetime.now(CET).replace(tzinfo=None)
 
 
 # db is injected from app.py after creation
@@ -23,7 +32,7 @@ def init_models(database, config):
 
 class User(UserMixin, object):
     """Registered user via Discord OAuth."""
-    pass  # Defined dynamically below
+    pass
 
 
 class Rating(object):
@@ -135,15 +144,13 @@ def define_models(db, app):
 
         id = db.Column(db.Integer, primary_key=True)
         user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
-        clock_in = db.Column(db.DateTime, nullable=False, default=lambda: datetime.utcnow() + timedelta(hours=1))
+        clock_in = db.Column(db.DateTime, nullable=False, default=now_cet)
         clock_out = db.Column(db.DateTime, nullable=True)
 
         @property
         def duration_seconds(self):
-            now_cet = datetime.utcnow() + timedelta(hours=1)
-            if self.clock_out:
-                return (self.clock_out - self.clock_in).total_seconds()
-            return (now_cet - self.clock_in).total_seconds()
+            end = self.clock_out if self.clock_out else now_cet()
+            return (end - self.clock_in).total_seconds()
 
         @property
         def duration_formatted(self):
@@ -162,7 +169,7 @@ def define_models(db, app):
         is_paid = db.Column(db.Boolean, default=False)
         paid_at = db.Column(db.DateTime, nullable=True)
         company_id = db.Column(db.Integer, db.ForeignKey("delivery_companies.id"), nullable=True)
-        created_at = db.Column(db.DateTime, default=datetime.utcnow)
+        created_at = db.Column(db.DateTime, default=now_cet)
         created_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
 
         company = db.relationship("DeliveryCompany", backref="dues")
@@ -174,7 +181,7 @@ def define_models(db, app):
         id = db.Column(db.Integer, primary_key=True)
         title = db.Column(db.String(256), nullable=False)
         content = db.Column(db.Text, nullable=False)
-        created_at = db.Column(db.DateTime, default=datetime.utcnow)
+        created_at = db.Column(db.DateTime, default=now_cet)
         created_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
 
     class DeliveryCompany(db.Model):
@@ -182,7 +189,7 @@ def define_models(db, app):
 
         id = db.Column(db.Integer, primary_key=True)
         name = db.Column(db.String(128), nullable=False)
-        created_at = db.Column(db.DateTime, default=datetime.utcnow)
+        created_at = db.Column(db.DateTime, default=now_cet)
 
         messages = db.relationship("DeliveryMessage", backref="company", lazy="dynamic",
                                    order_by="DeliveryMessage.created_at.desc()")
@@ -194,7 +201,7 @@ def define_models(db, app):
         company_id = db.Column(db.Integer, db.ForeignKey("delivery_companies.id"), nullable=False)
         user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
         content = db.Column(db.Text, nullable=False)
-        created_at = db.Column(db.DateTime, default=datetime.utcnow)
+        created_at = db.Column(db.DateTime, default=now_cet)
 
         author = db.relationship("User", backref="delivery_messages")
 
@@ -205,7 +212,7 @@ def define_models(db, app):
         company_name = db.Column(db.String(256), nullable=False)
         description = db.Column(db.Text, nullable=False)
         image_path = db.Column(db.String(512), nullable=True)
-        created_at = db.Column(db.DateTime, default=datetime.utcnow)
+        created_at = db.Column(db.DateTime, default=now_cet)
         created_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
 
     class Rank(db.Model):
@@ -214,8 +221,8 @@ def define_models(db, app):
         id = db.Column(db.Integer, primary_key=True)
         name = db.Column(db.String(128), nullable=False, unique=True)
         sort_order = db.Column(db.Integer, nullable=False, default=0)
-        color = db.Column(db.String(32), nullable=True)  # optional badge color
-        created_at = db.Column(db.DateTime, default=datetime.utcnow)
+        color = db.Column(db.String(32), nullable=True)
+        created_at = db.Column(db.DateTime, default=now_cet)
 
     class Ingredient(db.Model):
         __tablename__ = "ingredients"
@@ -227,21 +234,21 @@ def define_models(db, app):
         stock = db.Column(db.Float, nullable=False, default=0.0)
         min_stock = db.Column(db.Float, nullable=False, default=5.0)
         weight_per_unit_gram = db.Column(db.Float, nullable=True, default=0.0)
-        created_at = db.Column(db.DateTime, default=datetime.utcnow)
+        created_at = db.Column(db.DateTime, default=now_cet)
 
     class MenuItem(db.Model):
         __tablename__ = "menu_items"
 
         id = db.Column(db.Integer, primary_key=True)
         name = db.Column(db.String(128), nullable=False)
-        category = db.Column(db.String(32), nullable=False)  # 'alc', 'non_alc', 'food'
+        category = db.Column(db.String(32), nullable=False)
         price = db.Column(db.Float, nullable=False, default=0.0)
         production_cost = db.Column(db.Float, nullable=False, default=0.0)
         production_time_seconds = db.Column(db.Integer, nullable=False, default=0)
         image_path = db.Column(db.String(512), nullable=True)
         stock = db.Column(db.Float, nullable=False, default=0.0)
         min_stock = db.Column(db.Float, nullable=False, default=5.0)
-        created_at = db.Column(db.DateTime, default=datetime.utcnow)
+        created_at = db.Column(db.DateTime, default=now_cet)
         created_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
 
         recipe_items = db.relationship("MenuItemIngredient",
@@ -297,7 +304,7 @@ def define_models(db, app):
 
         id = db.Column(db.Integer, primary_key=True)
         company_id = db.Column(db.Integer, db.ForeignKey("delivery_companies.id"), nullable=False)
-        category = db.Column(db.String(32), nullable=False)  # 'alc', 'non_alc', 'food'
+        category = db.Column(db.String(32), nullable=False)
         discount_percent = db.Column(db.Float, nullable=False, default=0.0)
 
         company = db.relationship("DeliveryCompany", backref="discounts")
@@ -317,7 +324,7 @@ def define_models(db, app):
         price_list = db.Column(db.Text, nullable=True)
         logo_path = db.Column(db.String(512), nullable=True)
         sort_order = db.Column(db.Integer, nullable=False, default=0)
-        created_at = db.Column(db.DateTime, default=datetime.utcnow)
+        created_at = db.Column(db.DateTime, default=now_cet)
 
         images = db.relationship("PartnerImage", backref="partner",
                                   cascade="all, delete-orphan", lazy="dynamic",
@@ -340,8 +347,9 @@ def define_models(db, app):
         item_id = db.Column(db.Integer, nullable=False)
         quantity = db.Column(db.Float, nullable=False)
         reason = db.Column(db.String(256), nullable=True)
+        data_json = db.Column(db.Text, nullable=True)  # Structured JSON data for preorders etc.
         user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
-        created_at = db.Column(db.DateTime, default=datetime.utcnow)
+        created_at = db.Column(db.DateTime, default=now_cet)
 
         user = db.relationship("User")
 
@@ -351,8 +359,7 @@ def define_models(db, app):
         id = db.Column(db.Integer, primary_key=True)
         user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
         message = db.Column(db.Text, nullable=False)
-        created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
+        created_at = db.Column(db.DateTime, default=now_cet)
         likes = db.Column(db.Integer, nullable=False, default=0)
 
         author = db.relationship("User", backref="guest_book_entries")
@@ -363,7 +370,7 @@ def define_models(db, app):
         id = db.Column(db.Integer, primary_key=True)
         entry_id = db.Column(db.Integer, db.ForeignKey("guest_book_entries.id"), nullable=False)
         user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
-        created_at = db.Column(db.DateTime, default=datetime.utcnow)
+        created_at = db.Column(db.DateTime, default=now_cet)
 
         __table_args__ = (
             db.UniqueConstraint("entry_id", "user_id", name="uq_guestbook_like"),
@@ -377,7 +384,7 @@ def define_models(db, app):
         target_user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
         comment_type = db.Column(db.String(16), nullable=False)
         content = db.Column(db.Text, nullable=False)
-        created_at = db.Column(db.DateTime, default=datetime.utcnow)
+        created_at = db.Column(db.DateTime, default=now_cet)
 
         reviewer = db.relationship("User", foreign_keys=[reviewer_user_id])
         target = db.relationship("User", foreign_keys=[target_user_id])
@@ -389,10 +396,10 @@ def define_models(db, app):
         title = db.Column(db.String(256), nullable=False)
         description = db.Column(db.Text, nullable=True)
         event_date = db.Column(db.Date, nullable=False)
-        event_time = db.Column(db.String(16), nullable=True)  # e.g. "18:00"
-        event_type = db.Column(db.String(32), nullable=False, default="public")  # 'public' or 'private'
+        event_time = db.Column(db.String(16), nullable=True)
+        event_type = db.Column(db.String(32), nullable=False, default="public")
         is_published = db.Column(db.Boolean, default=True)
-        created_at = db.Column(db.DateTime, default=datetime.utcnow)
+        created_at = db.Column(db.DateTime, default=now_cet)
         created_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
 
         creator = db.relationship("User", backref="created_events")
@@ -402,16 +409,16 @@ def define_models(db, app):
 
         id = db.Column(db.Integer, primary_key=True)
         user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
-        event_id = db.Column(db.Integer, db.ForeignKey("events.id"), nullable=True)  # null = standalone booking
+        event_id = db.Column(db.Integer, db.ForeignKey("events.id"), nullable=True)
         booking_date = db.Column(db.Date, nullable=False)
         booking_time = db.Column(db.String(16), nullable=True)
         guest_count = db.Column(db.Integer, nullable=False, default=1)
-        event_type_label = db.Column(db.String(64), nullable=True)  # 'Születésnap', 'Céges', etc.
+        event_type_label = db.Column(db.String(64), nullable=True)
         contact_name = db.Column(db.String(128), nullable=False)
         contact_phone = db.Column(db.String(32), nullable=True)
         note = db.Column(db.Text, nullable=True)
-        status = db.Column(db.String(32), nullable=False, default="pending")  # pending, confirmed, rejected
-        created_at = db.Column(db.DateTime, default=datetime.utcnow)
+        status = db.Column(db.String(32), nullable=False, default="pending")
+        created_at = db.Column(db.DateTime, default=now_cet)
 
         user = db.relationship("User", backref="bookings")
         event = db.relationship("Event", backref="bookings")
@@ -426,7 +433,7 @@ def define_models(db, app):
         booking_id = db.Column(db.Integer, db.ForeignKey("bookings.id"), nullable=False)
         user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
         content = db.Column(db.Text, nullable=False)
-        created_at = db.Column(db.DateTime, default=datetime.utcnow)
+        created_at = db.Column(db.DateTime, default=now_cet)
 
         author = db.relationship("User")
 
@@ -435,10 +442,10 @@ def define_models(db, app):
         __tablename__ = "bonus_config"
 
         id = db.Column(db.Integer, primary_key=True)
-        alc_percent = db.Column(db.Float, nullable=False, default=10.0)       # % bonus on alcoholic felírás
-        non_alc_percent = db.Column(db.Float, nullable=False, default=5.0)    # % bonus on non-alc felírás
-        food_percent = db.Column(db.Float, nullable=False, default=5.0)       # % bonus on food felírás
-        per_minute_bonus = db.Column(db.Float, nullable=False, default=0.0)   # fixed amount per worked minute
+        alc_percent = db.Column(db.Float, nullable=False, default=10.0)
+        non_alc_percent = db.Column(db.Float, nullable=False, default=5.0)
+        food_percent = db.Column(db.Float, nullable=False, default=5.0)
+        per_minute_bonus = db.Column(db.Float, nullable=False, default=0.0)
 
     class BonusEntry(db.Model):
         """Individual bonus record for a user."""
@@ -448,8 +455,8 @@ def define_models(db, app):
         user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
         amount = db.Column(db.Float, nullable=False, default=0.0)
         reason = db.Column(db.String(256), nullable=False)
-        bonus_type = db.Column(db.String(32), nullable=False, default="feliras")  # 'feliras', 'time', 'manual', 'withdrawal'
-        created_at = db.Column(db.DateTime, default=datetime.utcnow)
+        bonus_type = db.Column(db.String(32), nullable=False, default="feliras")
+        created_at = db.Column(db.DateTime, default=now_cet)
         created_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
 
         user = db.relationship("User", foreign_keys=[user_id], backref="bonus_entries")
