@@ -361,6 +361,7 @@ def define_models(db, app):
         message = db.Column(db.Text, nullable=False)
         created_at = db.Column(db.DateTime, default=now_cet)
         likes = db.Column(db.Integer, nullable=False, default=0)
+        is_approved = db.Column(db.Boolean, default=True)
 
         author = db.relationship("User", backref="guest_book_entries")
 

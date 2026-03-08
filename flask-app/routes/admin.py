@@ -703,6 +703,17 @@ def register_admin_routes(app, db, models):
             flash("Bejegyzés nem található.", "danger")
         return redirect(url_for("admin_reviews"))
 
+    @app.route("/admin/reviews/guestbook/<int:entry_id>/approve", methods=["POST"])
+    @admin_required
+    def admin_approve_guestbook(entry_id):
+        entry = db.session.get(GuestBookEntry, entry_id)
+        if entry:
+            entry.is_approved = not entry.is_approved
+            db.session.commit()
+            status = "jóváhagyva" if entry.is_approved else "elrejtve"
+            flash(f"Bejegyzés {status}.", "success")
+        return redirect(url_for("admin_reviews"))
+
     @app.route("/admin/reviews/comment/<int:comment_id>/delete", methods=["POST"])
     @admin_required
     def admin_delete_comment(comment_id):
