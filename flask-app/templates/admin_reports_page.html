@@ -10,6 +10,12 @@
 {% endblock %}
 
 {% block admin_content %}
+
+{# Period navigation #}
+{% set period_param = "report_period" %}
+{% set period_value = report_period %}
+{% include "partials/period_nav.html" %}
+
 {# Summary Cards #}
 <div class="row g-3 mb-4">
   <div class="col-md-4">

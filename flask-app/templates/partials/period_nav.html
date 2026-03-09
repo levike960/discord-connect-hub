@@ -1,0 +1,30 @@
+{#
+  Period navigation partial.
+  Requires: period_param (str), period_value (str), offset (int), period_label (str), url_name (str)
+  Optional: extra_params (dict) for additional URL params
+#}
+<div class="d-flex align-items-center justify-content-center gap-2 mb-3">
+  <a href="?{{ period_param }}={{ period_value }}&offset={{ offset - 1 }}{% for k,v in (extra_params or {}).items() %}&{{ k }}={{ v }}{% endfor %}"
+     class="btn btn-sm btn-outline-secondary">
+    <i class="bi bi-chevron-left"></i>
+  </a>
+  <span class="badge bg-secondary px-3 py-2" style="font-size: 0.85rem; min-width: 180px; text-align: center;">
+    {{ period_label }}
+  </span>
+  {% if offset < 0 %}
+  <a href="?{{ period_param }}={{ period_value }}&offset={{ offset + 1 }}{% for k,v in (extra_params or {}).items() %}&{{ k }}={{ v }}{% endfor %}"
+     class="btn btn-sm btn-outline-secondary">
+    <i class="bi bi-chevron-right"></i>
+  </a>
+  {% else %}
+  <button class="btn btn-sm btn-outline-secondary" disabled>
+    <i class="bi bi-chevron-right"></i>
+  </button>
+  {% endif %}
+  {% if offset != 0 %}
+  <a href="?{{ period_param }}={{ period_value }}{% for k,v in (extra_params or {}).items() %}&{{ k }}={{ v }}{% endfor %}"
+     class="btn btn-sm btn-outline-primary">
+    <i class="bi bi-calendar-check"></i> Ma
+  </a>
+  {% endif %}
+</div>

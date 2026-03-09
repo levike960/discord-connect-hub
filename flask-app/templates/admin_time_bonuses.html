@@ -13,6 +13,11 @@
 
 {% block admin_content %}
 
+{# Period navigation #}
+{% set period_param = "period" %}
+{% set period_value = period %}
+{% include "partials/period_nav.html" %}
+
 {# ── Summary ── #}
 <div class="row g-3 mb-4">
   <div class="col-md-4">

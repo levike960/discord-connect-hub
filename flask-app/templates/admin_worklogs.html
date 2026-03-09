@@ -12,6 +12,12 @@
 {% endblock %}
 
 {% block admin_content %}
+
+{# Period navigation #}
+{% set period_param = "wh_period" %}
+{% set period_value = wh_period %}
+{% include "partials/period_nav.html" %}
+
 {% if workhour_stats %}
 <div class="row g-3">
   {% for stat in workhour_stats %}
