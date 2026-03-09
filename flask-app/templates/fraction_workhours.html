@@ -9,16 +9,22 @@
         <h2 class="card-title mb-4"><i class="bi bi-hourglass-split"></i> Munkaórák</h2>
 
         {# Period selector buttons #}
-        <div class="btn-group mb-4" role="group">
+        <div class="btn-group mb-3" role="group">
           <a href="?period=day" class="btn btn-{{ 'primary' if period == 'day' else 'outline-primary' }}">Nap</a>
           <a href="?period=week" class="btn btn-{{ 'primary' if period == 'week' else 'outline-primary' }}">Hét</a>
           <a href="?period=month" class="btn btn-{{ 'primary' if period == 'month' else 'outline-primary' }}">Hónap</a>
           <a href="?period=year" class="btn btn-{{ 'primary' if period == 'year' else 'outline-primary' }}">Év</a>
         </div>
 
+        {# Period navigation #}
+        {% set period_param = "period" %}
+        {% set period_value = period %}
+        {% include "partials/period_nav.html" %}
+
         <div class="alert alert-info">
           <strong>Összesen:</strong> {{ total_formatted }}
         </div>
+
 
         {# ── Bonus Summary ── #}
         <div class="row g-3 mb-4">

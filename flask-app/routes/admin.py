@@ -8,7 +8,7 @@ from flask import (
 )
 from flask_login import current_user
 from werkzeug.utils import secure_filename
-from helpers import now_cet, admin_required, allowed_file
+from helpers import now_cet, admin_required, allowed_file, period_range
 
 
 def admin_post_handler(db, models, app):
@@ -821,24 +821,17 @@ def register_admin_routes(app, db, models):
             _do_post()
             return redirect(url_for("admin_worklogs"))
         wh_period = request.args.get("wh_period", "day")
-        now = now_cet()
-        if wh_period == "day":
-            wh_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-        elif wh_period == "week":
-            wh_start = (now - timedelta(days=now.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
-        elif wh_period == "month":
-            wh_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        elif wh_period == "year":
-            wh_start = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
-        else:
-            wh_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        offset = request.args.get("offset", 0, type=int)
+        wh_start, wh_end, period_label = period_range(wh_period, offset)
+
         fraction_members = User.query.filter_by(has_fraction_permission=True).all()
         fraction_members.sort(key=lambda u: (u.rank.sort_order if u.rank else 9999, u.display_name))
         workhour_stats = []
         for member in fraction_members:
             logs = WorkLog.query.filter(
                 WorkLog.user_id == member.id,
-                WorkLog.clock_in >= wh_start
+                WorkLog.clock_in >= wh_start,
+                WorkLog.clock_in < wh_end
             ).order_by(WorkLog.clock_in.desc()).all()
             total_secs = sum(l.duration_seconds for l in logs)
             h, rem = divmod(int(total_secs), 3600)
@@ -849,7 +842,8 @@ def register_admin_routes(app, db, models):
                 "total_seconds": total_secs,
             })
         workhour_stats.sort(key=lambda x: x["total_seconds"], reverse=True)
-        return render_template("admin_worklogs.html", workhour_stats=workhour_stats, wh_period=wh_period)
+        return render_template("admin_worklogs.html", workhour_stats=workhour_stats,
+                               wh_period=wh_period, offset=offset, period_label=period_label)
 
     @app.route("/admin/time-bonuses", methods=["GET", "POST"])
     @admin_required
@@ -881,17 +875,8 @@ def register_admin_routes(app, db, models):
             return redirect(url_for("admin_time_bonuses", period=request.form.get("period", "month")))
 
         period = request.args.get("period", "month")
-        now = now_cet()
-        if period == "day":
-            start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-        elif period == "week":
-            start = (now - timedelta(days=now.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
-        elif period == "month":
-            start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        elif period == "year":
-            start = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
-        else:
-            start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        offset = request.args.get("offset", 0, type=int)
+        start, end, period_label = period_range(period, offset)
 
         bonus_cfg = BonusConfig.query.first()
         per_minute_rate = bonus_cfg.per_minute_bonus if bonus_cfg else 0.0
@@ -904,7 +889,8 @@ def register_admin_routes(app, db, models):
         for member in fraction_members:
             logs = WorkLog.query.filter(
                 WorkLog.user_id == member.id,
-                WorkLog.clock_in >= start
+                WorkLog.clock_in >= start,
+                WorkLog.clock_in < end
             ).all()
             total_secs = sum(l.duration_seconds for l in logs)
             total_minutes = total_secs / 60
@@ -914,7 +900,8 @@ def register_admin_routes(app, db, models):
             time_adjustments = BonusEntry.query.filter(
                 BonusEntry.user_id == member.id,
                 BonusEntry.bonus_type.in_(["time_deduction", "time_addition"]),
-                BonusEntry.created_at >= start
+                BonusEntry.created_at >= start,
+                BonusEntry.created_at < end
             ).all()
             adjustment_total = sum(e.amount for e in time_adjustments)
 
@@ -940,7 +927,8 @@ def register_admin_routes(app, db, models):
                                user_stats=user_stats, period=period,
                                per_minute_rate=per_minute_rate,
                                grand_total_formatted=f"{gh}h {gm}m",
-                               grand_total_bonus=grand_total_bonus)
+                               grand_total_bonus=grand_total_bonus,
+                               offset=offset, period_label=period_label)
 
     @app.route("/admin/ingredients", methods=["GET", "POST"])
     @admin_required
@@ -985,19 +973,26 @@ def register_admin_routes(app, db, models):
     def admin_reports_page():
         now = now_cet()
         report_period = request.args.get("report_period", "week")
-        if report_period == "month":
-            report_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-            num_days = (now - report_start).days + 1
-        else:
-            report_start = (now - timedelta(days=now.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
-            num_days = 7
-        report_dues = Due.query.filter(Due.created_at >= report_start).all()
+        offset = request.args.get("offset", 0, type=int)
+        report_start, report_end, period_label = period_range(report_period, offset)
+        num_days = (report_end - report_start).days
+
+        report_dues = Due.query.filter(
+            Due.created_at >= report_start,
+            Due.created_at < report_end
+        ).all()
         report_revenue = sum(d.amount for d in report_dues)
         report_revenue_count = len(report_dues)
-        report_movements = StockMovement.query.filter(StockMovement.created_at >= report_start).all()
+        report_movements = StockMovement.query.filter(
+            StockMovement.created_at >= report_start,
+            StockMovement.created_at < report_end
+        ).all()
         report_stock_in_count = sum(1 for m in report_movements if m.quantity > 0)
         report_stock_out_count = sum(1 for m in report_movements if m.quantity < 0)
-        report_wlogs = WorkLog.query.filter(WorkLog.clock_in >= report_start).all()
+        report_wlogs = WorkLog.query.filter(
+            WorkLog.clock_in >= report_start,
+            WorkLog.clock_in < report_end
+        ).all()
         report_total_secs = sum(l.duration_seconds for l in report_wlogs)
         rh, rm = divmod(int(report_total_secs), 3600)
         rmm, _ = divmod(rm, 60)
@@ -1042,7 +1037,8 @@ def register_admin_routes(app, db, models):
                                report_worker_stats=report_worker_stats,
                                report_chart_labels=chart_labels,
                                report_chart_revenue=chart_revenue,
-                               report_chart_workhours=chart_workhours)
+                               report_chart_workhours=chart_workhours,
+                               offset=offset, period_label=period_label)
 
     @app.route("/admin/events", methods=["GET", "POST"])
     @admin_required

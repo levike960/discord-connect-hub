@@ -6,7 +6,7 @@ from flask import (
     render_template, redirect, url_for, request, flash, session
 )
 from flask_login import login_required, current_user
-from helpers import now_cet, fraction_required
+from helpers import now_cet, fraction_required, period_range
 
 
 def register_fraction_routes(app, db, models):
@@ -69,22 +69,13 @@ def register_fraction_routes(app, db, models):
     @fraction_required
     def fraction_workhours():
         period = request.args.get("period", "day")
-        now = now_cet()
-
-        if period == "day":
-            start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-        elif period == "week":
-            start = (now - timedelta(days=now.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
-        elif period == "month":
-            start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        elif period == "year":
-            start = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
-        else:
-            start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        offset = request.args.get("offset", 0, type=int)
+        start, end, period_label = period_range(period, offset)
 
         logs = WorkLog.query.filter(
             WorkLog.user_id == current_user.id,
-            WorkLog.clock_in >= start
+            WorkLog.clock_in >= start,
+            WorkLog.clock_in < end
         ).order_by(WorkLog.clock_in.desc()).all()
 
         total_seconds = sum(l.duration_seconds for l in logs)
@@ -102,7 +93,8 @@ def register_fraction_routes(app, db, models):
         time_adjustments = BonusEntry.query.filter(
             BonusEntry.user_id == current_user.id,
             BonusEntry.bonus_type.in_(["time_deduction", "time_addition"]),
-            BonusEntry.created_at >= start
+            BonusEntry.created_at >= start,
+            BonusEntry.created_at < end
         ).all()
         time_adjustment_total = sum(b.amount for b in time_adjustments)
         time_bonus_final = time_bonus + time_adjustment_total
@@ -110,7 +102,8 @@ def register_fraction_routes(app, db, models):
         feliras_bonuses = BonusEntry.query.filter(
             BonusEntry.user_id == current_user.id,
             BonusEntry.bonus_type == "feliras",
-            BonusEntry.created_at >= start
+            BonusEntry.created_at >= start,
+            BonusEntry.created_at < end
         ).all()
         feliras_bonus_total = sum(b.amount for b in feliras_bonuses)
 
@@ -124,7 +117,8 @@ def register_fraction_routes(app, db, models):
                                feliras_bonus_total=feliras_bonus_total,
                                total_balance=total_balance, bonus_cfg=bonus_cfg,
                                feliras_bonuses=feliras_bonuses,
-                               time_adjustments=time_adjustments)
+                               time_adjustments=time_adjustments,
+                               offset=offset, period_label=period_label)
 
     @app.route("/fraction/dues", methods=["GET", "POST"])
     @fraction_required
