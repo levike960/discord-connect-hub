@@ -69,22 +69,13 @@ def register_fraction_routes(app, db, models):
     @fraction_required
     def fraction_workhours():
         period = request.args.get("period", "day")
-        now = now_cet()
-
-        if period == "day":
-            start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-        elif period == "week":
-            start = (now - timedelta(days=now.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
-        elif period == "month":
-            start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        elif period == "year":
-            start = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
-        else:
-            start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        offset = request.args.get("offset", 0, type=int)
+        start, end, period_label = period_range(period, offset)
 
         logs = WorkLog.query.filter(
             WorkLog.user_id == current_user.id,
-            WorkLog.clock_in >= start
+            WorkLog.clock_in >= start,
+            WorkLog.clock_in < end
         ).order_by(WorkLog.clock_in.desc()).all()
 
         total_seconds = sum(l.duration_seconds for l in logs)
