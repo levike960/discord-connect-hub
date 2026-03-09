@@ -93,7 +93,8 @@ def register_fraction_routes(app, db, models):
         time_adjustments = BonusEntry.query.filter(
             BonusEntry.user_id == current_user.id,
             BonusEntry.bonus_type.in_(["time_deduction", "time_addition"]),
-            BonusEntry.created_at >= start
+            BonusEntry.created_at >= start,
+            BonusEntry.created_at < end
         ).all()
         time_adjustment_total = sum(b.amount for b in time_adjustments)
         time_bonus_final = time_bonus + time_adjustment_total
@@ -101,7 +102,8 @@ def register_fraction_routes(app, db, models):
         feliras_bonuses = BonusEntry.query.filter(
             BonusEntry.user_id == current_user.id,
             BonusEntry.bonus_type == "feliras",
-            BonusEntry.created_at >= start
+            BonusEntry.created_at >= start,
+            BonusEntry.created_at < end
         ).all()
         feliras_bonus_total = sum(b.amount for b in feliras_bonuses)
 
@@ -115,7 +117,8 @@ def register_fraction_routes(app, db, models):
                                feliras_bonus_total=feliras_bonus_total,
                                total_balance=total_balance, bonus_cfg=bonus_cfg,
                                feliras_bonuses=feliras_bonuses,
-                               time_adjustments=time_adjustments)
+                               time_adjustments=time_adjustments,
+                               offset=offset, period_label=period_label)
 
     @app.route("/fraction/dues", methods=["GET", "POST"])
     @fraction_required
