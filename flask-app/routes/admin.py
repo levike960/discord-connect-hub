@@ -973,19 +973,26 @@ def register_admin_routes(app, db, models):
     def admin_reports_page():
         now = now_cet()
         report_period = request.args.get("report_period", "week")
-        if report_period == "month":
-            report_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-            num_days = (now - report_start).days + 1
-        else:
-            report_start = (now - timedelta(days=now.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
-            num_days = 7
-        report_dues = Due.query.filter(Due.created_at >= report_start).all()
+        offset = request.args.get("offset", 0, type=int)
+        report_start, report_end, period_label = period_range(report_period, offset)
+        num_days = (report_end - report_start).days
+
+        report_dues = Due.query.filter(
+            Due.created_at >= report_start,
+            Due.created_at < report_end
+        ).all()
         report_revenue = sum(d.amount for d in report_dues)
         report_revenue_count = len(report_dues)
-        report_movements = StockMovement.query.filter(StockMovement.created_at >= report_start).all()
+        report_movements = StockMovement.query.filter(
+            StockMovement.created_at >= report_start,
+            StockMovement.created_at < report_end
+        ).all()
         report_stock_in_count = sum(1 for m in report_movements if m.quantity > 0)
         report_stock_out_count = sum(1 for m in report_movements if m.quantity < 0)
-        report_wlogs = WorkLog.query.filter(WorkLog.clock_in >= report_start).all()
+        report_wlogs = WorkLog.query.filter(
+            WorkLog.clock_in >= report_start,
+            WorkLog.clock_in < report_end
+        ).all()
         report_total_secs = sum(l.duration_seconds for l in report_wlogs)
         rh, rm = divmod(int(report_total_secs), 3600)
         rmm, _ = divmod(rm, 60)
@@ -1030,7 +1037,8 @@ def register_admin_routes(app, db, models):
                                report_worker_stats=report_worker_stats,
                                report_chart_labels=chart_labels,
                                report_chart_revenue=chart_revenue,
-                               report_chart_workhours=chart_workhours)
+                               report_chart_workhours=chart_workhours,
+                               offset=offset, period_label=period_label)
 
     @app.route("/admin/events", methods=["GET", "POST"])
     @admin_required
