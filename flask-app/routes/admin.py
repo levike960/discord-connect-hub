@@ -851,9 +851,35 @@ def register_admin_routes(app, db, models):
         workhour_stats.sort(key=lambda x: x["total_seconds"], reverse=True)
         return render_template("admin_worklogs.html", workhour_stats=workhour_stats, wh_period=wh_period)
 
-    @app.route("/admin/time-bonuses")
+    @app.route("/admin/time-bonuses", methods=["GET", "POST"])
     @admin_required
     def admin_time_bonuses():
+        if request.method == "POST":
+            form_type = request.form.get("form_type", "")
+            if form_type == "time_deduction":
+                uid = request.form.get("user_id", type=int)
+                amount = request.form.get("amount", type=float)
+                reason = request.form.get("reason", "Idő bónusz levonás").strip()
+                if uid and amount:
+                    db.session.add(BonusEntry(
+                        user_id=uid, amount=-abs(amount), reason=reason,
+                        bonus_type="time_deduction", created_by=current_user.id
+                    ))
+                    db.session.commit()
+                    flash(f"Idő bónusz levonás rögzítve: {'%.0f' % abs(amount)} Ft", "success")
+            elif form_type == "time_addition":
+                uid = request.form.get("user_id", type=int)
+                amount = request.form.get("amount", type=float)
+                reason = request.form.get("reason", "Idő bónusz hozzáadás").strip()
+                if uid and amount:
+                    db.session.add(BonusEntry(
+                        user_id=uid, amount=abs(amount), reason=reason,
+                        bonus_type="time_addition", created_by=current_user.id
+                    ))
+                    db.session.commit()
+                    flash(f"Idő bónusz hozzáadva: {'%.0f' % abs(amount)} Ft", "success")
+            return redirect(url_for("admin_time_bonuses", period=request.form.get("period", "month")))
+
         period = request.args.get("period", "month")
         now = now_cet()
         if period == "day":
@@ -882,7 +908,17 @@ def register_admin_routes(app, db, models):
             ).all()
             total_secs = sum(l.duration_seconds for l in logs)
             total_minutes = total_secs / 60
-            bonus = round(total_minutes * per_minute_rate, 2)
+            calculated_bonus = round(total_minutes * per_minute_rate, 2)
+
+            # Get manual time adjustments (additions/deductions)
+            time_adjustments = BonusEntry.query.filter(
+                BonusEntry.user_id == member.id,
+                BonusEntry.bonus_type.in_(["time_deduction", "time_addition"]),
+                BonusEntry.created_at >= start
+            ).all()
+            adjustment_total = sum(e.amount for e in time_adjustments)
+
+            bonus = calculated_bonus + adjustment_total
             h, rem = divmod(int(total_secs), 3600)
             m, _ = divmod(rem, 60)
             user_stats.append({
@@ -890,6 +926,8 @@ def register_admin_routes(app, db, models):
                 "total_formatted": f"{h}h {m}m",
                 "total_seconds": total_secs,
                 "bonus": bonus,
+                "calculated_bonus": calculated_bonus,
+                "adjustment_total": adjustment_total,
             })
             grand_total_seconds += total_secs
             grand_total_bonus += bonus

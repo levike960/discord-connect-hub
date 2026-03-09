@@ -106,7 +106,7 @@ def register_fraction_routes(app, db, models):
         feliras_bonus_total = sum(b.amount for b in feliras_bonuses)
 
         all_bonuses = BonusEntry.query.filter_by(user_id=current_user.id).all()
-        total_balance = sum(b.amount for b in all_bonuses)
+        total_balance = sum(b.amount for b in all_bonuses) + time_bonus
 
         return render_template("fraction_workhours.html",
                                logs=logs, period=period, total_formatted=total_formatted,
