@@ -19,6 +19,7 @@
         {# Period navigation #}
         {% set period_param = "period" %}
         {% set period_value = period %}
+        {% include "partials/period_nav.html" %}
 
         <div class="alert alert-info">
           <strong>Összesen:</strong> {{ total_formatted }}
