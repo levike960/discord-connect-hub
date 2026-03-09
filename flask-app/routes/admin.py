@@ -875,17 +875,8 @@ def register_admin_routes(app, db, models):
             return redirect(url_for("admin_time_bonuses", period=request.form.get("period", "month")))
 
         period = request.args.get("period", "month")
-        now = now_cet()
-        if period == "day":
-            start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-        elif period == "week":
-            start = (now - timedelta(days=now.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
-        elif period == "month":
-            start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        elif period == "year":
-            start = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
-        else:
-            start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        offset = request.args.get("offset", 0, type=int)
+        start, end, period_label = period_range(period, offset)
 
         bonus_cfg = BonusConfig.query.first()
         per_minute_rate = bonus_cfg.per_minute_bonus if bonus_cfg else 0.0
@@ -898,7 +889,8 @@ def register_admin_routes(app, db, models):
         for member in fraction_members:
             logs = WorkLog.query.filter(
                 WorkLog.user_id == member.id,
-                WorkLog.clock_in >= start
+                WorkLog.clock_in >= start,
+                WorkLog.clock_in < end
             ).all()
             total_secs = sum(l.duration_seconds for l in logs)
             total_minutes = total_secs / 60
@@ -908,7 +900,8 @@ def register_admin_routes(app, db, models):
             time_adjustments = BonusEntry.query.filter(
                 BonusEntry.user_id == member.id,
                 BonusEntry.bonus_type.in_(["time_deduction", "time_addition"]),
-                BonusEntry.created_at >= start
+                BonusEntry.created_at >= start,
+                BonusEntry.created_at < end
             ).all()
             adjustment_total = sum(e.amount for e in time_adjustments)
 
@@ -934,7 +927,8 @@ def register_admin_routes(app, db, models):
                                user_stats=user_stats, period=period,
                                per_minute_rate=per_minute_rate,
                                grand_total_formatted=f"{gh}h {gm}m",
-                               grand_total_bonus=grand_total_bonus)
+                               grand_total_bonus=grand_total_bonus,
+                               offset=offset, period_label=period_label)
 
     @app.route("/admin/ingredients", methods=["GET", "POST"])
     @admin_required
