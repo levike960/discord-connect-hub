@@ -55,7 +55,10 @@
             <th>Név (IC)</th>
             <th>Rang</th>
             <th>Munkaidő</th>
-            <th>Bónusz összeg</th>
+            <th>Számított bónusz</th>
+            <th>Korrekció</th>
+            <th>Összesen</th>
+            <th>Műveletek</th>
           </tr>
         </thead>
         <tbody>
@@ -81,7 +84,21 @@
               {% endif %}
             </td>
             <td>{{ s.total_formatted }}</td>
+            <td>{{ "%.0f"|format(s.calculated_bonus) }} Ft</td>
+            <td class="{% if s.adjustment_total > 0 %}text-success{% elif s.adjustment_total < 0 %}text-danger{% endif %}">
+              {% if s.adjustment_total != 0 %}{{ "%+.0f"|format(s.adjustment_total) }} Ft{% else %}—{% endif %}
+            </td>
             <td class="fw-bold text-success">{{ "%.0f"|format(s.bonus) }} Ft</td>
+            <td>
+              <button class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#timeAddModal"
+                      onclick="document.getElementById('add_user_id').value='{{ s.user.id }}'; document.getElementById('add_user_name').textContent='{{ s.user.ingame_name or s.user.display_name }}';">
+                <i class="bi bi-plus-circle"></i>
+              </button>
+              <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#timeDeductModal"
+                      onclick="document.getElementById('deduct_user_id').value='{{ s.user.id }}'; document.getElementById('deduct_user_name').textContent='{{ s.user.ingame_name or s.user.display_name }}';">
+                <i class="bi bi-dash-circle"></i>
+              </button>
+            </td>
           </tr>
           {% endfor %}
         </tbody>
@@ -92,4 +109,68 @@
 {% else %}
 <p class="text-muted">Nincsenek fraction tagok.</p>
 {% endif %}
+
+{# ── Add Time Bonus Modal ── #}
+<div class="modal fade" id="timeAddModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" action="{{ url_for('admin_time_bonuses') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="form_type" value="time_addition">
+        <input type="hidden" name="user_id" id="add_user_id" value="">
+        <input type="hidden" name="period" value="{{ period }}">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-plus-circle text-success"></i> Idő bónusz hozzáadás — <span id="add_user_name"></span></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Összeg (Ft)</label>
+            <input type="number" step="1" name="amount" class="form-control" required min="1">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Ok / megjegyzés</label>
+            <input type="text" name="reason" class="form-control" value="Idő bónusz hozzáadás" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Mégse</button>
+          <button type="submit" class="btn btn-success"><i class="bi bi-check"></i> Hozzáadás</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{# ── Deduct Time Bonus Modal ── #}
+<div class="modal fade" id="timeDeductModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" action="{{ url_for('admin_time_bonuses') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="form_type" value="time_deduction">
+        <input type="hidden" name="user_id" id="deduct_user_id" value="">
+        <input type="hidden" name="period" value="{{ period }}">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-dash-circle text-danger"></i> Idő bónusz levonás — <span id="deduct_user_name"></span></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Levonás összeg (Ft)</label>
+            <input type="number" step="1" name="amount" class="form-control" required min="1">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Ok / megjegyzés</label>
+            <input type="text" name="reason" class="form-control" value="Idő bónusz levonás" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Mégse</button>
+          <button type="submit" class="btn btn-danger"><i class="bi bi-dash-circle"></i> Levonás rögzítése</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
 {% endblock %}

@@ -34,9 +34,14 @@
             <div class="card border-primary h-100">
               <div class="card-body text-center">
                 <div class="text-muted small">Idő bónusz (időszak)</div>
-                <div class="fs-4 fw-bold text-primary">{{ "%.0f"|format(time_bonus) }} Ft</div>
+                <div class="fs-4 fw-bold text-primary">{{ "%.0f"|format(time_bonus_final) }} Ft</div>
                 {% if bonus_cfg and bonus_cfg.per_minute_bonus > 0 %}
                 <div class="text-muted" style="font-size:0.7rem;">{{ "%.1f"|format(bonus_cfg.per_minute_bonus) }} Ft/perc</div>
+                {% endif %}
+                {% if time_adjustment_total != 0 %}
+                <div class="text-muted" style="font-size:0.7rem;">
+                  Számított: {{ "%.0f"|format(time_bonus) }} Ft, korrekció: <span class="{% if time_adjustment_total > 0 %}text-success{% else %}text-danger{% endif %}">{{ "%+.0f"|format(time_adjustment_total) }} Ft</span>
+                </div>
                 {% endif %}
               </div>
             </div>
