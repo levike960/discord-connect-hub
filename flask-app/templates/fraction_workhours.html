@@ -17,13 +17,9 @@
         </div>
 
         {# Period navigation #}
-        {% include "partials/period_nav.html" with context %}
         {% set period_param = "period" %}
         {% set period_value = period %}
-
-        <div class="alert alert-info">
-          <strong>Összesen:</strong> {{ total_formatted }}
-        </div>
+        {% include "partials/period_nav.html" %}
 
         {# ── Bonus Summary ── #}
         <div class="row g-3 mb-4">
