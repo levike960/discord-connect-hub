@@ -821,24 +821,17 @@ def register_admin_routes(app, db, models):
             _do_post()
             return redirect(url_for("admin_worklogs"))
         wh_period = request.args.get("wh_period", "day")
-        now = now_cet()
-        if wh_period == "day":
-            wh_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-        elif wh_period == "week":
-            wh_start = (now - timedelta(days=now.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
-        elif wh_period == "month":
-            wh_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        elif wh_period == "year":
-            wh_start = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
-        else:
-            wh_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        offset = request.args.get("offset", 0, type=int)
+        wh_start, wh_end, period_label = period_range(wh_period, offset)
+
         fraction_members = User.query.filter_by(has_fraction_permission=True).all()
         fraction_members.sort(key=lambda u: (u.rank.sort_order if u.rank else 9999, u.display_name))
         workhour_stats = []
         for member in fraction_members:
             logs = WorkLog.query.filter(
                 WorkLog.user_id == member.id,
-                WorkLog.clock_in >= wh_start
+                WorkLog.clock_in >= wh_start,
+                WorkLog.clock_in < wh_end
             ).order_by(WorkLog.clock_in.desc()).all()
             total_secs = sum(l.duration_seconds for l in logs)
             h, rem = divmod(int(total_secs), 3600)
@@ -849,7 +842,8 @@ def register_admin_routes(app, db, models):
                 "total_seconds": total_secs,
             })
         workhour_stats.sort(key=lambda x: x["total_seconds"], reverse=True)
-        return render_template("admin_worklogs.html", workhour_stats=workhour_stats, wh_period=wh_period)
+        return render_template("admin_worklogs.html", workhour_stats=workhour_stats,
+                               wh_period=wh_period, offset=offset, period_label=period_label)
 
     @app.route("/admin/time-bonuses", methods=["GET", "POST"])
     @admin_required
