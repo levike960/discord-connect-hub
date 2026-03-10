@@ -497,4 +497,5 @@ def define_models(db, app):
         "BookingMessage": BookingMessage,
         "BonusConfig": BonusConfig,
         "BonusEntry": BonusEntry,
+        "UserCardOrder": UserCardOrder,
     }
