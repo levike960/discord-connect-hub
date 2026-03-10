@@ -597,7 +597,7 @@ def register_admin_routes(app, db, models):
                                dash_low_stock_products=low_stock_products,
                                dash_total_low_stock=total_low_stock)
 
-    # ── Bonuses ──
+    # ── Bonuses (Combined: Felírás + Idő) ──
 
     @app.route("/admin/bonuses", methods=["GET", "POST"])
     @admin_required
@@ -649,20 +649,66 @@ def register_admin_routes(app, db, models):
                     db.session.commit()
                     flash("Bónusz bejegyzés törölve.", "success")
 
-            return redirect(url_for("admin_bonuses", user_id=request.form.get("user_id", "")))
+            elif form_type == "time_deduction":
+                uid = request.form.get("user_id", type=int)
+                amount = request.form.get("amount", type=float)
+                reason = request.form.get("reason", "Idő bónusz levonás").strip()
+                if uid and amount:
+                    db.session.add(BonusEntry(
+                        user_id=uid, amount=-abs(amount), reason=reason,
+                        bonus_type="time_deduction", created_by=current_user.id
+                    ))
+                    db.session.commit()
+                    flash(f"Idő bónusz levonás rögzítve: {'%.0f' % abs(amount)} Ft", "success")
+
+            elif form_type == "time_addition":
+                uid = request.form.get("user_id", type=int)
+                amount = request.form.get("amount", type=float)
+                reason = request.form.get("reason", "Idő bónusz hozzáadás").strip()
+                if uid and amount:
+                    db.session.add(BonusEntry(
+                        user_id=uid, amount=abs(amount), reason=reason,
+                        bonus_type="time_addition", created_by=current_user.id
+                    ))
+                    db.session.commit()
+                    flash(f"Idő bónusz hozzáadva: {'%.0f' % abs(amount)} Ft", "success")
+
+            active_tab = "time" if form_type in ("time_addition", "time_deduction") else ""
+            return redirect(url_for("admin_bonuses",
+                                     period=request.form.get("period", "month"),
+                                     offset=request.args.get("offset", 0),
+                                     user_id=request.form.get("user_id", ""),
+                                     tab=active_tab))
+
+        # GET
+        period = request.args.get("period", "month")
+        offset = request.args.get("offset", 0, type=int)
+        start, end, period_label = period_range(period, offset)
+        active_tab = request.args.get("tab", "")
 
         bonus_cfg = BonusConfig.query.first()
+        per_minute_rate = bonus_cfg.per_minute_bonus if bonus_cfg else 0.0
+
         fraction_members = User.query.filter_by(has_fraction_permission=True).order_by(User.username).all()
 
+        # ── Felírás tab data ──
+        period_feliras_total = 0.0
+        period_withdrawal_total = 0.0
+        period_manual_total = 0.0
         user_balances = []
         for u in fraction_members:
             entries = BonusEntry.query.filter_by(user_id=u.id).all()
+            # Period-filtered for summary
+            period_entries = [e for e in entries if e.created_at and start <= e.created_at < end]
             feliras_total = sum(e.amount for e in entries if e.bonus_type == "feliras")
             withdrawal_total = sum(e.amount for e in entries if e.bonus_type == "withdrawal")
             manual_total = sum(e.amount for e in entries if e.bonus_type == "manual")
             balance = sum(e.amount for e in entries)
+            period_feliras_total += sum(e.amount for e in period_entries if e.bonus_type == "feliras")
+            period_withdrawal_total += sum(e.amount for e in period_entries if e.bonus_type == "withdrawal")
+            period_manual_total += sum(e.amount for e in period_entries if e.bonus_type == "manual")
             user_balances.append(type('obj', (object,), {
-                'id': u.id, 'display_name': u.display_name,
+                'id': u.id, 'display_name': u.display_name, 'avatar_url': u.avatar_url,
                 'feliras_total': feliras_total, 'withdrawal_total': withdrawal_total,
                 'manual_total': manual_total, 'balance': balance
             })())
@@ -675,9 +721,52 @@ def register_admin_routes(app, db, models):
             if selected_user:
                 user_entries = BonusEntry.query.filter_by(user_id=sel_id).order_by(BonusEntry.created_at.desc()).all()
 
-        return render_template("admin_bonuses.html",
+        # ── Time tab data ──
+        time_user_stats = []
+        grand_total_seconds = 0
+        grand_total_bonus = 0.0
+        for member in fraction_members:
+            logs = WorkLog.query.filter(
+                WorkLog.user_id == member.id,
+                WorkLog.clock_in >= start,
+                WorkLog.clock_in < end
+            ).all()
+            total_secs = sum(l.duration_seconds for l in logs)
+            total_minutes = total_secs / 60
+            calculated_bonus = round(total_minutes * per_minute_rate, 2)
+            time_adjustments = BonusEntry.query.filter(
+                BonusEntry.user_id == member.id,
+                BonusEntry.bonus_type.in_(["time_deduction", "time_addition"]),
+                BonusEntry.created_at >= start,
+                BonusEntry.created_at < end
+            ).all()
+            adjustment_total = sum(e.amount for e in time_adjustments)
+            bonus = calculated_bonus + adjustment_total
+            h, rem = divmod(int(total_secs), 3600)
+            m, _ = divmod(rem, 60)
+            time_user_stats.append({
+                "user": member, "total_formatted": f"{h}h {m}m",
+                "total_seconds": total_secs, "bonus": bonus,
+                "calculated_bonus": calculated_bonus, "adjustment_total": adjustment_total,
+            })
+            grand_total_seconds += total_secs
+            grand_total_bonus += bonus
+        time_user_stats.sort(key=lambda x: x["total_seconds"], reverse=True)
+        gh, grem = divmod(int(grand_total_seconds), 3600)
+        gm, _ = divmod(grem, 60)
+
+        return render_template("admin_bonuses_combined.html",
                                bonus_cfg=bonus_cfg, user_balances=user_balances,
-                               selected_user=selected_user, user_entries=user_entries)
+                               selected_user=selected_user, user_entries=user_entries,
+                               time_user_stats=time_user_stats,
+                               per_minute_rate=per_minute_rate,
+                               grand_total_formatted=f"{gh}h {gm}m",
+                               grand_total_bonus=grand_total_bonus,
+                               period=period, offset=offset, period_label=period_label,
+                               period_feliras_total=period_feliras_total,
+                               period_withdrawal_total=period_withdrawal_total,
+                               period_manual_total=period_manual_total,
+                               active_tab=active_tab)
 
     # ── Reviews ──
 
