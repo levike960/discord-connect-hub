@@ -25,11 +25,53 @@ def register_fraction_routes(app, db, models):
     Booking = models["Booking"]
     BonusConfig = models["BonusConfig"]
     BonusEntry = models["BonusEntry"]
+    UserCardOrder = models["UserCardOrder"]
+
+    # Default card order for fraction main page
+    DEFAULT_CARDS = [
+        "members", "clock", "workhours", "dues", "calculator", "ads",
+        "deliveries", "brewery", "contracts", "warehouse", "bookings",
+        "vince", "preorder"
+    ]
 
     @app.route("/fraction")
     @fraction_required
     def fraction():
-        return render_template("fraction.html")
+        import json as _json
+        order_entry = UserCardOrder.query.filter_by(user_id=current_user.id).first()
+        if order_entry:
+            try:
+                card_order = _json.loads(order_entry.card_order)
+                # Add any new cards that weren't in saved order
+                for c in DEFAULT_CARDS:
+                    if c not in card_order:
+                        card_order.append(c)
+                # Remove cards that no longer exist
+                card_order = [c for c in card_order if c in DEFAULT_CARDS]
+            except Exception:
+                card_order = list(DEFAULT_CARDS)
+        else:
+            card_order = list(DEFAULT_CARDS)
+        return render_template("fraction.html", card_order=card_order)
+
+    @app.route("/fraction/save-card-order", methods=["POST"])
+    @fraction_required
+    def fraction_save_card_order():
+        import json as _json
+        data = request.get_json(silent=True)
+        if not data or "order" not in data:
+            return {"ok": False}, 400
+        order = data["order"]
+        # Validate
+        if not isinstance(order, list) or not all(isinstance(x, str) for x in order):
+            return {"ok": False}, 400
+        entry = UserCardOrder.query.filter_by(user_id=current_user.id).first()
+        if not entry:
+            entry = UserCardOrder(user_id=current_user.id)
+            db.session.add(entry)
+        entry.card_order = _json.dumps(order)
+        db.session.commit()
+        return {"ok": True}
 
     @app.route("/fraction/members")
     @fraction_required

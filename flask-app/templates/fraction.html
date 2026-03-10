@@ -4,179 +4,221 @@
 {% block content %}
 <div class="row justify-content-center">
   <div class="col-lg-10">
-    <h2 class="mb-4"><i class="bi bi-grape"></i> Borászat — Főmenü</h2>
-    <p class="text-muted mb-4">Üdvözöljük, {{ current_user.display_name }}! Válasszon az alábbi menüpontokból:</p>
-
-    <div class="row g-4">
-      {# Members #}
-      <div class="col-md-4 col-sm-6 faction-card">
-        <a href="{{ url_for('fraction_members') }}" class="text-decoration-none">
-          <div class="card h-100 shadow-sm border-0 text-center">
-            <div class="card-body py-4">
-              <i class="bi bi-people-fill fs-1 faction-icon" style="color: var(--csp-accent);"></i>
-              <h5 class="mt-3">Taglista</h5>
-              <p class="text-muted small">Members</p>
-            </div>
-          </div>
-        </a>
+    <div class="d-flex align-items-center justify-content-between mb-4">
+      <div>
+        <h2 class="mb-0"><i class="bi bi-grape"></i> Borászat — Főmenü</h2>
+        <p class="text-muted mb-0 mt-1">Üdvözöljük, {{ current_user.display_name }}! Válasszon az alábbi menüpontokból:</p>
       </div>
+      <button class="btn btn-sm btn-outline-secondary" id="editOrderBtn" title="Sorrend szerkesztése">
+        <i class="bi bi-arrows-move"></i> Sorrend
+      </button>
+    </div>
 
-      {# Clock In/Out #}
-      <div class="col-md-4 col-sm-6 faction-card">
-        <a href="{{ url_for('fraction_clock') }}" class="text-decoration-none">
-          <div class="card h-100 shadow-sm border-0 text-center">
-            <div class="card-body py-4">
-              <i class="bi bi-clock-fill fs-1 text-primary faction-icon"></i>
-              <h5 class="mt-3">Bejelentkezés / Kijelentkezés</h5>
-              <p class="text-muted small">Clock in &amp; clock out</p>
-            </div>
-          </div>
-        </a>
-      </div>
+    {# Card definitions #}
+    {% set cards = {
+      "members":    {"url": url_for('fraction_members'),    "icon": "bi-people-fill",         "color": "var(--csp-accent)", "title": "Taglista",                  "sub": "Members"},
+      "clock":      {"url": url_for('fraction_clock'),      "icon": "bi-clock-fill",          "color": "var(--csp-accent)", "title": "Bejelentkezés / Kijelentkezés", "sub": "Clock in & clock out"},
+      "workhours":  {"url": url_for('fraction_workhours'),  "icon": "bi-hourglass-split",     "color": "var(--csp-green)",  "title": "Munkaórák",                 "sub": "Total workhours"},
+      "dues":       {"url": url_for('fraction_dues'),       "icon": "bi-cash-coin",           "color": "var(--csp-red)",    "title": "Tartozások",                "sub": "Dues"},
+      "calculator": {"url": url_for('fraction_calculator'), "icon": "bi-calculator-fill",     "color": "#38bdf8",           "title": "Kalkulátor",                "sub": "Calculator"},
+      "ads":        {"url": url_for('fraction_ads'),        "icon": "bi-megaphone-fill",      "color": "var(--csp-gold)",   "title": "Hirdetések",                "sub": "Current advertisements"},
+      "deliveries": {"url": url_for('fraction_deliveries'), "icon": "bi-truck",               "color": "var(--csp-text-muted)", "title": "Szállítások",           "sub": "Deliveries"},
+      "brewery":    {"url": url_for('fraction_brewery'),    "icon": "bi-cup-straw",           "color": "#722f37",           "title": "Borászat",                  "sub": "Brewery / Wine"},
+      "contracts":  {"url": url_for('fraction_contracts'),  "icon": "bi-file-earmark-text-fill", "color": "var(--csp-text)", "title": "Szerződések",              "sub": "Contracts"},
+      "warehouse":  {"url": url_for('fraction_warehouse'),  "icon": "bi-box-seam-fill",       "color": "#e67e22",           "title": "Raktár / Leltár",           "sub": "Warehouse & Inventory"},
+      "bookings":   {"url": url_for('fraction_bookings'),   "icon": "bi-calendar-check",      "color": "#e74c3c",           "title": "Foglalások",                "sub": "Bookings"},
+      "vince":      {"url": url_for('fraction_vince'),      "icon": "bi-person-plus-fill",    "color": "#8e44ad",           "title": "NPC töltése",               "sub": "Vince feltöltése"},
+      "preorder":   {"url": url_for('fraction_preorder'),   "icon": "bi-cart-check-fill",     "color": "#2980b9",           "title": "Előrendelés",               "sub": "Shopping list calculator"}
+    } %}
 
-      {# Total Workhours #}
-      <div class="col-md-4 col-sm-6 faction-card">
-        <a href="{{ url_for('fraction_workhours') }}" class="text-decoration-none">
-          <div class="card h-100 shadow-sm border-0 text-center">
-            <div class="card-body py-4">
-              <i class="bi bi-hourglass-split fs-1 text-success faction-icon"></i>
-              <h5 class="mt-3">Munkaórák</h5>
-              <p class="text-muted small">Total workhours</p>
+    <div class="row g-4" id="cardGrid">
+      {% for key in card_order %}
+        {% set c = cards[key] %}
+        {% if c %}
+        <div class="col-md-4 col-sm-6 faction-card" data-card-key="{{ key }}">
+          <a href="{{ c.url }}" class="text-decoration-none card-link">
+            <div class="card h-100 shadow-sm border-0 text-center">
+              <div class="card-body py-4">
+                <i class="bi {{ c.icon }} fs-1 faction-icon" style="color: {{ c.color }};"></i>
+                <h5 class="mt-3">{{ c.title }}</h5>
+                <p class="text-muted small">{{ c.sub }}</p>
+              </div>
             </div>
+          </a>
+          <div class="drag-handle d-none">
+            <i class="bi bi-grip-vertical"></i>
           </div>
-        </a>
-      </div>
-
-      {# Dues #}
-      <div class="col-md-4 col-sm-6 faction-card">
-        <a href="{{ url_for('fraction_dues') }}" class="text-decoration-none">
-          <div class="card h-100 shadow-sm border-0 text-center">
-            <div class="card-body py-4">
-              <i class="bi bi-cash-coin fs-1 text-danger faction-icon"></i>
-              <h5 class="mt-3">Tartozások</h5>
-              <p class="text-muted small">Dues</p>
-            </div>
-          </div>
-        </a>
-      </div>
-
-      {# Calculator #}
-      <div class="col-md-4 col-sm-6 faction-card">
-        <a href="{{ url_for('fraction_calculator') }}" class="text-decoration-none">
-          <div class="card h-100 shadow-sm border-0 text-center">
-            <div class="card-body py-4">
-              <i class="bi bi-calculator-fill fs-1 text-info faction-icon"></i>
-              <h5 class="mt-3">Kalkulátor</h5>
-              <p class="text-muted small">Calculator</p>
-            </div>
-          </div>
-        </a>
-      </div>
-
-      {# Advertisements #}
-      <div class="col-md-4 col-sm-6 faction-card">
-        <a href="{{ url_for('fraction_ads') }}" class="text-decoration-none">
-          <div class="card h-100 shadow-sm border-0 text-center">
-            <div class="card-body py-4">
-              <i class="bi bi-megaphone-fill fs-1 text-warning faction-icon"></i>
-              <h5 class="mt-3">Hirdetések</h5>
-              <p class="text-muted small">Current advertisements</p>
-            </div>
-          </div>
-        </a>
-      </div>
-
-      {# Deliveries #}
-      <div class="col-md-4 col-sm-6 faction-card">
-        <a href="{{ url_for('fraction_deliveries') }}" class="text-decoration-none">
-          <div class="card h-100 shadow-sm border-0 text-center">
-            <div class="card-body py-4">
-              <i class="bi bi-truck fs-1 text-secondary faction-icon"></i>
-              <h5 class="mt-3">Szállítások</h5>
-              <p class="text-muted small">Deliveries</p>
-            </div>
-          </div>
-        </a>
-      </div>
-
-      {# Brewery #}
-      <div class="col-md-4 col-sm-6 faction-card">
-        <a href="{{ url_for('fraction_brewery') }}" class="text-decoration-none">
-          <div class="card h-100 shadow-sm border-0 text-center">
-            <div class="card-body py-4">
-              <i class="bi bi-cup-straw fs-1 faction-icon" style="color: #722f37;"></i>
-              <h5 class="mt-3">Borászat</h5>
-              <p class="text-muted small">Brewery / Wine</p>
-            </div>
-          </div>
-        </a>
-      </div>
-
-      {# Contracts #}
-      <div class="col-md-4 col-sm-6 faction-card">
-        <a href="{{ url_for('fraction_contracts') }}" class="text-decoration-none">
-          <div class="card h-100 shadow-sm border-0 text-center">
-            <div class="card-body py-4">
-              <i class="bi bi-file-earmark-text-fill fs-1 text-dark faction-icon"></i>
-              <h5 class="mt-3">Szerződések</h5>
-              <p class="text-muted small">Contracts</p>
-            </div>
-          </div>
-        </a>
-      </div>
-
-      {# Warehouse / Inventory #}
-      <div class="col-md-4 col-sm-6 faction-card">
-        <a href="{{ url_for('fraction_warehouse') }}" class="text-decoration-none">
-          <div class="card h-100 shadow-sm border-0 text-center">
-            <div class="card-body py-4">
-              <i class="bi bi-box-seam-fill fs-1 faction-icon" style="color: #e67e22;"></i>
-              <h5 class="mt-3">Raktár / Leltár</h5>
-              <p class="text-muted small">Warehouse &amp; Inventory</p>
-            </div>
-          </div>
-        </a>
-      </div>
-
-      {# Bookings #}
-      <div class="col-md-4 col-sm-6 faction-card">
-        <a href="{{ url_for('fraction_bookings') }}" class="text-decoration-none">
-          <div class="card h-100 shadow-sm border-0 text-center">
-            <div class="card-body py-4">
-              <i class="bi bi-calendar-check fs-1 faction-icon" style="color: #e74c3c;"></i>
-              <h5 class="mt-3">Foglalások</h5>
-              <p class="text-muted small">Bookings</p>
-            </div>
-          </div>
-        </a>
-      </div>
-
-      {# NPC töltése #}
-      <div class="col-md-4 col-sm-6 faction-card">
-        <a href="{{ url_for('fraction_vince') }}" class="text-decoration-none">
-          <div class="card h-100 shadow-sm border-0 text-center">
-            <div class="card-body py-4">
-              <i class="bi bi-person-plus-fill fs-1 faction-icon" style="color: #8e44ad;"></i>
-              <h5 class="mt-3">NPC töltése</h5>
-              <p class="text-muted small">Vince feltöltése</p>
-            </div>
-          </div>
-        </a>
-      </div>
-
-      {# Előrendelés #}
-      <div class="col-md-4 col-sm-6 faction-card">
-        <a href="{{ url_for('fraction_preorder') }}" class="text-decoration-none">
-          <div class="card h-100 shadow-sm border-0 text-center">
-            <div class="card-body py-4">
-              <i class="bi bi-cart-check-fill fs-1 faction-icon" style="color: #2980b9;"></i>
-              <h5 class="mt-3">Előrendelés</h5>
-              <p class="text-muted small">Shopping list calculator</p>
-            </div>
-          </div>
-        </a>
-      </div>
+        </div>
+        {% endif %}
+      {% endfor %}
     </div>
   </div>
 </div>
+
+<style>
+  .faction-card { position: relative; }
+  .drag-handle {
+    position: absolute; top: 8px; right: 8px; z-index: 10;
+    background: var(--csp-surface); border: 1px solid var(--csp-border);
+    border-radius: 8px; padding: 4px 8px; cursor: grab;
+    color: var(--csp-text-muted); font-size: 1.2rem;
+  }
+  .drag-handle:active { cursor: grabbing; }
+  .faction-card.editing { animation: none !important; }
+  .faction-card.editing .card { border: 2px dashed var(--csp-accent) !important; }
+  .faction-card.editing .card-link { pointer-events: none; }
+  .faction-card.dragging { opacity: 0.5; }
+  #saveOrderBar {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 1050;
+    background: var(--csp-surface); border-top: 2px solid var(--csp-accent);
+    padding: 12px 20px;
+    display: none;
+    justify-content: center; align-items: center; gap: 12px;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.2);
+  }
+  #saveOrderBar.show { display: flex; }
+</style>
+
+<div id="saveOrderBar">
+  <span class="text-muted"><i class="bi bi-arrows-move"></i> Húzd a kártyákat a kívánt sorrendbe</span>
+  <button class="btn btn-sm btn-primary" id="saveOrderBtn"><i class="bi bi-check-lg"></i> Mentés</button>
+  <button class="btn btn-sm btn-outline-secondary" id="cancelOrderBtn"><i class="bi bi-x-lg"></i> Mégse</button>
+</div>
+
+<script>
+(function() {
+  const editBtn = document.getElementById('editOrderBtn');
+  const saveBtn = document.getElementById('saveOrderBtn');
+  const cancelBtn = document.getElementById('cancelOrderBtn');
+  const bar = document.getElementById('saveOrderBar');
+  const grid = document.getElementById('cardGrid');
+  let editing = false;
+  let dragEl = null;
+
+  editBtn.addEventListener('click', () => {
+    editing = !editing;
+    toggleEdit(editing);
+  });
+
+  cancelBtn.addEventListener('click', () => {
+    editing = false;
+    toggleEdit(false);
+    location.reload();
+  });
+
+  saveBtn.addEventListener('click', () => {
+    const cards = grid.querySelectorAll('.faction-card[data-card-key]');
+    const order = Array.from(cards).map(c => c.dataset.cardKey);
+    fetch('{{ url_for("fraction_save_card_order") }}', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': '{{ csrf_token() }}'
+      },
+      body: JSON.stringify({order})
+    }).then(r => {
+      if (r.ok) {
+        editing = false;
+        toggleEdit(false);
+      }
+    });
+  });
+
+  function toggleEdit(on) {
+    const handles = grid.querySelectorAll('.drag-handle');
+    const cards = grid.querySelectorAll('.faction-card');
+    handles.forEach(h => h.classList.toggle('d-none', !on));
+    cards.forEach(c => c.classList.toggle('editing', on));
+    bar.classList.toggle('show', on);
+    editBtn.innerHTML = on
+      ? '<i class="bi bi-x-lg"></i> Kész'
+      : '<i class="bi bi-arrows-move"></i> Sorrend';
+
+    if (on) enableDrag(); else disableDrag();
+  }
+
+  function enableDrag() {
+    grid.querySelectorAll('.faction-card').forEach(card => {
+      card.setAttribute('draggable', 'true');
+      card.addEventListener('dragstart', onDragStart);
+      card.addEventListener('dragend', onDragEnd);
+      card.addEventListener('dragover', onDragOver);
+      card.addEventListener('drop', onDrop);
+      // Touch support
+      card.addEventListener('touchstart', onTouchStart, {passive: false});
+      card.addEventListener('touchmove', onTouchMove, {passive: false});
+      card.addEventListener('touchend', onTouchEnd);
+    });
+  }
+
+  function disableDrag() {
+    grid.querySelectorAll('.faction-card').forEach(card => {
+      card.setAttribute('draggable', 'false');
+      card.removeEventListener('dragstart', onDragStart);
+      card.removeEventListener('dragend', onDragEnd);
+      card.removeEventListener('dragover', onDragOver);
+      card.removeEventListener('drop', onDrop);
+      card.removeEventListener('touchstart', onTouchStart);
+      card.removeEventListener('touchmove', onTouchMove);
+      card.removeEventListener('touchend', onTouchEnd);
+    });
+  }
+
+  function onDragStart(e) {
+    dragEl = this;
+    this.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+  }
+  function onDragEnd() {
+    this.classList.remove('dragging');
+    dragEl = null;
+  }
+  function onDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    const target = this.closest('.faction-card');
+    if (target && target !== dragEl) {
+      const rect = target.getBoundingClientRect();
+      const mid = rect.top + rect.height / 2;
+      if (e.clientY < mid) {
+        grid.insertBefore(dragEl, target);
+      } else {
+        grid.insertBefore(dragEl, target.nextSibling);
+      }
+    }
+  }
+  function onDrop(e) { e.preventDefault(); }
+
+  // Touch drag support
+  let touchClone = null;
+  function onTouchStart(e) {
+    if (!editing) return;
+    dragEl = this;
+    const touch = e.touches[0];
+    this.classList.add('dragging');
+  }
+  function onTouchMove(e) {
+    if (!dragEl || !editing) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+    if (el) {
+      const target = el.closest('.faction-card');
+      if (target && target !== dragEl) {
+        const rect = target.getBoundingClientRect();
+        const mid = rect.top + rect.height / 2;
+        if (touch.clientY < mid) {
+          grid.insertBefore(dragEl, target);
+        } else {
+          grid.insertBefore(dragEl, target.nextSibling);
+        }
+      }
+    }
+  }
+  function onTouchEnd() {
+    if (dragEl) dragEl.classList.remove('dragging');
+    dragEl = null;
+  }
+})();
+</script>
 {% endblock %}

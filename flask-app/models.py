@@ -462,6 +462,16 @@ def define_models(db, app):
 
         user = db.relationship("User", foreign_keys=[user_id], backref="bonus_entries")
 
+    class UserCardOrder(db.Model):
+        """Stores per-user card ordering for the fraction main page."""
+        __tablename__ = "user_card_orders"
+
+        id = db.Column(db.Integer, primary_key=True)
+        user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, unique=True)
+        card_order = db.Column(db.Text, nullable=False, default="[]")  # JSON array of card keys
+
+        user = db.relationship("User", backref="card_order_entry")
+
     return {
         "User": User,
         "Rating": Rating,
@@ -487,4 +497,5 @@ def define_models(db, app):
         "BookingMessage": BookingMessage,
         "BonusConfig": BonusConfig,
         "BonusEntry": BonusEntry,
+        "UserCardOrder": UserCardOrder,
     }
