@@ -411,6 +411,9 @@ def register_fraction_routes(app, db, models):
                 cart = session.get("pos_cart", [])
                 bonus_cfg = BonusConfig.query.first()
                 bonus_amount = 0.0
+                # Load company discounts so bonus is calculated on discounted price
+                company_discounts = {d.category: d.discount_percent
+                                     for d in CompanyDiscount.query.filter_by(company_id=company_id).all()}
                 for c in cart:
                     mi = db.session.get(MenuItem, c["id"])
                     if mi:
@@ -423,6 +426,10 @@ def register_fraction_routes(app, db, models):
                         ))
                         if bonus_cfg:
                             line_total = mi.price * c["qty"]
+                            # Apply company discount to get the real price
+                            cat_discount = company_discounts.get(mi.category, 0.0)
+                            if cat_discount > 0:
+                                line_total = line_total * (1 - cat_discount / 100)
                             if mi.category == "alc":
                                 bonus_amount += line_total * (bonus_cfg.alc_percent / 100)
                             else:
