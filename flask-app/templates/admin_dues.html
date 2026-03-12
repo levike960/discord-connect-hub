@@ -188,42 +188,36 @@
 <div class="table-responsive">
   <table class="table table-bordered align-middle">
     <thead class="table-dark">
-      <tr><th>#</th><th>Név</th><th>Összeg</th><th>Határidő</th><th>Cég</th><th>Könyvelte</th><th>Létrehozva</th><th>Státusz</th><th>Műveletek</th></tr>
+      <tr><th style="width:4%">#</th><th style="width:18%">Név</th><th style="width:12%">Összeg</th><th style="width:12%">Határidő</th><th style="width:14%">Cég</th><th style="width:12%">Könyvelte</th><th style="width:10%">Létrehozva</th><th style="width:8%">Státusz</th><th style="width:10%">Műveletek</th></tr>
     </thead>
     <tbody>
-      {% for due in all_dues_list %}
+      {% for due in all_dues_list|reverse %}
       <tr>
         <td>{{ due.id }}</td>
-        <td colspan="7" class="p-0">
-          <form method="POST" class="d-flex align-items-center" id="edit-form-{{ due.id }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <input type="hidden" name="form_type" value="edit_due">
-            <input type="hidden" name="due_id" value="{{ due.id }}">
-            <table class="table table-borderless mb-0">
-              <tr>
-                <td style="width:20%"><input type="text" name="due_name" class="form-control form-control-sm" value="{{ due.name }}"></td>
-                <td style="width:14%"><input type="number" name="due_amount" class="form-control form-control-sm" value="{{ '%.0f'|format(due.amount) }}" step="1"></td>
-                <td style="width:14%"><input type="date" name="due_date" class="form-control form-control-sm" value="{{ due.due_date.strftime('%Y-%m-%d') }}"></td>
-                <td style="width:14%">
-                  <select name="due_company_id" class="form-select form-select-sm">
-                    <option value="">— Nincs —</option>
-                    {% for c in all_companies %}
-                    <option value="{{ c.id }}" {{ 'selected' if due.company_id == c.id else '' }}>{{ c.name }}</option>
-                    {% endfor %}
-                  </select>
-                </td>
-                <td style="width:14%">{{ due.creator.display_name if due.creator else '—' }}</td>
-                <td style="width:10%">{{ due.created_at.strftime('%m.%d %H:%M') if due.created_at else '—' }}</td>
-                <td style="width:10%">
-                  {% if due.is_paid %}
-                    <span class="badge bg-success">Rendezve</span>
-                  {% else %}
-                    <span class="badge bg-warning text-dark">Nyitott</span>
-                  {% endif %}
-                </td>
-              </tr>
-            </table>
-          </form>
+        <form method="POST" id="edit-form-{{ due.id }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="form_type" value="edit_due">
+          <input type="hidden" name="due_id" value="{{ due.id }}">
+          <td><input type="text" name="due_name" class="form-control form-control-sm" value="{{ due.name }}"></td>
+          <td><input type="number" name="due_amount" class="form-control form-control-sm" value="{{ '%.0f'|format(due.amount) }}" step="1"></td>
+          <td><input type="date" name="due_date" class="form-control form-control-sm" value="{{ due.due_date.strftime('%Y-%m-%d') }}"></td>
+          <td>
+            <select name="due_company_id" class="form-select form-select-sm">
+              <option value="">— Nincs —</option>
+              {% for c in all_companies %}
+              <option value="{{ c.id }}" {{ 'selected' if due.company_id == c.id else '' }}>{{ c.name }}</option>
+              {% endfor %}
+            </select>
+          </td>
+        </form>
+        <td>{{ due.creator.display_name if due.creator else '—' }}</td>
+        <td>{{ due.created_at.strftime('%m.%d %H:%M') if due.created_at else '—' }}</td>
+        <td>
+          {% if due.is_paid %}
+            <span class="badge bg-success">Rendezve</span>
+          {% else %}
+            <span class="badge bg-warning text-dark">Nyitott</span>
+          {% endif %}
         </td>
         <td>
           <div class="d-flex gap-1">
