@@ -33,7 +33,15 @@
                 <small class="fw-bold">{{ entry.author.ingame_name or entry.author.display_name }}</small>
               </div>
             </td>
-            <td style="max-width:300px;"><small>{{ entry.message[:100] }}{% if entry.message|length > 100 %}...{% endif %}</small></td>
+            <td style="max-width:300px;">
+              <small>{{ entry.message[:80] }}{% if entry.message|length > 80 %}...</small>
+              <button class="btn btn-sm btn-link p-0 ms-1" data-bs-toggle="modal" data-bs-target="#msgModal{{ entry.id }}"><i class="bi bi-eye"></i></button>
+              <div class="modal fade" id="msgModal{{ entry.id }}" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+                <div class="modal-header"><h6 class="modal-title">{{ entry.author.ingame_name or entry.author.display_name }} üzenete</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">{{ entry.message }}</div>
+              </div></div></div>
+              {% else %}</small>{% endif %}
+            </td>
             <td class="text-center">{{ entry.likes }}</td>
             <td class="text-center">
               {% if entry.is_approved %}
