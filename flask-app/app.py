@@ -5,12 +5,15 @@ Flask Web Application — Simplified entry point with modular routes.
 import os
 import logging
 import traceback
+import threading
 from logging.handlers import RotatingFileHandler
 from flask import Flask, render_template, flash, redirect, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_wtf import CSRFProtect
+from flask_login import current_user
 from helpers import now_cet
+import requests as http_requests
 
 # ---------------------------------------------------------------------------
 # Configuration
