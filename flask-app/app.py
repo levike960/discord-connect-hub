@@ -5,12 +5,15 @@ Flask Web Application — Simplified entry point with modular routes.
 import os
 import logging
 import traceback
+import threading
 from logging.handlers import RotatingFileHandler
 from flask import Flask, render_template, flash, redirect, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_wtf import CSRFProtect
+from flask_login import current_user
 from helpers import now_cet
+import requests as http_requests
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -90,6 +93,49 @@ def internal_error(e):
     if referrer:
         return redirect(referrer)
     return redirect("/")
+
+
+# ---------------------------------------------------------------------------
+# Discord Webhook Request Logging
+# ---------------------------------------------------------------------------
+
+DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1484299458194837635/_EAr7dG4-1C1xAQ4UHFis1FCP_k-aIbhQgq52_eBn12ojI40W6aANw-2Wf46uSWO9VXd"
+
+
+def _send_discord_log(method, url, status, user_info, ip):
+    """Send request log to Discord webhook in a background thread."""
+    try:
+        color = 0x2ecc71 if status < 400 else (0xe67e22 if status < 500 else 0xe74c3c)
+        embed = {
+            "title": f"{method} → {status}",
+            "description": f"**URL:** `{url}`",
+            "color": color,
+            "fields": [
+                {"name": "Felhasználó", "value": user_info, "inline": True},
+                {"name": "IP", "value": ip, "inline": True},
+            ],
+        }
+        http_requests.post(DISCORD_WEBHOOK_URL, json={"embeds": [embed]}, timeout=5)
+    except Exception:
+        pass
+
+
+@app.after_request
+def log_request_to_discord(response):
+    if request.path.startswith("/static"):
+        return response
+    method = request.method
+    if method not in ("GET", "POST"):
+        return response
+    url = request.url
+    status = response.status_code
+    ip = request.remote_addr or "unknown"
+    if hasattr(current_user, "id") and current_user.is_authenticated:
+        user_info = f"{current_user.username} (ID: {current_user.id})"
+    else:
+        user_info = "Vendég"
+    threading.Thread(target=_send_discord_log, args=(method, url, status, user_info, ip), daemon=True).start()
+    return response
 
 
 # ---------------------------------------------------------------------------
