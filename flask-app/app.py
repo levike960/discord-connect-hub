@@ -3,7 +3,10 @@ Flask Web Application — Simplified entry point with modular routes.
 """
 
 import os
-from flask import Flask, render_template
+import logging
+import traceback
+from logging.handlers import RotatingFileHandler
+from flask import Flask, render_template, flash, redirect, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_wtf import CSRFProtect
@@ -32,6 +35,24 @@ login_manager.login_view = "visitor"
 os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
 # ---------------------------------------------------------------------------
+# Logging
+# ---------------------------------------------------------------------------
+
+LOG_DIR = os.path.join(app.root_path, "logs")
+os.makedirs(LOG_DIR, exist_ok=True)
+
+file_handler = RotatingFileHandler(
+    os.path.join(LOG_DIR, "error.log"),
+    maxBytes=1_000_000,  # 1 MB
+    backupCount=5
+)
+file_handler.setLevel(logging.ERROR)
+file_handler.setFormatter(logging.Formatter(
+    "[%(asctime)s] %(levelname)s in %(module)s (%(pathname)s:%(lineno)d):\n%(message)s\n"
+))
+app.logger.addHandler(file_handler)
+
+# ---------------------------------------------------------------------------
 # Models
 # ---------------------------------------------------------------------------
 
@@ -58,6 +79,17 @@ def inject_now():
 @app.errorhandler(403)
 def forbidden(e):
     return render_template("403.html"), 403
+
+
+@app.errorhandler(500)
+def internal_error(e):
+    app.logger.error("500 Internal Server Error\nURL: %s\nMethod: %s\n%s",
+                     request.url, request.method, traceback.format_exc())
+    flash("Hiba történt a kérés feldolgozása közben. A hiba naplózásra került.", "danger")
+    referrer = request.referrer
+    if referrer:
+        return redirect(referrer)
+    return redirect("/")
 
 
 # ---------------------------------------------------------------------------
