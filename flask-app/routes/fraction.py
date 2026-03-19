@@ -272,6 +272,8 @@ def register_fraction_routes(app, db, models):
                     if mi:
                         total_time += mi.production_time_seconds * item["qty"]
                         for ri in mi.recipe_items.all():
+                            if ri.ingredient is None:
+                                continue
                             key = ri.ingredient_id
                             if key not in ingredient_totals:
                                 ingredient_totals[key] = {
