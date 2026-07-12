@@ -1,12 +1,14 @@
 """Fraction (borászat) routes — internal staff features."""
 
 import json
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
+import calendar as _cal
 from flask import (
-    render_template, redirect, url_for, request, flash, session
+    render_template, redirect, url_for, request, flash, session, jsonify, abort
 )
 from flask_login import login_required, current_user
-from helpers import now_cet, fraction_required, period_range
+from helpers import now_cet, fraction_required, period_range, HU_MONTHS, HU_DAYS
+
 
 
 def register_fraction_routes(app, db, models):
