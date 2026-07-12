@@ -264,6 +264,15 @@ def register_visitor_routes(app, db, models):
         msg = BookingMessage(booking_id=booking_id, user_id=current_user.id, content=content)
         db.session.add(msg)
         db.session.commit()
+        send_booking_notification(
+            title="💬 Új üzenet foglaláshoz",
+            description=f"**#{booking_id}** — {booking.contact_name}",
+            color=0x3498db,
+            fields=[
+                {"name": "Küldő", "value": current_user.display_name, "inline": True},
+                {"name": "Üzenet", "value": content[:400], "inline": False},
+            ],
+        )
         flash("Üzenet elküldve!", "success")
         return redirect(url_for("booking_detail", booking_id=booking_id))
 
