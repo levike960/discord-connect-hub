@@ -87,6 +87,11 @@
           <i class="bi bi-clock-history"></i> Mozgások
         </button>
       </li>
+      <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#wh-bulk" type="button">
+          <i class="bi bi-clipboard-check"></i> Tömeges leltár
+        </button>
+      </li>
     </ul>
 
     <div class="tab-content">
@@ -274,6 +279,82 @@
         {% else %}
         <p class="text-muted">Még nincsenek raktármozgások.</p>
         {% endif %}
+      </div>
+
+      {# ── Bulk Inventory ── #}
+      <div class="tab-pane fade" id="wh-bulk">
+        <div class="alert alert-info py-2 px-3" style="font-size:0.9rem;">
+          <i class="bi bi-info-circle"></i> Írd be az új készletértéket, ahol változott. Az üresen hagyott mezők nem változnak. Egy gombnyomásra minden módosítás naplózódik.
+        </div>
+        <form method="POST">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="form_type" value="bulk_stock_set">
+          <div class="row g-2 mb-3">
+            <div class="col-md-6">
+              <input type="text" name="bulk_reason" class="form-control" placeholder="Ok / megjegyzés (opt.) – pl. Havi leltár">
+            </div>
+            <div class="col-md-6 text-md-end">
+              <button type="submit" class="btn btn-primary" onclick="return confirm('Biztos módosítod az összes megadott készletet?')">
+                <i class="bi bi-save"></i> Leltár mentése
+              </button>
+            </div>
+          </div>
+
+          {% if ingredients %}
+          <h5 class="mt-3"><i class="bi bi-box-seam"></i> Alapanyagok</h5>
+          <div class="table-responsive">
+            <table class="table table-sm table-striped align-middle">
+              <thead class="table-dark">
+                <tr><th>Alapanyag</th><th>Egység</th><th>Jelenlegi</th><th>Új érték</th></tr>
+              </thead>
+              <tbody>
+                {% for ing in ingredients %}
+                <tr>
+                  <td><strong>{{ ing.name }}</strong></td>
+                  <td><span class="badge bg-secondary">{{ ing.unit }}</span></td>
+                  <td>{{ "%.1f"|format(ing.stock) }}</td>
+                  <td>
+                    <input type="number" name="stock_ing_{{ ing.id }}" step="0.1" min="0"
+                           class="form-control form-control-sm" style="max-width:120px;"
+                           placeholder="{{ '%.1f'|format(ing.stock) }}">
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% endif %}
+
+          {% if menu_items %}
+          <h5 class="mt-4"><i class="bi bi-cup-straw"></i> Termékek</h5>
+          <div class="table-responsive">
+            <table class="table table-sm table-striped align-middle">
+              <thead class="table-dark">
+                <tr><th>Termék</th><th>Jelenlegi</th><th>Új érték</th></tr>
+              </thead>
+              <tbody>
+                {% for mi in menu_items %}
+                <tr>
+                  <td><strong>{{ mi.name }}</strong></td>
+                  <td>{{ "%.0f"|format(mi.stock) }} db</td>
+                  <td>
+                    <input type="number" name="stock_mi_{{ mi.id }}" step="1" min="0"
+                           class="form-control form-control-sm" style="max-width:120px;"
+                           placeholder="{{ '%.0f'|format(mi.stock) }}">
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% endif %}
+
+          <div class="text-end mt-3">
+            <button type="submit" class="btn btn-primary btn-lg" onclick="return confirm('Biztos módosítod az összes megadott készletet?')">
+              <i class="bi bi-save"></i> Leltár mentése
+            </button>
+          </div>
+        </form>
       </div>
 
     </div>
