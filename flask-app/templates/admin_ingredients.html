@@ -31,56 +31,96 @@
 </form>
 
 {% if ingredients %}
-<div class="table-responsive">
-  <table class="table table-striped">
-    <thead class="table-dark">
-      <tr><th>Név</th><th>Egység</th><th>Egységár</th><th>Súly/db (g)</th><th>Készlet</th><th>Min. készlet</th><th></th></tr>
-    </thead>
-    <tbody>
-      {% for ing in ingredients %}
-      <tr>
-        <td>{{ ing.name }}</td>
-        <td>{{ ing.unit }}</td>
-        <td>{{ "%.0f"|format(ing.price_per_unit) }} Ft</td>
-        <td>
-          <form method="POST" class="d-flex gap-1 align-items-center">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <input type="hidden" name="form_type" value="update_weight">
-            <input type="hidden" name="ing_id" value="{{ ing.id }}">
-            <input type="number" name="weight_gram" class="form-control form-control-sm" style="width:80px;"
-                   value="{{ '%.1f'|format(ing.weight_per_unit_gram or 0) }}" step="0.1" min="0">
-            <button class="btn btn-sm btn-outline-primary p-0 px-1"><i class="bi bi-check"></i></button>
-          </form>
-        </td>
-        <td>
-          <span class="{% if ing.stock <= 0 %}text-danger fw-bold{% elif ing.stock < ing.min_stock %}text-warning fw-bold{% else %}text-success{% endif %}">
-            {{ "%.1f"|format(ing.stock) }} {{ ing.unit }}
-          </span>
-        </td>
-        <td>
-          <form method="POST" class="d-flex gap-1 align-items-center">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <input type="hidden" name="form_type" value="update_min_stock">
-            <input type="hidden" name="item_type" value="ingredient">
-            <input type="hidden" name="item_id" value="{{ ing.id }}">
-            <input type="number" name="min_stock" class="form-control form-control-sm" style="width:70px;"
-                   value="{{ '%.1f'|format(ing.min_stock) }}" step="0.1" min="0">
-            <button class="btn btn-sm btn-outline-primary p-0 px-1"><i class="bi bi-check"></i></button>
-          </form>
-        </td>
-        <td>
-          <form method="POST" class="d-inline">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <input type="hidden" name="form_type" value="delete_ingredient">
-            <input type="hidden" name="ing_id" value="{{ ing.id }}">
-            <button class="btn btn-sm btn-danger">Törlés</button>
-          </form>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+<div class="d-flex align-items-center justify-content-between mb-2">
+  <h4 class="mb-0">Alapanyagok listája</h4>
+  <div class="d-flex gap-2">
+    <button type="button" class="btn btn-sm btn-outline-primary" id="toggleBulkPrice">
+      <i class="bi bi-currency-exchange"></i> Tömeges árszerkesztés
+    </button>
+  </div>
 </div>
+
+<form method="POST" id="bulkPriceForm">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="form_type" value="bulk_update_ingredient_prices">
+  <div class="table-responsive">
+    <table class="table table-striped align-middle">
+      <thead class="table-dark">
+        <tr><th>Név</th><th>Egység</th><th>Egységár (Ft)</th><th>Súly/db (g)</th><th>Készlet</th><th>Min. készlet</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for ing in ingredients %}
+        <tr>
+          <td>{{ ing.name }}</td>
+          <td>{{ ing.unit }}</td>
+          <td>
+            {# Read-only display + inline single-row edit form; bulk mode enables the input in this form #}
+            <div class="d-flex gap-1 align-items-center">
+              <input type="number" name="price_{{ ing.id }}" form="bulkPriceForm"
+                     class="form-control form-control-sm bulk-price-input"
+                     style="width:100px; display:none;"
+                     value="{{ '%.0f'|format(ing.price_per_unit) }}" step="1" min="0">
+              <span class="price-display">{{ "%.0f"|format(ing.price_per_unit) }} Ft</span>
+            </div>
+          </td>
+          <td>
+            <form method="POST" class="d-flex gap-1 align-items-center">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="form_type" value="update_weight">
+              <input type="hidden" name="ing_id" value="{{ ing.id }}">
+              <input type="number" name="weight_gram" class="form-control form-control-sm" style="width:80px;"
+                     value="{{ '%.1f'|format(ing.weight_per_unit_gram or 0) }}" step="0.1" min="0">
+              <button class="btn btn-sm btn-outline-primary p-0 px-1"><i class="bi bi-check"></i></button>
+            </form>
+          </td>
+          <td>
+            <span class="{% if ing.stock <= 0 %}text-danger fw-bold{% elif ing.stock < ing.min_stock %}text-warning fw-bold{% else %}text-success{% endif %}">
+              {{ "%.1f"|format(ing.stock) }} {{ ing.unit }}
+            </span>
+          </td>
+          <td>
+            <form method="POST" class="d-flex gap-1 align-items-center">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="form_type" value="update_min_stock">
+              <input type="hidden" name="item_type" value="ingredient">
+              <input type="hidden" name="item_id" value="{{ ing.id }}">
+              <input type="number" name="min_stock" class="form-control form-control-sm" style="width:70px;"
+                     value="{{ '%.1f'|format(ing.min_stock) }}" step="0.1" min="0">
+              <button class="btn btn-sm btn-outline-primary p-0 px-1"><i class="bi bi-check"></i></button>
+            </form>
+          </td>
+          <td>
+            <form method="POST" class="d-inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="form_type" value="delete_ingredient">
+              <input type="hidden" name="ing_id" value="{{ ing.id }}">
+              <button class="btn btn-sm btn-danger">Törlés</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div id="bulkPriceSaveBar" class="text-end mt-2" style="display:none;">
+    <button type="submit" class="btn btn-success"><i class="bi bi-save"></i> Új árak mentése</button>
+  </div>
+</form>
+
+<script>
+document.getElementById('toggleBulkPrice').addEventListener('click', function() {
+  const inputs = document.querySelectorAll('.bulk-price-input');
+  const displays = document.querySelectorAll('.price-display');
+  const saveBar = document.getElementById('bulkPriceSaveBar');
+  const on = inputs[0] && inputs[0].style.display === 'none';
+  inputs.forEach(i => i.style.display = on ? '' : 'none');
+  displays.forEach(d => d.style.display = on ? 'none' : '');
+  saveBar.style.display = on ? '' : 'none';
+  this.innerHTML = on
+    ? '<i class="bi bi-x-lg"></i> Mégse'
+    : '<i class="bi bi-currency-exchange"></i> Tömeges árszerkesztés';
+});
+</script>
 {% else %}
 <p class="text-muted">Nincsenek alapanyagok.</p>
 {% endif %}
