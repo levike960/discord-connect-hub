@@ -853,7 +853,7 @@ def register_admin_routes(app, db, models):
             _do_post()
             return redirect(url_for("admin_dues"))
         from collections import defaultdict
-        all_dues = Due.query.order_by(Due.due_date.asc()).all()
+        all_dues = Due.query.order_by(Due.created_at.desc().nullslast(), Due.id.desc()).all()
         dues_by_company = defaultdict(list)
         dues_no_company = []
         for d in all_dues:
