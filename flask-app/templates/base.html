@@ -700,5 +700,53 @@
     }
   }
 </script>
+<script>
+// Generic client-side table pagination for <table data-paginate="N">.
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('table[data-paginate]').forEach(function(table) {
+    const pageSize = parseInt(table.getAttribute('data-paginate'), 10) || 20;
+    const tbody = table.querySelector('tbody');
+    if (!tbody) return;
+    const rows = Array.from(tbody.children);
+    if (rows.length <= pageSize) return;
+    const totalPages = Math.ceil(rows.length / pageSize);
+    let currentPage = 1;
+
+    const nav = document.createElement('nav');
+    nav.className = 'd-flex justify-content-between align-items-center mt-2 flex-wrap gap-2';
+    nav.innerHTML = `
+      <small class="text-muted"><span class="pg-info"></span></small>
+      <ul class="pagination pagination-sm mb-0"></ul>`;
+    table.parentNode.insertBefore(nav, table.nextSibling);
+    const ul = nav.querySelector('.pagination');
+    const info = nav.querySelector('.pg-info');
+
+    function render() {
+      const start = (currentPage - 1) * pageSize;
+      const end = start + pageSize;
+      rows.forEach((r, i) => { r.style.display = (i >= start && i < end) ? '' : 'none'; });
+      info.textContent = `${start + 1}–${Math.min(end, rows.length)} / ${rows.length}`;
+      ul.innerHTML = '';
+      const mk = (label, page, disabled, active) => {
+        const li = document.createElement('li');
+        li.className = 'page-item' + (disabled ? ' disabled' : '') + (active ? ' active' : '');
+        const a = document.createElement('a');
+        a.className = 'page-link'; a.href = '#'; a.textContent = label;
+        a.addEventListener('click', e => { e.preventDefault(); if (!disabled && !active) { currentPage = page; render(); } });
+        li.appendChild(a); return li;
+      };
+      ul.appendChild(mk('«', currentPage - 1, currentPage === 1, false));
+      const win = 2;
+      const from = Math.max(1, currentPage - win);
+      const to = Math.min(totalPages, currentPage + win);
+      if (from > 1) { ul.appendChild(mk('1', 1, false, false)); if (from > 2) ul.appendChild(mk('…', 0, true, false)); }
+      for (let p = from; p <= to; p++) ul.appendChild(mk(String(p), p, false, p === currentPage));
+      if (to < totalPages) { if (to < totalPages - 1) ul.appendChild(mk('…', 0, true, false)); ul.appendChild(mk(String(totalPages), totalPages, false, false)); }
+      ul.appendChild(mk('»', currentPage + 1, currentPage === totalPages, false));
+    }
+    render();
+  });
+});
+</script>
 </body>
 </html>
