@@ -514,4 +514,5 @@ def define_models(db, app):
         "BonusConfig": BonusConfig,
         "BonusEntry": BonusEntry,
         "UserCardOrder": UserCardOrder,
+        "PersonalEvent": PersonalEvent,
     }
