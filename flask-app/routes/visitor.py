@@ -233,6 +233,17 @@ def register_visitor_routes(app, db, models):
         )
         db.session.add(booking)
         db.session.commit()
+        send_booking_notification(
+            title="📅 Új foglalás érkezett",
+            description=f"**{contact_name}** foglalt {booking_date.strftime('%Y.%m.%d')} {booking_time or ''}",
+            color=0x2ecc71,
+            fields=[
+                {"name": "Létszám", "value": f"{guest_count} fő", "inline": True},
+                {"name": "Típus", "value": event_type_label or "—", "inline": True},
+                {"name": "Telefon", "value": contact_phone or "—", "inline": True},
+                {"name": "Megjegyzés", "value": (note[:300] if note else "—"), "inline": False},
+            ],
+        )
         flash("Foglalás leadva! Az adminisztrátor hamarosan megerősíti.", "success")
         return redirect(url_for("visitor") + "#mybookings")
 
