@@ -61,7 +61,17 @@
 
 <style>
   .faction-card { position: relative; }
-  .drag-handle {
+  .card-badge {
+    position: absolute; top: 10px; right: 10px; z-index: 5;
+    color: #fff; font-weight: 700; font-size: 0.78rem;
+    padding: 3px 10px; border-radius: 999px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+    animation: pulse-badge 1.8s ease-in-out infinite;
+  }
+  @keyframes pulse-badge {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+  }
     position: absolute; top: 8px; right: 8px; z-index: 10;
     background: var(--csp-surface); border: 1px solid var(--csp-border);
     border-radius: 8px; padding: 4px 8px; cursor: grab;
