@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+{% block title %}Naptár / Tervező{% endblock %}
+
+{% block content %}
+<style>
+  .cal-wrap { max-width: 1100px; margin: 0 auto; }
+  .cal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 1rem; gap: .5rem; flex-wrap: wrap;
+  }
+  .cal-title { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.02em; margin:0; }
+  .cal-title span { color: var(--csp-accent); }
+  .cal-grid {
+    display: grid; grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 6px; background: var(--csp-border); padding: 6px;
+    border-radius: 12px;
+  }
+  .cal-day-name {
+    text-align: center; font-size: .75rem; font-weight: 600;
+    color: var(--csp-text-muted); text-transform: uppercase;
+    padding: 6px 0; background: var(--csp-surface); border-radius: 8px;
+  }
+  .cal-cell {
+    background: var(--csp-surface); border-radius: 8px; min-height: 110px;
+    padding: 6px; position: relative; overflow: hidden;
+    transition: transform .15s ease, box-shadow .15s ease;
+  }
+  .cal-cell.empty { background: transparent; }
+  .cal-cell:not(.empty):hover { transform: translateY(-2px); box-shadow: 0 4px 14px rgba(0,0,0,.15); }
+  .cal-cell.today { outline: 2px solid var(--csp-accent); }
+  .cal-daynum {
+    font-weight: 700; font-size: .9rem; color: var(--csp-text);
+    display: inline-block; padding: 2px 6px; border-radius: 6px;
+  }
+  .cal-cell.today .cal-daynum {
+    background: var(--csp-accent); color: #fff;
+  }
+  .cal-events { margin-top: 4px; display: flex; flex-direction: column; gap: 3px; }
+  .cal-ev {
+    font-size: .7rem; padding: 2px 6px; border-radius: 4px;
+    color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    cursor: pointer;
+  }
+  .cal-cell .add-btn {
+    position: absolute; bottom: 4px; right: 4px;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--csp-accent-subtle); color: var(--csp-accent);
+    border: none; font-size: .8rem; opacity: 0; transition: opacity .15s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .cal-cell:hover .add-btn { opacity: 1; }
+  @media (max-width: 720px) {
+    .cal-cell { min-height: 70px; }
+    .cal-ev { font-size: .62rem; }
+    .cal-daynum { font-size: .78rem; }
+  }
+</style>
+
+<div class="cal-wrap">
+  <a href="{{ url_for('fraction') }}" class="btn btn-outline-secondary btn-sm mb-3">
+    <i class="bi bi-arrow-left"></i> Vissza
+  </a>
+
+  <div class="cal-header">
+    <h2 class="cal-title"><i class="bi bi-calendar3"></i> <span>{{ year }}. {{ month_label }}</span></h2>
+    <div class="d-flex gap-2 align-items-center">
+      <a class="btn btn-sm btn-outline-secondary"
+         href="{{ url_for('fraction_calendar', year=prev_year, month=prev_month) }}">
+        <i class="bi bi-chevron-left"></i>
+      </a>
+      <a class="btn btn-sm btn-outline-primary" href="{{ url_for('fraction_calendar') }}">Ma</a>
+      <a class="btn btn-sm btn-outline-secondary"
+         href="{{ url_for('fraction_calendar', year=next_year, month=next_month) }}">
+        <i class="bi bi-chevron-right"></i>
+      </a>
+      <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addEventModal">
+        <i class="bi bi-plus-lg"></i> Új esemény
+      </button>
+    </div>
+  </div>
+
+  <div class="cal-grid">
+    {% for d in hu_days %}
+      <div class="cal-day-name">{{ d[:3] }}</div>
+    {% endfor %}
+
+    {% for week in weeks %}
+      {% for day in week %}
+        {% if day == 0 %}
+          <div class="cal-cell empty"></div>
+        {% else %}
+          {% set is_today = (year == today.year and month == today.month and day == today.day) %}
+          <div class="cal-cell {% if is_today %}today{% endif %}">
+            <span class="cal-daynum">{{ day }}</span>
+            <button class="add-btn" title="Új esemény ezen a napon"
+                    data-bs-toggle="modal" data-bs-target="#addEventModal"
+                    data-day="{{ '%04d-%02d-%02d'|format(year, month, day) }}">
+              <i class="bi bi-plus"></i>
+            </button>
+            <div class="cal-events">
+              {% for e in events_by_day.get(day, []) %}
+                <div class="cal-ev" style="background: {{ e.color }};"
+                     data-bs-toggle="modal" data-bs-target="#viewEventModal"
+                     data-title="{{ e.title }}"
+                     data-time="{{ e.time }}"
+                     data-desc="{{ e.get('description', '') }}"
+                     data-owner="{{ e.get('owner', '') }}"
+                     data-type="{{ e.type }}"
+                     data-id="{{ e.id }}"
+                     data-own="{{ '1' if e.get('own') else '0' }}"
+                     data-shared="{{ '1' if e.get('shared') else '0' }}">
+                  {% if e.time %}<b>{{ e.time }}</b> {% endif %}{{ e.title }}
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        {% endif %}
+      {% endfor %}
+    {% endfor %}
+  </div>
+
+  {% if upcoming %}
+  <div class="mt-4">
+    <h5 class="mb-3"><i class="bi bi-list-ul"></i> Közelgő események</h5>
+    <div class="list-group">
+      {% for e in upcoming %}
+        <div class="list-group-item d-flex align-items-center gap-3">
+          <div style="width:8px;height:40px;background:{{ e.color }};border-radius:4px;"></div>
+          <div class="flex-grow-1">
+            <div class="fw-semibold">{{ e.title }}
+              {% if e.is_shared %}<span class="badge bg-info ms-1">Megosztott</span>{% endif %}
+            </div>
+            <div class="small text-muted">
+              {{ e.event_date.strftime('%Y.%m.%d') }}{% if e.event_time %} — {{ e.event_time }}{% endif %}
+              {% if e.user_id != current_user.id %} · {{ e.user.display_name }}{% endif %}
+            </div>
+          </div>
+          {% if e.user_id == current_user.id or current_user.is_admin %}
+          <form method="POST" action="{{ url_for('fraction_calendar_delete', event_id=e.id) }}"
+                onsubmit="return confirm('Biztosan törlöd?');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+          </form>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Add modal -->
+<div class="modal fade" id="addEventModal" tabindex="-1">
+  <div class="modal-dialog">
+    <form class="modal-content" method="POST" action="{{ url_for('fraction_calendar_add') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-calendar-plus"></i> Új esemény</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label">Cím *</label>
+          <input type="text" name="title" class="form-control" required maxlength="160" placeholder="Pl. Meeting a Fő téren">
+        </div>
+        <div class="row g-2">
+          <div class="col-7">
+            <label class="form-label">Dátum *</label>
+            <input type="date" name="event_date" id="ev_date_input" class="form-control" required>
+          </div>
+          <div class="col-5">
+            <label class="form-label">Idő</label>
+            <input type="time" name="event_time" class="form-control">
+          </div>
+        </div>
+        <div class="mb-3 mt-3">
+          <label class="form-label">Leírás</label>
+          <textarea name="description" class="form-control" rows="2" maxlength="1000"></textarea>
+        </div>
+        <div class="d-flex gap-3 align-items-center">
+          <div>
+            <label class="form-label mb-1">Szín</label>
+            <input type="color" name="color" value="#7c5cfc" class="form-control form-control-color" style="width:50px;">
+          </div>
+          <div class="form-check mt-4">
+            <input class="form-check-input" type="checkbox" name="is_shared" id="is_shared">
+            <label class="form-check-label" for="is_shared">Megosztás a csapattal</label>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Mégse</button>
+        <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Mentés</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- View modal -->
+<div class="modal fade" id="viewEventModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="viewEvTitle">—</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-1"><b>Idő:</b> <span id="viewEvTime">—</span></p>
+        <p class="mb-1"><b>Létrehozta:</b> <span id="viewEvOwner">—</span></p>
+        <p id="viewEvDescBlock" class="mt-3"><b>Leírás:</b><br><span id="viewEvDesc"></span></p>
+      </div>
+      <div class="modal-footer">
+        <form id="viewEvDeleteForm" method="POST" style="display:none;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn-outline-danger" onclick="return confirm('Törlöd?');">
+            <i class="bi bi-trash"></i> Törlés
+          </button>
+        </form>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bezárás</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  const addModal = document.getElementById('addEventModal');
+  const dateInput = document.getElementById('ev_date_input');
+  addModal.addEventListener('show.bs.modal', function(ev) {
+    const btn = ev.relatedTarget;
+    const preset = btn && btn.dataset ? btn.dataset.day : null;
+    if (preset) dateInput.value = preset;
+    else if (!dateInput.value) {
+      const t = new Date();
+      dateInput.value = t.toISOString().slice(0,10);
+    }
+  });
+
+  const viewModal = document.getElementById('viewEventModal');
+  viewModal.addEventListener('show.bs.modal', function(ev) {
+    const btn = ev.relatedTarget;
+    if (!btn) return;
+    document.getElementById('viewEvTitle').textContent = btn.dataset.title || '';
+    document.getElementById('viewEvTime').textContent = btn.dataset.time || '—';
+    document.getElementById('viewEvOwner').textContent = btn.dataset.owner || '—';
+    const desc = btn.dataset.desc || '';
+    document.getElementById('viewEvDesc').textContent = desc;
+    document.getElementById('viewEvDescBlock').style.display = desc ? '' : 'none';
+
+    const type = btn.dataset.type;
+    const own = btn.dataset.own === '1';
+    const id = btn.dataset.id;
+    const delForm = document.getElementById('viewEvDeleteForm');
+    if (type === 'personal' && own && id) {
+      delForm.action = '/fraction/calendar/' + id + '/delete';
+      delForm.style.display = '';
+    } else {
+      delForm.style.display = 'none';
+    }
+  });
+})();
+</script>
+{% endblock %}

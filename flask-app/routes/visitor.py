@@ -6,7 +6,7 @@ from flask import (
     render_template, redirect, url_for, request, flash, abort
 )
 from flask_login import login_required, current_user
-from helpers import now_cet, allowed_file
+from helpers import now_cet, allowed_file, send_booking_notification
 
 
 def register_visitor_routes(app, db, models):
@@ -233,6 +233,17 @@ def register_visitor_routes(app, db, models):
         )
         db.session.add(booking)
         db.session.commit()
+        send_booking_notification(
+            title="📅 Új foglalás érkezett",
+            description=f"**{contact_name}** foglalt {booking_date.strftime('%Y.%m.%d')} {booking_time or ''}",
+            color=0x2ecc71,
+            fields=[
+                {"name": "Létszám", "value": f"{guest_count} fő", "inline": True},
+                {"name": "Típus", "value": event_type_label or "—", "inline": True},
+                {"name": "Telefon", "value": contact_phone or "—", "inline": True},
+                {"name": "Megjegyzés", "value": (note[:300] if note else "—"), "inline": False},
+            ],
+        )
         flash("Foglalás leadva! Az adminisztrátor hamarosan megerősíti.", "success")
         return redirect(url_for("visitor") + "#mybookings")
 
@@ -253,6 +264,15 @@ def register_visitor_routes(app, db, models):
         msg = BookingMessage(booking_id=booking_id, user_id=current_user.id, content=content)
         db.session.add(msg)
         db.session.commit()
+        send_booking_notification(
+            title="💬 Új üzenet foglaláshoz",
+            description=f"**#{booking_id}** — {booking.contact_name}",
+            color=0x3498db,
+            fields=[
+                {"name": "Küldő", "value": current_user.display_name, "inline": True},
+                {"name": "Üzenet", "value": content[:400], "inline": False},
+            ],
+        )
         flash("Üzenet elküldve!", "success")
         return redirect(url_for("booking_detail", booking_id=booking_id))
 

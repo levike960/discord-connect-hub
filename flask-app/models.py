@@ -472,6 +472,22 @@ def define_models(db, app):
 
         user = db.relationship("User", backref="card_order_entry")
 
+    class PersonalEvent(db.Model):
+        """Personal calendar entries for fraction members (planner)."""
+        __tablename__ = "personal_events"
+
+        id = db.Column(db.Integer, primary_key=True)
+        user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+        title = db.Column(db.String(160), nullable=False)
+        description = db.Column(db.Text, nullable=True)
+        event_date = db.Column(db.Date, nullable=False)
+        event_time = db.Column(db.String(16), nullable=True)
+        color = db.Column(db.String(16), nullable=False, default="#7c5cfc")
+        is_shared = db.Column(db.Boolean, nullable=False, default=False)
+        created_at = db.Column(db.DateTime, default=now_cet)
+
+        user = db.relationship("User", backref="personal_events")
+
     return {
         "User": User,
         "Rating": Rating,
@@ -498,4 +514,5 @@ def define_models(db, app):
         "BonusConfig": BonusConfig,
         "BonusEntry": BonusEntry,
         "UserCardOrder": UserCardOrder,
+        "PersonalEvent": PersonalEvent,
     }
