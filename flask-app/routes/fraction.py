@@ -28,12 +28,13 @@ def register_fraction_routes(app, db, models):
     BonusConfig = models["BonusConfig"]
     BonusEntry = models["BonusEntry"]
     UserCardOrder = models["UserCardOrder"]
+    PersonalEvent = models["PersonalEvent"]
 
     # Default card order for fraction main page
     DEFAULT_CARDS = [
         "members", "clock", "workhours", "dues", "calculator", "ads",
         "deliveries", "brewery", "contracts", "warehouse", "bookings",
-        "vince", "preorder"
+        "calendar", "vince", "preorder"
     ]
 
     @app.route("/fraction")
@@ -44,17 +45,29 @@ def register_fraction_routes(app, db, models):
         if order_entry:
             try:
                 card_order = _json.loads(order_entry.card_order)
-                # Add any new cards that weren't in saved order
                 for c in DEFAULT_CARDS:
                     if c not in card_order:
                         card_order.append(c)
-                # Remove cards that no longer exist
                 card_order = [c for c in card_order if c in DEFAULT_CARDS]
             except Exception:
                 card_order = list(DEFAULT_CARDS)
         else:
             card_order = list(DEFAULT_CARDS)
-        return render_template("fraction.html", card_order=card_order)
+
+        pending_bookings = Booking.query.filter_by(status="pending").count()
+        today = now_cet().date()
+        upcoming_personal = PersonalEvent.query.filter(
+            PersonalEvent.event_date >= today,
+            (PersonalEvent.user_id == current_user.id) | (PersonalEvent.is_shared == True)
+        ).count()
+
+        return render_template(
+            "fraction.html",
+            card_order=card_order,
+            pending_bookings=pending_bookings,
+            upcoming_personal=upcoming_personal,
+        )
+
 
     @app.route("/fraction/save-card-order", methods=["POST"])
     @fraction_required
