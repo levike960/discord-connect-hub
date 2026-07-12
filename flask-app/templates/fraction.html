@@ -26,7 +26,8 @@
       "brewery":    {"url": url_for('fraction_brewery'),    "icon": "bi-cup-straw",           "color": "#722f37",           "title": "Borászat",                  "sub": "Brewery / Wine"},
       "contracts":  {"url": url_for('fraction_contracts'),  "icon": "bi-file-earmark-text-fill", "color": "var(--csp-text)", "title": "Szerződések",              "sub": "Contracts"},
       "warehouse":  {"url": url_for('fraction_warehouse'),  "icon": "bi-box-seam-fill",       "color": "#e67e22",           "title": "Raktár / Leltár",           "sub": "Warehouse & Inventory"},
-      "bookings":   {"url": url_for('fraction_bookings'),   "icon": "bi-calendar-check",      "color": "#e74c3c",           "title": "Foglalások",                "sub": "Bookings"},
+      "bookings":   {"url": url_for('fraction_bookings'),   "icon": "bi-calendar-check",      "color": "#e74c3c",           "title": "Foglalások",                "sub": "Bookings", "badge": pending_bookings},
+      "calendar":   {"url": url_for('fraction_calendar'),   "icon": "bi-calendar3",           "color": "#16a085",           "title": "Naptár / Tervező",          "sub": "Personal planner", "badge": upcoming_personal},
       "vince":      {"url": url_for('fraction_vince'),      "icon": "bi-person-plus-fill",    "color": "#8e44ad",           "title": "NPC töltése",               "sub": "Vince feltöltése"},
       "preorder":   {"url": url_for('fraction_preorder'),   "icon": "bi-cart-check-fill",     "color": "#2980b9",           "title": "Előrendelés",               "sub": "Shopping list calculator"}
     } %}
