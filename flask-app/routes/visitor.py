@@ -6,7 +6,7 @@ from flask import (
     render_template, redirect, url_for, request, flash, abort
 )
 from flask_login import login_required, current_user
-from helpers import now_cet, allowed_file
+from helpers import now_cet, allowed_file, send_booking_notification
 
 
 def register_visitor_routes(app, db, models):
