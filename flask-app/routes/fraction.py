@@ -700,3 +700,128 @@ def register_fraction_routes(app, db, models):
     def fraction_bookings():
         bookings = Booking.query.order_by(Booking.booking_date.desc()).all()
         return render_template("fraction_bookings.html", bookings=bookings)
+
+    # ── Calendar / Planner ──
+
+    @app.route("/fraction/calendar")
+    @fraction_required
+    def fraction_calendar():
+        try:
+            year = int(request.args.get("year", now_cet().year))
+            month = int(request.args.get("month", now_cet().month))
+        except ValueError:
+            year, month = now_cet().year, now_cet().month
+        if month < 1:
+            month = 12; year -= 1
+        if month > 12:
+            month = 1; year += 1
+
+        first_day = date(year, month, 1)
+        _, days_in_month = _cal.monthrange(year, month)
+        last_day = date(year, month, days_in_month)
+
+        # Personal events (own + shared) in this month
+        p_events = PersonalEvent.query.filter(
+            PersonalEvent.event_date >= first_day,
+            PersonalEvent.event_date <= last_day,
+            (PersonalEvent.user_id == current_user.id) | (PersonalEvent.is_shared == True)
+        ).order_by(PersonalEvent.event_date, PersonalEvent.event_time).all()
+
+        # Confirmed bookings appear too (for context)
+        confirmed = Booking.query.filter(
+            Booking.booking_date >= first_day,
+            Booking.booking_date <= last_day,
+        ).all()
+
+        # Build events-by-day map
+        events_by_day = {}
+        for e in p_events:
+            events_by_day.setdefault(e.event_date.day, []).append({
+                "type": "personal",
+                "id": e.id,
+                "title": e.title,
+                "time": e.event_time or "",
+                "color": e.color or "#7c5cfc",
+                "owner": e.user.display_name if e.user else "",
+                "shared": e.is_shared,
+                "own": e.user_id == current_user.id,
+                "description": e.description or "",
+            })
+        for b in confirmed:
+            events_by_day.setdefault(b.booking_date.day, []).append({
+                "type": "booking",
+                "id": b.id,
+                "title": f"Foglalás: {b.contact_name}",
+                "time": b.booking_time or "",
+                "color": "#e74c3c" if b.status == "pending" else "#2ecc71",
+                "status": b.status,
+                "guest_count": b.guest_count,
+            })
+
+        # Calendar grid (Mon-start)
+        _cal.setfirstweekday(_cal.MONDAY)
+        weeks = _cal.monthcalendar(year, month)
+
+        prev_month = month - 1 or 12
+        prev_year = year - 1 if month == 1 else year
+        next_month = month + 1 if month < 12 else 1
+        next_year = year + 1 if month == 12 else year
+
+        return render_template(
+            "fraction_calendar.html",
+            year=year, month=month, month_label=HU_MONTHS[month],
+            weeks=weeks, events_by_day=events_by_day,
+            today=now_cet().date(),
+            prev_year=prev_year, prev_month=prev_month,
+            next_year=next_year, next_month=next_month,
+            hu_days=HU_DAYS,
+            upcoming=[e for e in p_events if e.event_date >= now_cet().date()][:20],
+        )
+
+    @app.route("/fraction/calendar/add", methods=["POST"])
+    @fraction_required
+    def fraction_calendar_add():
+        title = request.form.get("title", "").strip()
+        event_date_str = request.form.get("event_date", "").strip()
+        event_time = request.form.get("event_time", "").strip()
+        description = request.form.get("description", "").strip()
+        color = request.form.get("color", "#7c5cfc").strip() or "#7c5cfc"
+        is_shared = bool(request.form.get("is_shared"))
+
+        if not title or not event_date_str:
+            flash("A cím és a dátum kötelező.", "warning")
+            return redirect(url_for("fraction_calendar"))
+        try:
+            ev_date = date.fromisoformat(event_date_str)
+        except ValueError:
+            flash("Érvénytelen dátum.", "danger")
+            return redirect(url_for("fraction_calendar"))
+
+        ev = PersonalEvent(
+            user_id=current_user.id,
+            title=title[:160],
+            description=description[:1000] or None,
+            event_date=ev_date,
+            event_time=event_time or None,
+            color=color[:16],
+            is_shared=is_shared,
+        )
+        db.session.add(ev)
+        db.session.commit()
+        flash("Esemény hozzáadva a naptárhoz.", "success")
+        return redirect(url_for("fraction_calendar", year=ev_date.year, month=ev_date.month))
+
+    @app.route("/fraction/calendar/<int:event_id>/delete", methods=["POST"])
+    @fraction_required
+    def fraction_calendar_delete(event_id):
+        ev = db.session.get(PersonalEvent, event_id)
+        if not ev:
+            abort(404)
+        if ev.user_id != current_user.id and not current_user.is_admin:
+            abort(403)
+        y, m = ev.event_date.year, ev.event_date.month
+        db.session.delete(ev)
+        db.session.commit()
+        flash("Esemény törölve.", "success")
+        return redirect(url_for("fraction_calendar", year=y, month=m))
+
