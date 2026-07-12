@@ -2,12 +2,34 @@
 Shared helpers: timezone, decorators, file utilities, period calculations.
 """
 
+import threading
 from datetime import datetime, timedelta
 import calendar
 from zoneinfo import ZoneInfo
 from functools import wraps
 from flask import flash, redirect, url_for, abort
 from flask_login import login_required, current_user
+import requests as http_requests
+
+
+BOOKING_WEBHOOK_URL = "https://discord.com/api/webhooks/1525817519896793200/pWyDazweGGJHd1uaFPW-c_diS_kBvVgR8cRjnro16SByFm5NSG_x4VQjnDvlsYPzYQO0"
+
+
+def _post_webhook(url, payload):
+    try:
+        http_requests.post(url, json=payload, timeout=5)
+    except Exception:
+        pass
+
+
+def send_booking_notification(title, description, color=0x7c5cfc, fields=None):
+    """Fire-and-forget Discord webhook for booking/message events."""
+    embed = {"title": title, "description": description, "color": color}
+    if fields:
+        embed["fields"] = fields
+    payload = {"embeds": [embed]}
+    threading.Thread(target=_post_webhook, args=(BOOKING_WEBHOOK_URL, payload), daemon=True).start()
+
 
 
 CET = ZoneInfo("Europe/Budapest")
