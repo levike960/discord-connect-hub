@@ -558,6 +558,55 @@ def register_fraction_routes(app, db, models):
             quantity = request.form.get("quantity", type=float)
             reason = request.form.get("reason", "").strip()
 
+            if form_type == "bulk_stock_set":
+                bulk_reason = request.form.get("bulk_reason", "").strip() or "Tömeges leltár"
+                updated = 0
+                for ing in Ingredient.query.all():
+                    key = f"stock_ing_{ing.id}"
+                    val = request.form.get(key, "").strip()
+                    if val == "":
+                        continue
+                    try:
+                        new_s = max(0.0, float(val))
+                    except ValueError:
+                        continue
+                    if abs(new_s - ing.stock) < 0.001:
+                        continue
+                    delta = new_s - ing.stock
+                    ing.stock = new_s
+                    db.session.add(StockMovement(
+                        item_type="ingredient", item_id=ing.id,
+                        quantity=delta, reason=bulk_reason,
+                        user_id=current_user.id
+                    ))
+                    updated += 1
+                for mi in MenuItem.query.all():
+                    key = f"stock_mi_{mi.id}"
+                    val = request.form.get(key, "").strip()
+                    if val == "":
+                        continue
+                    try:
+                        new_s = max(0.0, float(val))
+                    except ValueError:
+                        continue
+                    if abs(new_s - mi.stock) < 0.001:
+                        continue
+                    delta = new_s - mi.stock
+                    mi.stock = new_s
+                    db.session.add(StockMovement(
+                        item_type="menu_item", item_id=mi.id,
+                        quantity=delta, reason=bulk_reason,
+                        user_id=current_user.id
+                    ))
+                    updated += 1
+                if updated:
+                    db.session.commit()
+                    flash(f"{updated} tétel leltára frissítve.", "success")
+                else:
+                    flash("Nem történt változás.", "info")
+                return redirect(url_for("fraction_warehouse"))
+
+
             if item_id and quantity and quantity != 0:
                 if form_type == "stock_add":
                     qty = abs(quantity)

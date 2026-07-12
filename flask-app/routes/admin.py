@@ -244,6 +244,34 @@ def admin_post_handler(db, models, app):
             db.session.commit()
             flash(f"Súly frissítve: {ing.name} → {ing.weight_per_unit_gram:.1f} g", "success")
 
+    elif form_type == "update_price":
+        ing_id = request.form.get("ing_id", type=int)
+        ing = db.session.get(Ingredient, ing_id)
+        if ing:
+            p = request.form.get("price_per_unit", type=float)
+            if p is not None and p >= 0:
+                ing.price_per_unit = p
+                db.session.commit()
+                flash(f"Ár frissítve: {ing.name} → {ing.price_per_unit:.0f} Ft", "success")
+
+    elif form_type == "bulk_update_ingredient_prices":
+        updated = 0
+        for ing in Ingredient.query.all():
+            key = f"price_{ing.id}"
+            if key in request.form:
+                try:
+                    new_p = float(request.form.get(key))
+                    if new_p >= 0 and abs(new_p - ing.price_per_unit) > 0.001:
+                        ing.price_per_unit = new_p
+                        updated += 1
+                except (TypeError, ValueError):
+                    pass
+        if updated:
+            db.session.commit()
+            flash(f"{updated} alapanyag ára frissítve.", "success")
+        else:
+            flash("Nem történt változás.", "info")
+
     elif form_type == "delete_ingredient":
         ing_id = request.form.get("ing_id", type=int)
         ing = db.session.get(Ingredient, ing_id)
