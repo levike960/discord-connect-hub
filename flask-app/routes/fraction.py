@@ -208,6 +208,51 @@ def register_fraction_routes(app, db, models):
         return render_template("fraction_dues.html", grouped_dues=grouped_dues,
                                dues_no_company=dues_no_company, all_companies=all_companies)
 
+    def resolve_production(cart_rows):
+        """Recursively resolve production needs.
+        Sub-items are taken from warehouse stock first; any shortfall is crafted
+        on the spot, i.e. its recipe is unpacked into raw ingredients + time."""
+        raw, used, crafted = {}, {}, {}
+        temp_stock = {}
+        state = {"time": 0}
+
+        def process(mi, qty, depth=0):
+            if depth > 20 or qty <= 0:
+                return
+            state["time"] += (mi.production_time_seconds or 0) * qty
+            for ri in mi.recipe_items.all():
+                need = (ri.quantity or 0) * qty
+                if ri.sub_menu_item_id and ri.sub_menu_item:
+                    sub = ri.sub_menu_item
+                    temp_stock.setdefault(sub.id, max(0.0, float(sub.stock or 0)))
+                    take = min(temp_stock[sub.id], need)
+                    short = need - take
+                    if take > 0:
+                        temp_stock[sub.id] -= take
+                        u = used.setdefault(sub.id, {"id": sub.id, "name": sub.name, "qty": 0.0})
+                        u["qty"] += take
+                    if short > 0:
+                        cr = crafted.setdefault(sub.id, {"id": sub.id, "name": sub.name, "qty": 0.0})
+                        cr["qty"] += short
+                        process(sub, short, depth + 1)
+                elif ri.ingredient:
+                    ing = ri.ingredient
+                    r = raw.setdefault(ing.id, {"id": ing.id, "name": ing.name, "unit": ing.unit,
+                                                "unit_price": ing.price_per_unit or 0, "qty": 0.0,
+                                                "stock": ing.stock or 0})
+                    r["qty"] += need
+
+        for item_id, qty in cart_rows:
+            mi = db.session.get(MenuItem, item_id)
+            if mi:
+                process(mi, qty)
+        total = 0.0
+        for r in raw.values():
+            r["cost"] = r["qty"] * r["unit_price"]
+            total += r["cost"]
+        return {"raw_ingredients": list(raw.values()), "stock_used": list(used.values()),
+                "crafted": list(crafted.values()), "total_time": state["time"], "total_cost": total}
+
     @app.route("/fraction/calculator")
     @fraction_required
     def fraction_calculator():
@@ -279,31 +324,12 @@ def register_fraction_routes(app, db, models):
                         ctx["discount_details"] = details
                         ctx["discount_total"] = disc_total
             elif mode == "production":
-                ingredient_totals = {}
-                total_time = 0
-                total_cost = 0.0
-                for item in cart:
-                    mi = db.session.get(MenuItem, item["item_id"])
-                    if mi:
-                        total_time += mi.production_time_seconds * item["qty"]
-                        for ri in mi.recipe_items.all():
-                            if ri.ingredient is None:
-                                continue
-                            key = ri.ingredient_id
-                            if key not in ingredient_totals:
-                                ingredient_totals[key] = {
-                                    "name": ri.ingredient.name,
-                                    "unit": ri.ingredient.unit,
-                                    "unit_price": ri.ingredient.price_per_unit,
-                                    "qty": 0.0
-                                }
-                            ingredient_totals[key]["qty"] += ri.quantity * item["qty"]
-                for v in ingredient_totals.values():
-                    v["cost"] = v["qty"] * v["unit_price"]
-                    total_cost += v["cost"]
-                ctx["production_ingredients"] = list(ingredient_totals.values())
-                ctx["production_time"] = total_time
-                ctx["production_cost"] = total_cost
+                res = resolve_production(cart_rows=[(i["item_id"], i["qty"]) for i in cart])
+                ctx["production_ingredients"] = res["raw_ingredients"]
+                ctx["production_stock_used"] = res["stock_used"]
+                ctx["production_crafted"] = res["crafted"]
+                ctx["production_time"] = res["total_time"]
+                ctx["production_cost"] = res["total_cost"]
 
         return render_template("fraction_calculator.html", **ctx)
 
@@ -375,34 +401,32 @@ def register_fraction_routes(app, db, models):
             flash("Eladás rögzítve, raktár frissítve.", "success")
 
         elif mode == "production":
+            res = resolve_production(cart_rows=[(c["id"], c["qty"]) for c in cart])
+            names = []
             for c in cart:
                 mi = db.session.get(MenuItem, c["id"])
                 if mi:
+                    names.append(mi.name)
                     mi.stock += c["qty"]
                     db.session.add(StockMovement(
-                        item_type="menu_item", item_id=mi.id,
-                        quantity=c["qty"],
-                        reason="POS gyártás",
-                        user_id=current_user.id
-                    ))
-                    for ri in mi.recipe_items.all():
-                        used = ri.quantity * c["qty"]
-                        if ri.sub_menu_item_id and ri.sub_menu_item:
-                            ri.sub_menu_item.stock = max(0, ri.sub_menu_item.stock - used)
-                            db.session.add(StockMovement(
-                                item_type="menu_item", item_id=ri.sub_menu_item_id,
-                                quantity=-used,
-                                reason=f"POS gyártás (altétel): {mi.name}",
-                                user_id=current_user.id
-                            ))
-                        elif ri.ingredient:
-                            ri.ingredient.stock = max(0, ri.ingredient.stock - used)
-                            db.session.add(StockMovement(
-                                item_type="ingredient", item_id=ri.ingredient.id,
-                                quantity=-used,
-                                reason=f"POS gyártás: {mi.name}",
-                                user_id=current_user.id
-                            ))
+                        item_type="menu_item", item_id=mi.id, quantity=c["qty"],
+                        reason="POS gyártás", user_id=current_user.id))
+            label = ", ".join(names)
+            for u in res["stock_used"]:
+                sub = db.session.get(MenuItem, u["id"])
+                if sub:
+                    sub.stock = max(0, (sub.stock or 0) - u["qty"])
+                    db.session.add(StockMovement(
+                        item_type="menu_item", item_id=sub.id, quantity=-u["qty"],
+                        reason=f"POS gyártás (raktárból felhasznált altétel): {label}",
+                        user_id=current_user.id))
+            for ing_row in res["raw_ingredients"]:
+                ing = db.session.get(Ingredient, ing_row["id"])
+                if ing:
+                    ing.stock = max(0, (ing.stock or 0) - ing_row["qty"])
+                    db.session.add(StockMovement(
+                        item_type="ingredient", item_id=ing.id, quantity=-ing_row["qty"],
+                        reason=f"POS gyártás: {label}", user_id=current_user.id))
             db.session.commit()
             session["pos_cart"] = []
             flash("Gyártás rögzítve, raktár frissítve.", "success")

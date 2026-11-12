@@ -442,6 +442,20 @@
     <h5 class="mb-3"><i class="bi bi-gear"></i> Gyártás kalkuláció</h5>
     <div class="card mb-3">
       <div class="card-body">
+        {% if production_stock_used %}
+        <h6><i class="bi bi-box-seam"></i> Raktárból felhasznált altételek:</h6>
+        <ul class="mb-3">
+          {% for u in production_stock_used %}<li><strong>{{ u.name }}</strong> × {{ "%g"|format(u.qty) }} db <span class="text-muted small">(levonásra kerül a raktárból)</span></li>{% endfor %}
+        </ul>
+        {% endif %}
+        {% if production_crafted %}
+        <div class="alert alert-warning py-2">
+          <strong><i class="bi bi-hammer"></i> Legyártandó altételek</strong> (nincs elég raktáron — receptjük alapanyagai hozzáadva):
+          <ul class="mb-0">
+            {% for c in production_crafted %}<li><strong>{{ c.name }}</strong> × {{ "%g"|format(c.qty) }} db</li>{% endfor %}
+          </ul>
+        </div>
+        {% endif %}
         <h6>Szükséges alapanyagok:</h6>
         {% if production_ingredients %}
         <table class="table table-sm">
@@ -450,7 +464,7 @@
             {% for ing in production_ingredients %}
             <tr>
               <td>{{ ing.name }}</td>
-              <td>{{ "%.1f"|format(ing.qty) }} {{ ing.unit }}</td>
+              <td>{{ "%.1f"|format(ing.qty) }} {{ ing.unit }}{% if ing.stock < ing.qty %} <span class="badge bg-danger">raktár: {{ "%g"|format(ing.stock) }}</span>{% endif %}</td>
               <td>{{ "%.0f"|format(ing.unit_price) }} Ft</td>
               <td>{{ "%.0f"|format(ing.cost) }} Ft</td>
             </tr>
