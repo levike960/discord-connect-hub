@@ -2,6 +2,7 @@
 
 import os
 import json
+import math
 from datetime import date, datetime, timedelta
 from flask import (
     render_template, redirect, url_for, request, flash
@@ -286,6 +287,10 @@ def admin_post_handler(db, models, app):
         mi_price = request.form.get("mi_price", type=float, default=0)
         mi_time = request.form.get("mi_time", type=int, default=0)
         mi_cost = request.form.get("mi_cost_override", type=float)
+        mi_weight = request.form.get("mi_weight_gram", type=float, default=0.0)
+        if mi_weight is None or not math.isfinite(mi_weight) or mi_weight < 0:
+            flash("A súly csak nemnegatív szám lehet (grammban).", "warning")
+            return
         image_path = None
         file = request.files.get("mi_image")
         if file and file.filename and allowed_file(file.filename):
@@ -296,11 +301,23 @@ def admin_post_handler(db, models, app):
         if mi_name:
             item = MenuItem(name=mi_name, category=mi_cat, price=mi_price,
                             production_time_seconds=mi_time,
+                            weight_gram=mi_weight,
                             production_cost=mi_cost if mi_cost is not None else 0,
                             image_path=image_path, created_by=current_user.id)
             db.session.add(item)
             db.session.commit()
             flash("Menu item added.", "success")
+
+    elif form_type == "update_menu_item_weight":
+        mi = db.session.get(MenuItem, request.form.get("mi_id", type=int))
+        weight = request.form.get("weight_gram", type=float)
+        if weight is None or not math.isfinite(weight) or weight < 0:
+            flash("A súly csak nemnegatív szám lehet (grammban).", "warning")
+            return
+        if mi:
+            mi.weight_gram = weight
+            db.session.commit()
+            flash(f"Súly frissítve: {mi.name} → {weight:g} g", "success")
 
     elif form_type == "update_menu_item_image":
         mi_id = request.form.get("mi_id", type=int)

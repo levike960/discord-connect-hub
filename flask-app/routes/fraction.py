@@ -8,6 +8,7 @@ from flask import (
 )
 from flask_login import login_required, current_user
 from helpers import now_cet, fraction_required, period_range, HU_MONTHS, HU_DAYS
+from craft_logistics import craft_step, plan_trips, valid_weight
 
 
 
@@ -215,6 +216,7 @@ def register_fraction_routes(app, db, models):
         raw, used, crafted = {}, {}, {}
         temp_stock = {}
         state = {"time": 0}
+        steps = []
 
         def process(mi, qty, depth=0):
             if depth > 20 or qty <= 0:
@@ -239,8 +241,10 @@ def register_fraction_routes(app, db, models):
                     ing = ri.ingredient
                     r = raw.setdefault(ing.id, {"id": ing.id, "name": ing.name, "unit": ing.unit,
                                                 "unit_price": ing.price_per_unit or 0, "qty": 0.0,
+                                                "weight_gram": valid_weight(ing.weight_per_unit_gram),
                                                 "stock": ing.stock or 0})
                     r["qty"] += need
+            steps.append(craft_step(mi, qty))
 
         for item_id, qty in cart_rows:
             mi = db.session.get(MenuItem, item_id)
@@ -251,7 +255,8 @@ def register_fraction_routes(app, db, models):
             r["cost"] = r["qty"] * r["unit_price"]
             total += r["cost"]
         return {"raw_ingredients": list(raw.values()), "stock_used": list(used.values()),
-                "crafted": list(crafted.values()), "total_time": state["time"], "total_cost": total}
+                "crafted": list(crafted.values()), "total_time": state["time"], "total_cost": total,
+                "steps": steps}
 
     @app.route("/fraction/calculator")
     @fraction_required
@@ -284,6 +289,7 @@ def register_fraction_routes(app, db, models):
             if mi:
                 line_total = mi.price * c["qty"]
                 cart.append({"name": mi.name, "qty": c["qty"], "line_total": line_total,
+                             "weight_gram": mi.effective_weight_gram,
                              "category": mi.category, "item_id": mi.id})
                 cart_total += line_total
 
@@ -330,6 +336,33 @@ def register_fraction_routes(app, db, models):
                 ctx["production_crafted"] = res["crafted"]
                 ctx["production_time"] = res["total_time"]
                 ctx["production_cost"] = res["total_cost"]
+                occupied = request.args.get("occupied_kg", type=float)
+                capacity = request.args.get("capacity_kg", type=float)
+                if "occupied_kg" not in request.args and "capacity_kg" not in request.args:
+                    occupied, capacity = session.get("craft_capacity", [None, None])
+                ctx["occupied_kg"] = occupied
+                ctx["capacity_kg"] = capacity
+                if occupied is not None and capacity is not None:
+                    import math
+                    if (math.isfinite(occupied) and math.isfinite(capacity)
+                            and occupied >= 0 and capacity > occupied):
+                        session["craft_capacity"] = [occupied, capacity]
+                    else:
+                        ctx["capacity_error"] = "A kapacitás legyen nagyobb a foglalt súlynál; mindkettő nemnegatív szám legyen."
+                elif "capacity_kg" in request.args or "occupied_kg" in request.args:
+                    ctx["capacity_error"] = "Add meg a foglalt súlyt és a teljes kapacitást is."
+                errors = {"Unknown weight": "Hiányzó súlyadat: add meg a termék és minden hozzávaló súlyát az admin felületen.",
+                          "One craft does not fit": "Egy darab gyártása sem fér el. Szabadíts fel helyet vagy növeld a kapacitást."}
+                for index, production_step in enumerate(res["steps"]):
+                    production_step["key"] = str(index)
+                    if occupied is not None and capacity is not None and not ctx.get("capacity_error"):
+                        try:
+                            production_step["plan"] = plan_trips(production_step, occupied, capacity)
+                        except ValueError as error:
+                            production_step["error"] = errors.get(str(error), "Nincs szabad kapacitás.")
+                ctx["production_steps"] = res["steps"]
+                ctx["planner_data"] = {"user_id": current_user.id, "steps": res["steps"],
+                                       "occupied": occupied, "capacity": capacity}
 
         return render_template("fraction_calculator.html", **ctx)
 

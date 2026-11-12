@@ -8,6 +8,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 from flask_login import UserMixin
 from flask import url_for
+from craft_logistics import item_weight_gram
 
 CET = ZoneInfo("Europe/Budapest")
 
@@ -245,6 +246,7 @@ def define_models(db, app):
         price = db.Column(db.Float, nullable=False, default=0.0)
         production_cost = db.Column(db.Float, nullable=False, default=0.0)
         production_time_seconds = db.Column(db.Integer, nullable=False, default=0)
+        weight_gram = db.Column(db.Float, nullable=False, default=0.0)
         image_path = db.Column(db.String(512), nullable=True)
         stock = db.Column(db.Float, nullable=False, default=0.0)
         min_stock = db.Column(db.Float, nullable=False, default=5.0)
@@ -255,6 +257,10 @@ def define_models(db, app):
                                         foreign_keys="MenuItemIngredient.menu_item_id",
                                         backref="menu_item",
                                         cascade="all, delete-orphan", lazy="dynamic")
+
+        @property
+        def effective_weight_gram(self):
+            return item_weight_gram(self)
 
         @property
         def calculated_cost(self):

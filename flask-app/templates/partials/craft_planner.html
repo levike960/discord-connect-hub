@@ -1,0 +1,49 @@
+<style>
+  .craft-step { border: 1px solid var(--csp-border); border-radius: 8px; padding: 1rem; margin-bottom: 1rem; overflow-wrap: anywhere; }
+  .craft-step.craft-complete { border-color: var(--csp-green); }
+  .craft-step progress { width: 100%; height: 12px; accent-color: var(--csp-green); }
+  .craft-step .btn { min-width: 44px; min-height: 44px; }
+  .craft-actions { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem; }
+</style>
+<section class="my-4">
+  <h5><i class="bi bi-backpack"></i> Fordulóterv</h5>
+  <form method="GET" class="row g-2 mb-3">
+    <input type="hidden" name="step" value="finish">
+    <input type="hidden" name="mode" value="production">
+    <div class="col-sm-5">
+      <label for="occupied-kg" class="form-label">Foglalt hely (kg)</label>
+      <input id="occupied-kg" class="form-control" name="occupied_kg" type="number" min="0" step="0.001" value="{{ occupied_kg if occupied_kg is not none else '' }}" placeholder="24" required>
+    </div>
+    <div class="col-sm-5">
+      <label for="capacity-kg" class="form-label">Teljes kapacitás (kg)</label>
+      <input id="capacity-kg" class="form-control" name="capacity_kg" type="number" min="0.001" step="0.001" value="{{ capacity_kg if capacity_kg is not none else '' }}" placeholder="50" required>
+    </div>
+    <div class="col-sm-2 d-flex align-items-end"><button class="btn btn-primary w-100" title="Fordulók kiszámítása" aria-label="Fordulók kiszámítása"><i class="bi bi-calculator"></i></button></div>
+  </form>
+  {% if capacity_error %}<div class="alert alert-warning" role="alert">{{ capacity_error }}</div>{% endif %}
+  {% if occupied_kg is not none and capacity_kg is not none and not capacity_error %}
+    <p>Szabad hely: <strong>{{ '%g'|format(capacity_kg - occupied_kg) }} kg</strong></p>
+    <p class="small text-muted">A terv minden kör után a késztermék lerakásával számol. A körök jelölése nem módosítja a raktárkészletet.</p>
+  {% endif %}
+  {% for step in production_steps %}
+    <article id="craft-step-{{ step.key }}" class="craft-step">
+      <h6>{{ loop.index }}. {{ step.name }} — {{ '%g'|format(step.qty) }} db</h6>
+      <p class="small mb-2">Késztermék: {% if step.weight_gram %}{{ '%g'|format(step.weight_gram) }} g / db · {{ '%g'|format(step.weight_gram * step.qty / 1000) }} kg összesen{% else %}hiányzó súlyadat{% endif %}</p>
+      {% if step.error %}<div class="alert alert-warning mb-0">{{ step.error }}</div>
+      {% elif step.plan %}
+        <p class="mb-2">{{ step.plan.trips }} kör · legfeljebb {{ step.plan.batch }} db / kör · utolsó kör: {{ '%g'|format(step.plan.last) }} db</p>
+        <strong data-next-title></strong>
+        <p data-load class="mb-1"></p>
+        <p data-load-weight class="small text-muted"></p>
+        <progress value="0" max="{{ step.plan.trips }}" aria-label="{{ step.name }} elkészült körei"></progress>
+        <div class="craft-actions mt-2">
+          <button type="button" data-complete class="btn btn-outline-success" title="Egy kör elkészült" aria-label="{{ step.name }}: egy kör elkészült"><i class="bi bi-plus-lg"></i></button>
+          <button type="button" data-undo class="btn btn-outline-secondary" title="Utolsó kör visszavonása" aria-label="{{ step.name }}: utolsó kör visszavonása"><i class="bi bi-arrow-counterclockwise"></i></button>
+          <span data-status role="status"></span>
+        </div>
+      {% endif %}
+    </article>
+  {% endfor %}
+</section>
+<script type="application/json" id="craft-plan-data">{{ planner_data|tojson }}</script>
+<script src="{{ url_for('static', filename='craft_planner.js') }}" defer></script>
