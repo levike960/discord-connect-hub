@@ -240,7 +240,7 @@
     <h6><i class="bi bi-cart3"></i> Kosár ({{ cart|length }} tétel)</h6>
     {% for item in cart %}
     <div class="pos-cart-item">
-      <span>{{ item.name }} × {{ item.qty }}</span>
+      <span>{{ item.name }} × {{ item.qty }}<small class="d-block text-muted">{% if item.weight_gram %}{{ '%g'|format(item.weight_gram) }} g / db · {{ '%g'|format(item.weight_gram * item.qty / 1000) }} kg{% else %}Súly: nincs megadva{% endif %}</small></span>
       <span>
         {{ "%.0f"|format(item.line_total) }} Ft
         <a href="{{ url_for('fraction_calculator', remove=loop.index0) }}" class="text-danger ms-2" title="Törlés"><i class="bi bi-x-circle"></i></a>
@@ -294,6 +294,7 @@
       {% endif %}
       <div class="fw-semibold" style="font-size:0.85rem;">{{ item.name }}</div>
       <div class="item-price">{{ "%.0f"|format(item.price) }} Ft</div>
+      <div class="small text-muted">{{ '%g'|format(item.effective_weight_gram) ~ ' g / db' if item.effective_weight_gram else 'Súly: nincs megadva' }}</div>
     </a>
     {% endfor %}
   </div>
@@ -308,7 +309,7 @@
       <i class="bi bi-arrow-left"></i> Vissza
     </a>
     <h5>{{ selected_item.name }}</h5>
-    <p class="text-muted">{{ "%.0f"|format(selected_item.price) }} Ft / db</p>
+    <p class="text-muted">{{ "%.0f"|format(selected_item.price) }} Ft / db · {{ '%g'|format(selected_item.effective_weight_gram) ~ ' g / db' if selected_item.effective_weight_gram else 'Súly: nincs megadva' }}</p>
     <form method="POST" action="{{ url_for('fraction_calculator_add') }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <input type="hidden" name="item_id" value="{{ selected_item.id }}">
@@ -459,12 +460,13 @@
         <h6>Szükséges alapanyagok:</h6>
         {% if production_ingredients %}
         <table class="table table-sm">
-          <thead><tr><th>Alapanyag</th><th>Mennyiség</th><th>Egységár</th><th>Költség</th></tr></thead>
+          <thead><tr><th>Alapanyag</th><th>Mennyiség</th><th>Súly</th><th>Egységár</th><th>Költség</th></tr></thead>
           <tbody>
             {% for ing in production_ingredients %}
             <tr>
               <td>{{ ing.name }}</td>
               <td>{{ "%.1f"|format(ing.qty) }} {{ ing.unit }}{% if ing.stock < ing.qty %} <span class="badge bg-danger">raktár: {{ "%g"|format(ing.stock) }}</span>{% endif %}</td>
+              <td>{% if ing.weight_gram %}{{ '%g'|format(ing.weight_gram) }} g / {{ ing.unit }}<small class="d-block">{{ '%g'|format(ing.weight_gram * ing.qty / 1000) }} kg</small>{% else %}Hiányzó súlyadat{% endif %}</td>
               <td>{{ "%.0f"|format(ing.unit_price) }} Ft</td>
               <td>{{ "%.0f"|format(ing.cost) }} Ft</td>
             </tr>
@@ -491,6 +493,7 @@
         </div>
       </div>
     </div>
+    {% include 'partials/craft_planner.html' %}
     <div class="d-flex gap-2 no-print">
       <button onclick="window.print()" class="btn btn-outline-primary"><i class="bi bi-printer"></i> Nyomtatás</button>
       <form method="POST" action="{{ url_for('fraction_calculator_confirm') }}" class="d-inline">
